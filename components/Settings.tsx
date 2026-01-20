@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Camera, Link2, Unlink, Check, Save, RefreshCw, Smartphone, Monitor, Gamepad2, Database, Shield, Lock, ChevronDown, ChevronUp, AlertCircle, Globe } from 'lucide-react';
+import { User, Camera, Link2, Unlink, Check, Save, RefreshCw, Smartphone, Monitor, Gamepad2, Database, Shield, Lock, ChevronDown, ChevronUp, AlertCircle, Globe, CloudCheck, ExternalLink } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { Platform } from '../types';
 import { PlatformIcon } from './PlatformIcon';
@@ -19,7 +19,6 @@ export const Settings: React.FC = () => {
   const [gamertags, setGamertags] = useState<Record<string, string>>({});
   
   // UI State
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   if (!userStats) return null;
@@ -32,7 +31,6 @@ export const Settings: React.FC = () => {
         nexusId: nexusId.startsWith('@') ? nexusId : `@${nexusId}`
       } : null);
       setIsSaving(false);
-      alert("Perfil atualizado com sucesso!");
     }, 800);
   };
 
@@ -62,7 +60,7 @@ export const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 md:p-10 max-w-4xl mx-auto space-y-10 animate-fade-in pb-24 h-full overflow-y-auto custom-scrollbar">
+    <div className="p-6 md:p-10 max-w-4xl mx-auto space-y-10 animate-fade-in pb-24 h-full overflow-y-auto custom-scrollbar text-gray-100">
       
       {/* SECTION: GAMER IDENTITY */}
       <section className="space-y-6">
@@ -98,7 +96,7 @@ export const Settings: React.FC = () => {
                       type="text" 
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-4 py-3 text-white focus:border-nexus-accent outline-none"
+                      className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-4 py-3 text-white focus:border-nexus-accent outline-none transition-all"
                     />
                  </div>
                  <div className="space-y-2">
@@ -107,7 +105,7 @@ export const Settings: React.FC = () => {
                       type="text" 
                       value={nexusId}
                       onChange={(e) => setNexusId(e.target.value)}
-                      className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-4 py-3 text-white focus:border-nexus-accent outline-none font-mono"
+                      className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-4 py-3 text-white focus:border-nexus-accent outline-none font-mono transition-all"
                     />
                  </div>
               </div>
@@ -182,52 +180,15 @@ export const Settings: React.FC = () => {
         </div>
       </section>
 
-      {/* SECTION: ADVANCED / CLOUD (COLLAPSIBLE) */}
-      <section className="pt-10">
-         <button 
-           onClick={() => setShowAdvanced(!showAdvanced)}
-           className="w-full flex items-center justify-between p-6 bg-nexus-800 border border-nexus-700 rounded-3xl text-gray-400 hover:text-white transition-all group"
-         >
-            <div className="flex items-center gap-3">
-               <Database size={20} className="group-hover:text-nexus-accent" />
-               <span className="font-bold text-sm uppercase tracking-widest">Configurações da Nuvem (Avançado)</span>
-            </div>
-            {showAdvanced ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-         </button>
-
-         {showAdvanced && (
-           <div className="mt-4 p-8 bg-nexus-900 border border-nexus-800 rounded-[2.5rem] animate-fade-in space-y-6 shadow-2xl">
-              <div className="flex items-start gap-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-yellow-500 text-xs">
-                 <AlertCircle size={20} className="shrink-0" />
-                 <p>Estas configurações gerenciam a persistência dos seus dados no Supabase. Modifique apenas se souber o que está fazendo.</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Status da Conexão</label>
-                    <div className="flex items-center gap-2 px-4 py-3 bg-nexus-800 rounded-xl border border-nexus-700 text-sm text-green-400 font-mono">
-                       <Globe size={14} /> Legado Sincronizado
-                    </div>
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Criptografia</label>
-                    <div className="flex items-center gap-2 px-4 py-3 bg-nexus-800 rounded-xl border border-nexus-700 text-sm text-blue-400 font-mono">
-                       <Lock size={14} /> AES-256 Cloud Shield
-                    </div>
-                 </div>
-              </div>
-
-              <div className="flex gap-4">
-                 <button className="flex-1 py-3 bg-white/5 text-gray-400 border border-white/10 rounded-xl font-bold hover:text-white transition-all text-sm">
-                    Limpar Cache Local
-                 </button>
-                 <button className="flex-1 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all text-sm">
-                    Resetar Banco de Dados
-                 </button>
-              </div>
-           </div>
-         )}
-      </section>
+      {/* FOOTER */}
+      <div className="pt-10 flex gap-4 border-t border-nexus-800">
+          <button 
+          onClick={() => { localStorage.clear(); window.location.reload(); }}
+          className="w-full py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl font-bold hover:bg-red-500 hover:text-white transition-all text-xs"
+          >
+            Limpar Cache e Resetar App
+          </button>
+      </div>
 
       {/* SYNC MODAL OVERLAY */}
       {syncingPlatform && (

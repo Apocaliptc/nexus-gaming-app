@@ -18,8 +18,10 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, nexusId: string) => Promise<void>;
   logout: () => void;
+  updateCloudConfig: (url: string, key: string) => void;
   isLoading: boolean;
   isSyncing: boolean;
+  isCloudActive: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -30,6 +32,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [friends, setFriends] = useState<Friend[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isCloudActive, setIsCloudActive] = useState(nexusCloud.isCloudActive());
 
   const setUserStats = (update: UserStats | ((prev: UserStats | null) => UserStats | null)) => {
     setIsSyncing(true);
@@ -43,43 +46,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const init = async () => {
-      const session = await nexusCloud.getActiveSession();
-      if (session) {
-        setCurrentUser({ email: session.nexusId });
-        setUserStatsState(session);
-        const userFriends = await nexusCloud.getFriends(session.nexusId);
-        setFriends(userFriends);
+      try {
+        const session = await nexusCloud.getActiveSession();
+        if (session) {
+          setCurrentUser({ email: session.nexusId });
+          setUserStatsState(session);
+          const userFriends = await nexusCloud.getFriends(session.nexusId);
+          setFriends(userFriends);
+        }
+      } catch (e) {
+        console.error("Erro durante a inicialização da sessão", e);
+      } finally {
+        setIsCloudActive(nexusCloud.isCloudActive());
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     init();
   }, []);
 
-  // Updated login to accept password and fetch friends from cloud
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    const profile = await nexusCloud.login(email, password);
-    setCurrentUser({ email });
-    setUserStatsState(profile);
-    const userFriends = await nexusCloud.getFriends(profile.nexusId);
-    setFriends(userFriends);
-    setIsLoading(false);
+    try {
+        const profile = await nexusCloud.login(email, password);
+        setCurrentUser({ email });
+        setUserStatsState(profile);
+        const userFriends = await nexusCloud.getFriends(profile.nexusId);
+        setFriends(userFriends);
+    } catch (e) {
+        throw e;
+    } finally {
+        setIsCloudActive(nexusCloud.isCloudActive());
+        setIsLoading(false);
+    }
   };
 
-  // Added signup method to AppContext implementation
   const signup = async (email: string, password: string, nexusId: string) => {
     setIsLoading(true);
-    const profile = await nexusCloud.signup(email, password, nexusId);
-    setCurrentUser({ email });
-    setUserStatsState(profile);
-    setFriends([]);
-    setIsLoading(false);
+    try {
+        const profile = await nexusCloud.signup(email, password, nexusId);
+        setCurrentUser({ email });
+        setUserStatsState(profile);
+        setFriends([]);
+    } catch (e) {
+        throw e;
+    } finally {
+        setIsCloudActive(nexusCloud.isCloudActive());
+        setIsLoading(false);
+    }
   };
 
   const logout = () => {
     setCurrentUser(null);
     setUserStatsState(null);
     localStorage.removeItem('nexus_active_session');
+    setIsCloudActive(nexusCloud.isCloudActive());
+  };
+
+  const updateCloudConfig = (url: string, key: string) => {
+    nexusCloud.updateConfig(url, key);
+    setIsCloudActive(nexusCloud.isCloudActive());
   };
 
   const addManualGame = (game: Game) => {
@@ -123,7 +148,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Persists friend addition to local storage via nexusCloud
   const addFriend = (friend: Friend) => {
     if (!userStats) return;
     nexusCloud.addFriend(userStats.nexusId, friend);
@@ -168,8 +192,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentUser, userStats, setUserStats, 
       friends, addFriend, removeFriend,
       toggleAchievement, login, signup, logout,
+      updateCloudConfig,
       linkAccount, unlinkAccount, addManualGame, 
-      importNexusData, isLoading, isSyncing 
+      importNexusData, isLoading, isSyncing, isCloudActive
     }}>
       {children}
     </AppContext.Provider>
