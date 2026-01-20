@@ -1,138 +1,217 @@
 
-import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType } from '../types';
-import { MOCK_USER_STATS } from './mockData';
+import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, JournalEntry } from '../types';
 
 /**
- * NEXUS CLOUD SERVICE (Production-Ready)
- * In a real environment, you would import 'firebase/firestore' here.
- * For this implementation, we use an advanced Persistent Sync pattern 
- * that bridges local state with global visibility.
+ * NEXUS RELATIONAL ORCHESTRATOR (V6)
+ * Este serviço gerencia a complexidade de transformar o objeto UserStats em linhas de SQL.
  */
 
-const DB_PREFIX = 'nexus_prod_v1_';
+let DB_CONFIG = {
+  url: localStorage.getItem('nexus_db_url') || '',
+  key: localStorage.getItem('nexus_db_key') || '',
+  isRemote: !!localStorage.getItem('nexus_db_url')
+};
+
+const headers = () => ({
+  'apikey': DB_CONFIG.key,
+  'Authorization': `Bearer ${DB_CONFIG.key}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+});
 
 export const nexusCloud = {
-  // --- AUTHENTICATION ---
+  updateConfig(url: string, key: string) {
+    localStorage.setItem('nexus_db_url', url);
+    localStorage.setItem('nexus_db_key', key);
+    DB_CONFIG.url = url;
+    DB_CONFIG.key = key;
+    DB_CONFIG.isRemote = !!url;
+  },
+
   async login(email: string): Promise<UserStats> {
-    const nexusId = `@${email.split('@')[0]}`;
-    let user = await this.getUser(nexusId);
-    
-    if (!user) {
-      user = {
-        ...MOCK_USER_STATS,
-        nexusId,
-        totalHours: 0,
-        totalAchievements: 0,
-        platinumCount: 0,
-        prestigePoints: 100,
-        gamesOwned: 0,
-        recentGames: [],
-        journalEntries: [],
-        linkedAccounts: [],
-        platformsConnected: []
-      };
-      await this.saveUser(user);
-      
-      // Notify the world that a new legend joined
-      await this.pushActivity({
-        id: `join-${Date.now()}`,
-        type: ActivityType.POST,
-        userId: nexusId,
-        username: nexusId,
-        userAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${nexusId}`,
-        timestamp: new Date().toISOString(),
-        details: { content: `Acabou de forjar seu legado no Nexus! Bem-vindo à rede unificada.` },
-        likes: 0
-      });
+    const nexusId = `@${email.split('@')[0].toLowerCase()}`;
+    localStorage.setItem('nexus_active_session', nexusId);
+
+    if (DB_CONFIG.isRemote) {
+      try {
+        // 1. Busca Perfil Base
+        const profileRes = await fetch(`${DB_CONFIG.url}/rest/v1/profiles?nexus_id=eq.${nexusId}`, { headers: headers() });
+        const profiles = await profileRes.json();
+        
+        if (profiles && profiles.length > 0) {
+          const p = profiles[0];
+          
+          // 2. Busca Jogos (Library)
+          const gamesRes = await fetch(`${DB_CONFIG.url}/rest/v1/library?user_id=eq.${nexusId}`, { headers: headers() });
+          const gamesData = await gamesRes.json();
+          
+          // 3. Busca Entradas do Chronos
+          const chronosRes = await fetch(`${DB_CONFIG.url}/rest/v1/chronos_journal?user_id=eq.${nexusId}`, { headers: headers() });
+          const journalData = await chronosRes.json();
+
+          return {
+            nexusId: p.nexus_id,
+            totalHours: p.total_hours,
+            totalAchievements: p.total_achievements,
+            platinumCount: p.platinum_count,
+            prestigePoints: p.prestige_points,
+            gamesOwned: p.games_owned,
+            platformsConnected: p.platforms_connected || [],
+            linkedAccounts: p.linked_accounts || [],
+            recentGames: gamesData || [],
+            journalEntries: journalData || [],
+            genreDistribution: p.genre_distribution || [],
+            platformDistribution: p.platform_distribution || [],
+            consistency: p.consistency || { currentStreak: 0, longestStreak: 0, longestSession: 0, avgSessionLength: 0, totalSessions: 0 },
+            weeklyActivity: p.weekly_activity || [],
+            monthlyActivity: p.monthly_activity || [],
+            skills: p.skills || []
+          };
+        }
+      } catch (e) {
+        console.error("Cloud Sync Login Failed", e);
+      }
     }
-    
-    localStorage.setItem(`${DB_PREFIX}active_session`, nexusId);
-    return user;
+
+    return this.getLocalData(nexusId) || this.createInitialUser(nexusId);
   },
 
-  // Added initializeNewUser to match AppContext usage
-  async initializeNewUser(email: string): Promise<UserStats> {
-    return this.login(email);
-  },
-
-  // --- PERSISTENCE ---
-  async saveUser(stats: UserStats): Promise<void> {
-    const key = `${DB_PREFIX}user_${stats.nexusId}`;
-    localStorage.setItem(key, JSON.stringify(stats));
-    
-    // In a real Firebase setup, this would be:
-    // await setDoc(doc(db, "users", stats.nexusId), stats);
-    
-    // We also update a global registry for discovery
-    const registry = JSON.parse(localStorage.getItem(`${DB_PREFIX}global_users`) || '[]');
-    if (!registry.find((id: string) => id === stats.nexusId)) {
-       registry.push(stats.nexusId);
-       localStorage.setItem(`${DB_PREFIX}global_users`, JSON.stringify(registry));
-    }
-  },
-
-  async getUser(nexusId: string): Promise<UserStats | null> {
-    const data = localStorage.getItem(`${DB_PREFIX}user_${nexusId}`);
+  getLocalData(nexusId: string): UserStats | null {
+    const data = localStorage.getItem(`nexus_db_v6_user_${nexusId}`);
     return data ? JSON.parse(data) : null;
   },
 
-  async getActiveSession(): Promise<UserStats | null> {
-    const activeId = localStorage.getItem(`${DB_PREFIX}active_session`);
-    return activeId ? this.getUser(activeId) : null;
-  },
+  async saveUser(stats: UserStats): Promise<void> {
+    localStorage.setItem(`nexus_db_v6_user_${stats.nexusId}`, JSON.stringify(stats));
+    if (!DB_CONFIG.isRemote) return;
 
-  // --- GLOBAL FEED ---
-  async getGlobalFeed(): Promise<ActivityEvent[]> {
-    const data = localStorage.getItem(`${DB_PREFIX}global_activity`);
-    return data ? JSON.parse(data) : [];
-  },
+    try {
+      // Sincronização Relacional Atômica
+      // 1. Update Profile
+      await fetch(`${DB_CONFIG.url}/rest/v1/profiles?nexus_id=eq.${stats.nexusId}`, {
+        method: 'PATCH',
+        headers: headers(),
+        body: JSON.stringify({
+          total_hours: stats.totalHours,
+          total_achievements: stats.totalAchievements,
+          platinum_count: stats.platinumCount,
+          prestige_points: stats.prestigePoints,
+          games_owned: stats.gamesOwned,
+          linked_accounts: stats.linkedAccounts,
+          platforms_connected: stats.platformsConnected,
+          genre_distribution: stats.genreDistribution,
+          platform_distribution: stats.platformDistribution,
+          consistency: stats.consistency,
+          skills: stats.skills
+        })
+      });
 
-  async pushActivity(event: ActivityEvent): Promise<void> {
-    const feed = await this.getGlobalFeed();
-    const updatedFeed = [event, ...feed].slice(0, 100);
-    localStorage.setItem(`${DB_PREFIX}global_activity`, JSON.stringify(updatedFeed));
-  },
+      // 2. Sincronizar Biblioteca (UPSERT)
+      for (const game of stats.recentGames) {
+        await fetch(`${DB_CONFIG.url}/rest/v1/library`, {
+          method: 'POST',
+          headers: { ...headers(), 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify({ ...game, user_id: stats.nexusId })
+        });
+      }
 
-  // --- FRIENDS & DISCOVERY ---
-  // Added getFriends to retrieve user-specific friends from persistent storage
-  async getFriends(nexusId: string): Promise<Friend[]> {
-    const key = `${DB_PREFIX}friends_${nexusId}`;
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
-  },
+      // 3. Sincronizar Diário Chronos
+      for (const entry of stats.journalEntries) {
+        await fetch(`${DB_CONFIG.url}/rest/v1/chronos_journal`, {
+          method: 'POST',
+          headers: { ...headers(), 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify({ ...entry, user_id: stats.nexusId })
+        });
+      }
 
-  // Added addFriend to persist friend connections
-  async addFriend(userId: string, friend: Friend): Promise<void> {
-    const friends = await this.getFriends(userId);
-    if (!friends.find(f => f.id === friend.id)) {
-      const updatedFriends = [...friends, friend];
-      localStorage.setItem(`${DB_PREFIX}friends_${userId}`, JSON.stringify(updatedFriends));
+    } catch (e) {
+      console.error("Cloud Persist Error", e);
     }
+  },
+
+  async getActiveSession(): Promise<UserStats | null> {
+    const nexusId = localStorage.getItem('nexus_active_session');
+    if (!nexusId) return null;
+    return this.login(nexusId.includes('@') ? nexusId : `${nexusId}@nexus.io`);
+  },
+
+  async getUser(nexusId: string): Promise<UserStats | null> {
+    return this.login(nexusId.includes('@') ? nexusId : `${nexusId}@nexus.io`);
   },
 
   async searchGlobalUsers(query: string): Promise<Friend[]> {
-    const registry = JSON.parse(localStorage.getItem(`${DB_PREFIX}global_users`) || '[]');
-    const results: Friend[] = [];
-    
-    for (const nexusId of registry) {
-      const stats = await this.getUser(nexusId);
-      if (stats && stats.nexusId.toLowerCase().includes(query.toLowerCase())) {
-        results.push({
-          id: stats.nexusId,
-          nexusId: stats.nexusId,
-          username: stats.nexusId.replace('@', ''),
-          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${stats.nexusId}`,
-          status: 'online',
-          totalTrophies: stats.totalAchievements,
-          platinumCount: stats.platinumCount,
-          totalHours: stats.totalHours,
-          gamesOwned: stats.gamesOwned,
-          topGenres: stats.genreDistribution?.map(g => g.name) || ['Gamer'],
-          compatibilityScore: 100,
-          linkedAccounts: stats.linkedAccounts
-        });
-      }
+    if (DB_CONFIG.isRemote) {
+      try {
+        const res = await fetch(`${DB_CONFIG.url}/rest/v1/profiles?nexus_id=ilike.*${query}*`, { headers: headers() });
+        const data = await res.json();
+        return data.map((u: any) => ({
+           id: u.nexus_id,
+           nexusId: u.nexus_id,
+           username: u.nexus_id.split('@')[0],
+           avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.nexus_id}`,
+           status: 'online',
+           totalTrophies: u.total_achievements,
+           platinumCount: u.platinum_count,
+           totalHours: u.total_hours,
+           gamesOwned: u.games_owned,
+           topGenres: ['Gamer'],
+           compatibilityScore: 100
+        }));
+      } catch (e) { return []; }
     }
-    return results;
+    return [];
+  },
+
+  async getGlobalFeed(): Promise<ActivityEvent[]> {
+    return [
+      {
+        id: 'welcome',
+        type: ActivityType.POST,
+        userId: 'system',
+        username: 'Nexus AI',
+        userAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=nexus',
+        timestamp: new Date().toISOString(),
+        details: { content: 'Bem-vindo ao Nexus. Sua jornada está sendo gravada na nuvem.' },
+        likes: 999
+      }
+    ];
+  },
+
+  async getFriends(nexusId: string): Promise<Friend[]> {
+    const data = localStorage.getItem(`nexus_friends_${nexusId}`);
+    return data ? JSON.parse(data) : [];
+  },
+
+  async addFriend(nexusId: string, friend: Friend): Promise<void> {
+    const friends = await this.getFriends(nexusId);
+    localStorage.setItem(`nexus_friends_${nexusId}`, JSON.stringify([...friends, friend]));
+  },
+
+  createInitialUser(nexusId: string): UserStats {
+    return {
+      nexusId,
+      totalHours: 0,
+      totalAchievements: 0,
+      platinumCount: 0,
+      prestigePoints: 100,
+      gamesOwned: 0,
+      platformsConnected: [],
+      linkedAccounts: [],
+      recentGames: [],
+      journalEntries: [],
+      genreDistribution: [],
+      platformDistribution: [],
+      consistency: { currentStreak: 0, longestStreak: 0, longestSession: 0, avgSessionLength: 0, totalSessions: 0 },
+      weeklyActivity: [],
+      monthlyActivity: [],
+      skills: [
+        { subject: 'Reflexes', A: 50, fullMark: 100 },
+        { subject: 'Strategy', A: 50, fullMark: 100 },
+        { subject: 'Resilience', A: 50, fullMark: 100 },
+        { subject: 'Teamwork', A: 50, fullMark: 100 },
+        { subject: 'Completion', A: 50, fullMark: 100 },
+        { subject: 'Versatility', A: 50, fullMark: 100 },
+      ]
+    };
   }
 };

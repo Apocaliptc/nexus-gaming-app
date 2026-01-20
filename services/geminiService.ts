@@ -2,25 +2,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserStats, AIInsight, Game, Platform, ChallengeType, Achievement, JournalEntry } from "../types";
 
-// In Vercel, process.env.API_KEY is available if configured in Environment Variables
-const apiKey = process.env.API_KEY;
-
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
-
-const checkAI = () => {
-  if (!ai) {
+// Helper to obtain a fresh GoogleGenAI client using process.env.API_KEY
+const getAiClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
     console.warn("Nexus AI: API_KEY is missing. AI features will use fallback responses.");
-    return false;
+    return null;
   }
-  return true;
+  return new GoogleGenAI({ apiKey });
 };
 
 export const generateJournalNarrative = async (gameTitle: string, rawInput: string): Promise<{ narrative: string, mood: string }> => {
-  if (!checkAI()) return { narrative: rawInput, mood: "Epic" };
+  // Always create a new instance right before use
+  const ai = getAiClient();
+  if (!ai) return { narrative: rawInput, mood: "Epic" };
   
   const model = 'gemini-3-flash-preview';
   try {
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
       model,
       contents: `O jogador disse o seguinte sobre sua sessão em "${gameTitle}": "${rawInput}". Transforme isso em uma entrada poética e emocionante para um diário de vida gamer.`,
       config: {
@@ -37,6 +36,7 @@ export const generateJournalNarrative = async (gameTitle: string, rawInput: stri
       }
     });
 
+    // Use .text property directly as per Google GenAI SDK rules
     if (response.text) {
       return JSON.parse(response.text);
     }
@@ -50,7 +50,9 @@ export const generateJournalNarrative = async (gameTitle: string, rawInput: stri
 };
 
 export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsight> => {
-  if (!checkAI()) {
+  // Always create a new instance right before use
+  const ai = getAiClient();
+  if (!ai) {
     return {
       personaTitle: "The Nexus Explorer",
       description: "Você tem uma biblioteca diversa e uma forte dedicação aos seus jogos.",
@@ -61,7 +63,7 @@ export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsi
 
   const model = 'gemini-3-flash-preview';
   try {
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
       model,
       contents: `Analise os seguintes dados de jogador e forneça uma persona gamer em português: ${JSON.stringify(userStats)}`,
       config: {
@@ -96,12 +98,14 @@ export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsi
 };
 
 export const generatePlayerManifesto = async (userStats: UserStats): Promise<string> => {
-  if (!checkAI()) return "Seu legado transcende os dados. A jornada continua...";
+  // Always create a new instance right before use
+  const ai = getAiClient();
+  if (!ai) return "Seu legado transcende os dados. A jornada continua...";
   
   const model = 'gemini-3-pro-preview';
   try {
-    const response = await ai!.models.generateContent({
-      model,
+    const response = await ai.models.generateContent({
+      model: model,
       contents: `Escreva um manifesto épico e emocionante em português sobre a carreira deste jogador. Use os seguintes dados como base: ${JSON.stringify(userStats)}. O tom deve ser de biografia heroica.`,
       config: {
         systemInstruction: "Você é um historiador de mundos virtuais.",
@@ -114,12 +118,14 @@ export const generatePlayerManifesto = async (userStats: UserStats): Promise<str
 };
 
 export const fetchPublicProfileData = async (platform: Platform, username: string): Promise<{ games: Game[], totalHours: number }> => {
-  if (!checkAI()) return { games: [], totalHours: 0 };
+  // Always create a new instance right before use
+  const ai = getAiClient();
+  if (!ai) return { games: [], totalHours: 0 };
   
   const modelId = "gemini-3-flash-preview";
   const prompt = `Simule a busca de dados de um perfil público para "${username}" na plataforma "${platform}". Retorne 5 jogos realistas com conquistas.`;
   try {
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
       model: modelId,
       contents: prompt,
       config: {
@@ -166,11 +172,13 @@ export const fetchPublicProfileData = async (platform: Platform, username: strin
 };
 
 export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => {
-  if (!checkAI()) return [];
+  // Always create a new instance right before use
+  const ai = getAiClient();
+  if (!ai) return [];
   
   const model = 'gemini-3-flash-preview';
   try {
-    const response = await ai!.models.generateContent({
+    const response = await ai.models.generateContent({
       model,
       contents: `Search for popular games related to: "${searchTerm}".`,
       config: {

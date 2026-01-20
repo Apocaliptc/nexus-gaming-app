@@ -69,24 +69,26 @@ export const NexusChronos: React.FC = () => {
       gameTitle: entry.gameTitle,
       importance: 'high' as const
     })),
+    // Fixed: Added 'as const' to literal types to match Milestone interface requirements
     {
       id: 'm1',
       date: '2024-02-28',
       title: 'Mestre das Terras Intermédias',
       description: 'Você atingiu 200 horas em Elden Ring e completou sua 42ª platina. Um marco lendário.',
       icon: 'trophy',
-      type: 'achievement',
+      type: 'achievement' as const,
       gameTitle: 'Elden Ring',
-      importance: 'legendary'
+      importance: 'legendary' as const
     },
+    // Fixed: Added 'as const' to literal types to match Milestone interface requirements
     {
       id: 'm2',
       date: '2023-11-15',
       title: 'A Ascensão do Atirador',
       description: 'Sua precisão em FPS subiu 40% este mês após maratonar The Finals.',
       icon: 'rocket',
-      type: 'evolution',
-      importance: 'high'
+      type: 'evolution' as const,
+      importance: 'high' as const
     }
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

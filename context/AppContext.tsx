@@ -13,9 +13,12 @@ interface AppContextType {
   toggleAchievement: (gameId: string, achievementId: string) => void;
   linkAccount: (platform: Platform, username: string, games: Game[], totalHours: number) => void;
   unlinkAccount: (platform: Platform) => void;
+  addManualGame: (game: Game) => void;
+  importNexusData: (json: string) => boolean;
   login: (email: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  isSyncing: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -25,12 +28,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userStats, setUserStatsState] = useState<UserStats | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Wrapper for state updates that also persists to "Cloud"
   const setUserStats = (update: UserStats | ((prev: UserStats | null) => UserStats | null)) => {
+    setIsSyncing(true);
     setUserStatsState(prev => {
       const next = typeof update === 'function' ? update(prev) : update;
       if (next) nexusCloud.saveUser(next);
+      setTimeout(() => setIsSyncing(false), 800);
       return next;
     });
   };
@@ -51,7 +56,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = async (email: string) => {
     setIsLoading(true);
-    const profile = await nexusCloud.initializeNewUser(email);
+    // Fixed: replaced initializeNewUser with login to match nexusCloud service definition
+    const profile = await nexusCloud.login(email);
     setCurrentUser({ email });
     setUserStatsState(profile);
     const userFriends = await nexusCloud.getFriends(profile.nexusId);
@@ -62,7 +68,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     setCurrentUser(null);
     setUserStatsState(null);
-    localStorage.removeItem('nexus_cloud_v1_active_session');
+    localStorage.removeItem('nexus_prod_v1_active_session');
+  };
+
+  const addManualGame = (game: Game) => {
+    setUserStats(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        recentGames: [game, ...prev.recentGames],
+        totalHours: prev.totalHours + game.hoursPlayed,
+        totalAchievements: prev.totalAchievements + game.achievementCount,
+        gamesOwned: prev.gamesOwned + 1
+      };
+    });
+  };
+
+  const importNexusData = (json: string): boolean => {
+    try {
+      const data = JSON.parse(json);
+      if (data.nexusId) {
+        setUserStats(data);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   };
 
   const toggleAchievement = (gameId: string, achievementId: string) => {
@@ -88,19 +120,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const removeFriend = (friendId: string) => {
     setFriends(prev => prev.filter(f => f.id !== friendId));
-    // To implement persistent removal in nexusCloud if needed
   };
 
   const linkAccount = (platform: Platform, username: string, games: Game[], totalHours: number) => {
     setUserStats(prev => {
       if (!prev) return null;
+      const existingIds = new Set(prev.recentGames.map(g => g.title + g.platform));
+      const newGames = games.filter(g => !existingIds.has(g.title + g.platform));
+      
       return {
         ...prev,
         linkedAccounts: [...prev.linkedAccounts.filter(a => a.platform !== platform), { platform, username }],
         platformsConnected: [...prev.platformsConnected.filter(p => p !== platform), platform],
-        recentGames: [...games, ...prev.recentGames],
+        recentGames: [...newGames, ...prev.recentGames],
         totalHours: prev.totalHours + totalHours,
-        gamesOwned: prev.gamesOwned + games.length
+        gamesOwned: prev.gamesOwned + newGames.length,
+        totalAchievements: prev.totalAchievements + newGames.reduce((acc, g) => acc + g.achievementCount, 0)
       };
     });
   };
@@ -121,7 +156,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentUser, userStats, setUserStats, 
       friends, addFriend, removeFriend,
       toggleAchievement, login, logout,
-      linkAccount, unlinkAccount, isLoading 
+      linkAccount, unlinkAccount, addManualGame, 
+      importNexusData, isLoading, isSyncing 
     }}>
       {children}
     </AppContext.Provider>
