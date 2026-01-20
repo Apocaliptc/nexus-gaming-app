@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Bot, Settings, LogOut, Compass, BarChart2, Grid, Box, Trophy, User, Zap, Mail, LogIn, ArrowRight, Globe, Beaker, History, Info, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Users, Bot, Settings, LogOut, Compass, BarChart2, Grid, Box, Trophy, User, Zap, Mail, LogIn, ArrowRight, Globe, Beaker, History, Info, Loader2, Lock, AtSign, UserPlus } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Friends } from './components/Friends';
 import { DiscordBot } from './components/DiscordBot';
@@ -20,33 +20,137 @@ import { decodeProfileFromSharing } from './services/shareService';
 import { nexusCloud } from './services/nexusCloud';
 
 const LoginScreen: React.FC = () => {
-  const { login } = useAppContext();
+  const { login, signup } = useAppContext();
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nexusId, setNexusId] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    
+    try {
+      if (mode === 'login') {
+        await login(email, password);
+      } else {
+        if (!nexusId.startsWith('@')) {
+          setError('O Nexus ID deve começar com @');
+          setLoading(false);
+          return;
+        }
+        await signup(email, password, nexusId);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro na autenticação');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="h-screen bg-[#050507] flex items-center justify-center p-4">
-      <div className="bg-nexus-900 p-8 rounded-3xl border border-nexus-800 shadow-2xl max-w-md w-full text-center space-y-6">
-        <div className="w-16 h-16 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-nexus-accent/20">
-          <span className="font-display font-bold text-3xl text-white">N</span>
+    <div className="h-screen bg-[#050507] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+      <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-nexus-accent/10 blur-[120px] rounded-full"></div>
+      <div className="absolute -bottom-[20%] -right-[10%] w-[60%] h-[60%] bg-nexus-secondary/10 blur-[120px] rounded-full"></div>
+
+      <div className="bg-nexus-900 p-8 md:p-10 rounded-[2.5rem] border border-nexus-800 shadow-2xl max-w-md w-full relative z-10 space-y-8">
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-nexus-accent/20 mb-4">
+            <span className="font-display font-bold text-3xl text-white">N</span>
+          </div>
+          <h1 className="text-3xl font-display font-bold text-white">Nexus Alpha</h1>
+          <p className="text-gray-500 text-sm italic">Onde seu legado é imortalizado.</p>
         </div>
-        <div>
-          <h1 className="text-3xl font-display font-bold text-white mb-2">Nexus Alpha</h1>
-          <p className="text-gray-400">Unifique seu legado gamer.</p>
-        </div>
-        <div className="space-y-4">
-          <input 
-            type="email" 
-            placeholder="Seu e-mail gamer" 
-            className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-4 py-3 text-white focus:border-nexus-accent outline-none"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+
+        <div className="flex bg-nexus-800 p-1 rounded-xl border border-nexus-700">
           <button 
-            onClick={() => login(email || 'apocaliptc@nexus.io')}
-            className="w-full bg-nexus-accent hover:bg-nexus-accent/90 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+            onClick={() => { setMode('login'); setError(''); }}
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${mode === 'login' ? 'bg-nexus-900 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
           >
-            Entrar no Nexus <ArrowRight size={18} />
+            Login
           </button>
+          <button 
+            onClick={() => { setMode('signup'); setError(''); }}
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${mode === 'signup' ? 'bg-nexus-900 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+          >
+            Cadastro
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+              <input 
+                required
+                type="email" 
+                placeholder="E-mail" 
+                className="w-full bg-nexus-800 border border-nexus-700 rounded-xl pl-12 pr-4 py-3.5 text-white focus:border-nexus-accent outline-none transition-all"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+              <input 
+                required
+                type="password" 
+                placeholder="Senha" 
+                className="w-full bg-nexus-800 border border-nexus-700 rounded-xl pl-12 pr-4 py-3.5 text-white focus:border-nexus-accent outline-none transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {mode === 'signup' && (
+            <div className="space-y-1 animate-fade-in">
+              <div className="relative">
+                <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                <input 
+                  required
+                  type="text" 
+                  placeholder="Seu Nexus ID (ex: @gamer)" 
+                  className="w-full bg-nexus-800 border border-nexus-700 rounded-xl pl-12 pr-4 py-3.5 text-white focus:border-nexus-accent outline-none transition-all font-mono"
+                  value={nexusId}
+                  onChange={(e) => setNexusId(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-xs flex items-center gap-2 animate-pulse">
+               <Info size={14} /> {error}
+            </div>
+          )}
+
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full bg-nexus-accent hover:bg-nexus-accent/90 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-nexus-accent/20"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : (
+              <>
+                {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
+                {mode === 'login' ? 'Acessar Nexus' : 'Criar Legado'}
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="text-center">
+           <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">
+              Protegido por Criptografia de Ponta-a-Ponta
+           </p>
         </div>
       </div>
     </div>
@@ -62,32 +166,6 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const resolveParams = async () => {
       const params = new URLSearchParams(window.location.search);
-      
-      // 1. Legado embutido (Legacy Sharing)
-      const sharedData = params.get('view_legacy');
-      if (sharedData) {
-        const decoded = decodeProfileFromSharing(sharedData);
-        if (decoded) {
-          setSharedProfile({
-            id: 'shared',
-            nexusId: decoded.nexusId,
-            username: decoded.nexusId,
-            avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${decoded.nexusId}`,
-            status: 'online',
-            totalTrophies: decoded.totalAchievements,
-            platinumCount: decoded.platinumCount,
-            totalHours: decoded.totalHours,
-            gamesOwned: decoded.gamesOwned,
-            topGenres: decoded.genreDistribution.map(g => g.name),
-            compatibilityScore: 99,
-            linkedAccounts: decoded.linkedAccounts
-          });
-          setActiveTab('profile');
-          return;
-        }
-      }
-
-      // 2. Busca por ID Direto (Invite Link)
       const userId = params.get('user');
       if (userId) {
         setIsResolvingLink(true);
