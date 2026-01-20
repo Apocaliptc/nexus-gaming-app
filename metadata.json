@@ -1,0 +1,5 @@
+{
+  "name": "Nexus",
+  "description": "Unified gaming dashboard aggregating statistics from Steam, PlayStation, and Xbox. Features AI-powered gaming habit analysis and Discord integration.",
+  "requestFramePermissions": []
+}
