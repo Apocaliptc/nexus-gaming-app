@@ -2,8 +2,8 @@
 import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, JournalEntry } from '../types';
 
 /**
- * NEXUS RELATIONAL ORCHESTRATOR (V6)
- * Este serviço gerencia a complexidade de transformar o objeto UserStats em linhas de SQL.
+ * NEXUS RELATIONAL ORCHESTRATOR (V8)
+ * Sincronização atômica mapeando CamelCase (App) para Snake_case (Database).
  */
 
 let DB_CONFIG = {
@@ -34,18 +34,13 @@ export const nexusCloud = {
 
     if (DB_CONFIG.isRemote) {
       try {
-        // 1. Busca Perfil Base
         const profileRes = await fetch(`${DB_CONFIG.url}/rest/v1/profiles?nexus_id=eq.${nexusId}`, { headers: headers() });
         const profiles = await profileRes.json();
         
         if (profiles && profiles.length > 0) {
           const p = profiles[0];
-          
-          // 2. Busca Jogos (Library)
           const gamesRes = await fetch(`${DB_CONFIG.url}/rest/v1/library?user_id=eq.${nexusId}`, { headers: headers() });
           const gamesData = await gamesRes.json();
-          
-          // 3. Busca Entradas do Chronos
           const chronosRes = await fetch(`${DB_CONFIG.url}/rest/v1/chronos_journal?user_id=eq.${nexusId}`, { headers: headers() });
           const journalData = await chronosRes.json();
 
@@ -58,7 +53,18 @@ export const nexusCloud = {
             gamesOwned: p.games_owned,
             platformsConnected: p.platforms_connected || [],
             linkedAccounts: p.linked_accounts || [],
-            recentGames: gamesData || [],
+            recentGames: gamesData.map((g: any) => ({
+              id: g.id,
+              title: g.title,
+              platform: g.platform,
+              hoursPlayed: g.hours_played,
+              achievementCount: g.achievement_count,
+              totalAchievements: g.total_achievements,
+              coverUrl: g.cover_url,
+              lastPlayed: g.last_played,
+              genres: g.genres || [],
+              achievements: g.achievements || []
+            })),
             journalEntries: journalData || [],
             genreDistribution: p.genre_distribution || [],
             platformDistribution: p.platform_distribution || [],
@@ -86,12 +92,12 @@ export const nexusCloud = {
     if (!DB_CONFIG.isRemote) return;
 
     try {
-      // Sincronização Relacional Atômica
-      // 1. Update Profile
-      await fetch(`${DB_CONFIG.url}/rest/v1/profiles?nexus_id=eq.${stats.nexusId}`, {
-        method: 'PATCH',
-        headers: headers(),
+      // 1. Upsert Profile
+      await fetch(`${DB_CONFIG.url}/rest/v1/profiles`, {
+        method: 'POST',
+        headers: { ...headers(), 'Prefer': 'resolution=merge-duplicates' },
         body: JSON.stringify({
+          nexus_id: stats.nexusId,
           total_hours: stats.totalHours,
           total_achievements: stats.totalAchievements,
           platinum_count: stats.platinumCount,
@@ -102,16 +108,29 @@ export const nexusCloud = {
           genre_distribution: stats.genreDistribution,
           platform_distribution: stats.platformDistribution,
           consistency: stats.consistency,
-          skills: stats.skills
+          skills: stats.skills,
+          updated_at: new Date().toISOString()
         })
       });
 
-      // 2. Sincronizar Biblioteca (UPSERT)
+      // 2. Sincronizar Biblioteca (Mapping camelCase to snake_case)
       for (const game of stats.recentGames) {
         await fetch(`${DB_CONFIG.url}/rest/v1/library`, {
           method: 'POST',
           headers: { ...headers(), 'Prefer': 'resolution=merge-duplicates' },
-          body: JSON.stringify({ ...game, user_id: stats.nexusId })
+          body: JSON.stringify({
+            id: game.id,
+            user_id: stats.nexusId,
+            title: game.title,
+            platform: game.platform,
+            hours_played: game.hoursPlayed,
+            achievement_count: game.achievementCount,
+            total_achievements: game.totalAchievements,
+            cover_url: game.coverUrl,
+            last_played: game.lastPlayed,
+            genres: game.genres,
+            achievements: game.achievements
+          })
         });
       }
 
@@ -120,7 +139,15 @@ export const nexusCloud = {
         await fetch(`${DB_CONFIG.url}/rest/v1/chronos_journal`, {
           method: 'POST',
           headers: { ...headers(), 'Prefer': 'resolution=merge-duplicates' },
-          body: JSON.stringify({ ...entry, user_id: stats.nexusId })
+          body: JSON.stringify({
+            id: entry.id,
+            user_id: stats.nexusId,
+            date: entry.date,
+            game_title: entry.gameTitle,
+            raw_input: entry.rawInput,
+            narrative: entry.narrative,
+            mood: entry.mood
+          })
         });
       }
 

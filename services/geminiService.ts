@@ -13,7 +13,6 @@ const getAiClient = () => {
 };
 
 export const generateJournalNarrative = async (gameTitle: string, rawInput: string): Promise<{ narrative: string, mood: string }> => {
-  // Always create a new instance right before use
   const ai = getAiClient();
   if (!ai) return { narrative: rawInput, mood: "Epic" };
   
@@ -36,7 +35,6 @@ export const generateJournalNarrative = async (gameTitle: string, rawInput: stri
       }
     });
 
-    // Use .text property directly as per Google GenAI SDK rules
     if (response.text) {
       return JSON.parse(response.text);
     }
@@ -50,7 +48,6 @@ export const generateJournalNarrative = async (gameTitle: string, rawInput: stri
 };
 
 export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsight> => {
-  // Always create a new instance right before use
   const ai = getAiClient();
   if (!ai) {
     return {
@@ -97,8 +94,38 @@ export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsi
   }
 };
 
+export const getGameRecommendations = async (userStats: UserStats): Promise<{title: string, reason: string}[]> => {
+  const ai = getAiClient();
+  if (!ai) return [];
+
+  const model = 'gemini-3-flash-preview';
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: `Com base nesses jogos: ${userStats.recentGames.map(g => g.title).join(', ')}, recomende 3 novos jogos em português.`,
+      config: {
+        systemInstruction: "Você é um recomendador de jogos especialista. Para cada jogo, dê o título e uma razão curta de por que o jogador vai gostar, baseada no estilo dele.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              reason: { type: Type.STRING }
+            },
+            required: ["title", "reason"]
+          }
+        }
+      }
+    });
+    return response.text ? JSON.parse(response.text) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
 export const generatePlayerManifesto = async (userStats: UserStats): Promise<string> => {
-  // Always create a new instance right before use
   const ai = getAiClient();
   if (!ai) return "Seu legado transcende os dados. A jornada continua...";
   
@@ -118,7 +145,6 @@ export const generatePlayerManifesto = async (userStats: UserStats): Promise<str
 };
 
 export const fetchPublicProfileData = async (platform: Platform, username: string): Promise<{ games: Game[], totalHours: number }> => {
-  // Always create a new instance right before use
   const ai = getAiClient();
   if (!ai) return { games: [], totalHours: 0 };
   
@@ -172,7 +198,6 @@ export const fetchPublicProfileData = async (platform: Platform, username: strin
 };
 
 export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => {
-  // Always create a new instance right before use
   const ai = getAiClient();
   if (!ai) return [];
   

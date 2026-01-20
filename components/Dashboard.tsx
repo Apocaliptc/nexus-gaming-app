@@ -1,21 +1,24 @@
 
 import React, { useEffect, useState } from 'react';
 import { UserStats, AIInsight, Platform, Game, ActivityEvent, ActivityType } from '../types';
-import { analyzeGamingProfile } from '../services/geminiService';
+import { analyzeGamingProfile, getGameRecommendations } from '../services/geminiService';
 import { PlatformIcon } from './PlatformIcon';
 import { useAppContext } from '../context/AppContext';
 import { 
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { Sparkles, Activity, Trophy, Clock, BrainCircuit, Plus, Loader2, Calendar, ChevronRight, Globe, History, Mail, AlertCircle, CheckCircle, ExternalLink, Database, Wifi, CloudCheck } from 'lucide-react';
+import { Sparkles, Activity, Trophy, Clock, BrainCircuit, Plus, Loader2, Calendar, ChevronRight, Globe, History, Mail, AlertCircle, CheckCircle, ExternalLink, Database, Wifi, CloudCheck, Star } from 'lucide-react';
 import { GameDetailView } from './GameDetailView';
 
 export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ onNavigate }) => {
   const { userStats, isSyncing } = useAppContext();
   const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
+  const [recommendations, setRecommendations] = useState<{title: string, reason: string}[]>([]);
   const [loadingAi, setLoadingAi] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [greeting, setGreeting] = useState('');
+
+  const isCloudConnected = !!localStorage.getItem('nexus_db_url');
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -25,13 +28,16 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
     else setGreeting(`Boa noite, ${userStats?.nexusId}. Hora de jogar!`);
   }, [userStats?.nexusId]);
 
-  if (!userStats) return null;
-
   const handleGenerateInsight = async () => {
+    if (!userStats) return;
     setLoadingAi(true);
     try {
-      const insight = await analyzeGamingProfile(userStats);
+      const [insight, recs] = await Promise.all([
+        analyzeGamingProfile(userStats),
+        getGameRecommendations(userStats)
+      ]);
       setAiInsight(insight);
+      setRecommendations(recs);
     } catch (e) {
       console.error(e);
     } finally {
@@ -39,6 +45,7 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
     }
   };
 
+  if (!userStats) return null;
   if (selectedGame) return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} />;
 
   return (
@@ -47,16 +54,19 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
         <div className="animate-fade-in">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight">{greeting}</h1>
-            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all ${isSyncing ? 'bg-nexus-accent/20 border-nexus-accent text-nexus-accent animate-pulse' : 'bg-green-500/10 border-green-500/20 text-green-400'}`}>
-              {isSyncing ? <Wifi size={10} /> : <Database size={10} />}
-              {isSyncing ? 'Sincronizando Nuvem...' : 'Nexus DB Conectado'}
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
+              isSyncing ? 'bg-nexus-accent/20 border-nexus-accent text-nexus-accent animate-pulse' : 
+              isCloudConnected ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+            }`}>
+              {isSyncing ? <Wifi size={12} /> : isCloudConnected ? <CloudCheck size={12} /> : <AlertCircle size={12} />}
+              {isSyncing ? 'SINCRONIZANDO NUVEM...' : isCloudConnected ? 'NEXUS CLOUD ATIVA' : 'MODO LOCAL APENAS'}
             </div>
           </div>
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full border border-yellow-500/20 text-xs font-bold uppercase tracking-widest">
               <Sparkles size={14} /> Prestige: {userStats.prestigePoints.toLocaleString()}
             </div>
-            <p className="text-[10px] text-gray-500 italic">Arquitetura de dados isolada por identificador único.</p>
+            <p className="text-[10px] text-gray-500 italic">Arquitetura Nexus V8 • Criptografado ponta-a-ponta.</p>
           </div>
         </div>
         <div className="flex items-center gap-3 mt-6 md:mt-0">
@@ -65,7 +75,7 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
            </button>
            {loadingAi ? (
              <div className="flex items-center gap-2 px-5 py-2.5 bg-nexus-800 rounded-xl text-nexus-accent border border-nexus-accent/20">
-               <Loader2 className="animate-spin" size={18} /> Analisando LocalDB...
+               <Loader2 className="animate-spin" size={18} /> Orquestrando IA...
              </div>
            ) : (
              <button onClick={handleGenerateInsight} className="flex items-center gap-2 px-5 py-2.5 bg-nexus-accent hover:bg-nexus-accent/90 text-white rounded-xl transition-all font-bold text-sm shadow-lg shadow-nexus-accent/20">
@@ -76,7 +86,8 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
       </header>
 
       <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto w-full">
-         {/* KPI Cards and rest of dashboard content */}
+         
+         {/* KPI Cards */}
          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700 shadow-xl group hover:border-nexus-accent transition-colors">
@@ -105,11 +116,11 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
                  <div className="relative z-10 flex flex-col justify-between h-full">
                     <div>
                       <h4 className="text-xs font-bold text-nexus-secondary uppercase tracking-widest mb-1 flex items-center gap-2">
-                        <History size={14} /> Memória Local
+                        <History size={14} /> Memória Ativa
                       </h4>
-                      <h3 className="text-xl font-display font-bold text-white mb-2">Dados em Segurança.</h3>
+                      <h3 className="text-xl font-display font-bold text-white mb-2">Seus dados, seu legado.</h3>
                       <p className="text-xs text-gray-400 leading-relaxed italic">
-                        Seus dados são criptografados localmente sob o ID {userStats.nexusId}.
+                        Visualizando persistência cloud para {userStats.nexusId}.
                       </p>
                     </div>
                     <div className="mt-4 flex items-center gap-2 text-xs font-bold text-nexus-accent group-hover:translate-x-1 transition-transform">
@@ -119,6 +130,28 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
                </div>
             </div>
          </div>
+
+         {/* IA RECOMMENDATIONS - NEW SECTION */}
+         {recommendations.length > 0 && (
+           <div className="animate-fade-in space-y-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2 px-2">
+                 <Star className="text-yellow-500" size={20} fill="currentColor" /> Recomendado para seu Perfil
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 {recommendations.map((rec, i) => (
+                   <div key={i} className="bg-nexus-900/50 backdrop-blur-md border border-nexus-700 rounded-3xl p-6 hover:border-nexus-secondary transition-all group">
+                      <h4 className="font-bold text-nexus-secondary mb-2 flex items-center justify-between">
+                         {rec.title}
+                         <Sparkles size={14} />
+                      </h4>
+                      <p className="text-sm text-gray-400 leading-relaxed italic">
+                         "{rec.reason}"
+                      </p>
+                   </div>
+                 ))}
+              </div>
+           </div>
+         )}
 
          {/* Latest Activities or Games */}
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -171,7 +204,7 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
                ) : (
                  <div className="flex flex-col items-center justify-center py-10 opacity-50">
                     <BrainCircuit size={48} className="mb-4 text-gray-600" />
-                    <p className="text-sm text-gray-500">Gere uma análise para ver sua persona.</p>
+                    <p className="text-sm text-gray-500">Gere uma análise para ver sua persona e recomendações.</p>
                  </div>
                )}
             </div>
