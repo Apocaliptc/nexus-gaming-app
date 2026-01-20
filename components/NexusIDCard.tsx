@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UserStats, AIInsight } from '../types';
-import { Trophy, Crown, Zap, Star, Share2, Download, ShieldCheck, Globe } from 'lucide-react';
+import { Trophy, Crown, Zap, Star, Share2, Download, ShieldCheck, Globe, Check, Copy, Link } from 'lucide-react';
 
 interface Props {
   stats: UserStats;
@@ -9,6 +9,22 @@ interface Props {
 }
 
 export const NexusIDCard: React.FC<Props> = ({ stats, insight }) => {
+  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const copyId = () => {
+    navigator.clipboard.writeText(stats.nexusId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyInviteLink = () => {
+    const link = `${window.location.origin}${window.location.pathname}?user=${encodeURIComponent(stats.nexusId)}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   return (
     <div className="w-full max-w-md mx-auto group">
       <div className="relative aspect-[1.586/1] w-full bg-nexus-900 rounded-[2rem] p-8 border-2 border-white/10 overflow-hidden shadow-2xl transition-all hover:border-nexus-accent/50 group-hover:shadow-nexus-accent/20">
@@ -80,11 +96,19 @@ export const NexusIDCard: React.FC<Props> = ({ stats, insight }) => {
       </div>
       
       <div className="mt-4 flex gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-         <button className="flex items-center gap-2 px-4 py-2 bg-nexus-800 hover:bg-nexus-700 text-white rounded-xl text-xs font-bold border border-nexus-700 transition-all">
-            <Download size={14} /> Download
+         <button 
+           onClick={copyInviteLink}
+           className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-lg ${copiedLink ? 'bg-green-600' : 'bg-nexus-secondary hover:bg-nexus-secondary/80 shadow-nexus-secondary/20'}`}
+         >
+            {copiedLink ? <Check size={14} /> : <Link size={14} />} 
+            {copiedLink ? 'Link Copiado!' : 'Link de Convite'}
          </button>
-         <button className="flex items-center gap-2 px-4 py-2 bg-nexus-accent hover:bg-nexus-accent/80 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-nexus-accent/20">
-            <Share2 size={14} /> Share Legacy
+         <button 
+          onClick={copyId}
+          className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-lg ${copied ? 'bg-green-600' : 'bg-nexus-accent hover:bg-nexus-accent/80 shadow-nexus-accent/20'}`}
+         >
+            {copied ? <Check size={14} /> : <Copy size={14} />} 
+            {copied ? 'ID Copiado!' : 'Copiar Nexus ID'}
          </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Bot, Settings, LogOut, Compass, BarChart2, Grid, Box, Trophy, User, Zap, Mail, LogIn, ArrowRight, Globe, Beaker, History, Info } from 'lucide-react';
+import { LayoutDashboard, Users, Bot, Settings, LogOut, Compass, BarChart2, Grid, Box, Trophy, User, Zap, Mail, LogIn, ArrowRight, Globe, Beaker, History, Info, Loader2 } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Friends } from './components/Friends';
 import { DiscordBot } from './components/DiscordBot';
@@ -17,6 +17,7 @@ import { NexusChronos } from './components/NexusChronos';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { Friend } from './types';
 import { decodeProfileFromSharing } from './services/shareService';
+import { nexusCloud } from './services/nexusCloud';
 
 const LoginScreen: React.FC = () => {
   const { login } = useAppContext();
@@ -56,40 +57,84 @@ const AppContent: React.FC = () => {
   const { userStats, currentUser, logout, isLoading } = useAppContext();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'friends' | 'discord' | 'settings' | 'discover' | 'statistics' | 'library' | 'collection' | 'achievements' | 'profile' | 'feed' | 'lab' | 'chronos'>('dashboard');
   const [sharedProfile, setSharedProfile] = useState<Friend | null>(null);
+  const [isResolvingLink, setIsResolvingLink] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sharedData = params.get('view_legacy');
-    if (sharedData) {
-      const decoded = decodeProfileFromSharing(sharedData);
-      if (decoded) {
-        setSharedProfile({
-          id: 'shared',
-          nexusId: decoded.nexusId,
-          username: decoded.nexusId,
-          avatarUrl: 'https://i.pravatar.cc/150?img=12',
-          status: 'online',
-          totalTrophies: decoded.totalAchievements,
-          platinumCount: decoded.platinumCount,
-          totalHours: decoded.totalHours,
-          gamesOwned: decoded.gamesOwned,
-          topGenres: decoded.genreDistribution.map(g => g.name),
-          compatibilityScore: 99,
-          linkedAccounts: decoded.linkedAccounts
-        });
-        setActiveTab('profile');
+    const resolveParams = async () => {
+      const params = new URLSearchParams(window.location.search);
+      
+      // 1. Legado embutido (Legacy Sharing)
+      const sharedData = params.get('view_legacy');
+      if (sharedData) {
+        const decoded = decodeProfileFromSharing(sharedData);
+        if (decoded) {
+          setSharedProfile({
+            id: 'shared',
+            nexusId: decoded.nexusId,
+            username: decoded.nexusId,
+            avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${decoded.nexusId}`,
+            status: 'online',
+            totalTrophies: decoded.totalAchievements,
+            platinumCount: decoded.platinumCount,
+            totalHours: decoded.totalHours,
+            gamesOwned: decoded.gamesOwned,
+            topGenres: decoded.genreDistribution.map(g => g.name),
+            compatibilityScore: 99,
+            linkedAccounts: decoded.linkedAccounts
+          });
+          setActiveTab('profile');
+          return;
+        }
       }
-    }
+
+      // 2. Busca por ID Direto (Invite Link)
+      const userId = params.get('user');
+      if (userId) {
+        setIsResolvingLink(true);
+        try {
+          const stats = await nexusCloud.getUser(userId);
+          if (stats) {
+            setSharedProfile({
+              id: stats.nexusId,
+              nexusId: stats.nexusId,
+              username: stats.nexusId.replace('@', ''),
+              avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${stats.nexusId}`,
+              status: 'online',
+              totalTrophies: stats.totalAchievements,
+              platinumCount: stats.platinumCount,
+              totalHours: stats.totalHours,
+              gamesOwned: stats.gamesOwned,
+              topGenres: stats.genreDistribution?.map(g => g.name) || ['Gamer'],
+              compatibilityScore: 100,
+              linkedAccounts: stats.linkedAccounts
+            });
+            setActiveTab('profile');
+          }
+        } catch (e) {
+          console.error("Link resolution failed", e);
+        } finally {
+          setIsResolvingLink(false);
+        }
+      }
+    };
+
+    resolveParams();
   }, []);
 
-  if (isLoading) return <div className="h-screen bg-[#050507] flex items-center justify-center"><Zap className="animate-pulse text-nexus-accent" size={48} /></div>;
+  if (isLoading || isResolvingLink) return (
+    <div className="h-screen bg-[#050507] flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin text-nexus-accent" size={48} />
+      <p className="text-nexus-accent font-bold animate-pulse text-xs uppercase tracking-widest">Acessando Nuvem Nexus...</p>
+    </div>
+  );
+
   if (!currentUser || !userStats) return <LoginScreen />;
 
   const myProfileData: Friend = {
     id: 'me',
     nexusId: userStats.nexusId,
     username: userStats.nexusId,
-    avatarUrl: 'https://i.pravatar.cc/150?img=12',
+    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats.nexusId}`,
     status: 'online',
     totalTrophies: userStats.totalAchievements,
     platinumCount: userStats.platinumCount,
@@ -154,9 +199,13 @@ const AppContent: React.FC = () => {
         
         {sharedProfile && (
            <div className="sticky top-0 z-[60] bg-nexus-accent text-white py-2 px-4 text-center font-bold text-xs flex items-center justify-center gap-4 animate-fade-in shadow-xl">
-              <Info size={14} /> Você está visualizando o legado compartilhado de {sharedProfile.username}
+              <Info size={14} /> Você está visualizando o legado de {sharedProfile.username}
               <button 
-                onClick={() => { setSharedProfile(null); window.history.replaceState({}, '', window.location.pathname); }}
+                onClick={() => { 
+                  setSharedProfile(null); 
+                  window.history.replaceState({}, '', window.location.pathname); 
+                  setActiveTab('dashboard');
+                }}
                 className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors border border-white/20"
               >
                 Voltar ao meu Nexus

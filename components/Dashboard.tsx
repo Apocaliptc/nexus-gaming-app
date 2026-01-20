@@ -7,7 +7,7 @@ import { useAppContext } from '../context/AppContext';
 import { 
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { Sparkles, Activity, Trophy, Clock, BrainCircuit, Plus, Loader2, Calendar, ChevronRight, Globe, History, Mail, AlertCircle, CheckCircle, ExternalLink, Database, Wifi, CloudCheck, Star } from 'lucide-react';
+import { Sparkles, Activity, Trophy, Clock, BrainCircuit, Plus, Loader2, Calendar, ChevronRight, Globe, History, Mail, AlertCircle, CheckCircle, ExternalLink, Database, Wifi, CloudCheck, Star, Copy, Check, Link } from 'lucide-react';
 import { GameDetailView } from './GameDetailView';
 
 export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ onNavigate }) => {
@@ -17,6 +17,8 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
   const [loadingAi, setLoadingAi] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [greeting, setGreeting] = useState('');
+  const [copiedId, setCopiedId] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const isCloudConnected = !!localStorage.getItem('nexus_db_url');
 
@@ -45,6 +47,21 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
     }
   };
 
+  const copyId = () => {
+    if (!userStats) return;
+    navigator.clipboard.writeText(userStats.nexusId);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  const copyInviteLink = () => {
+    if (!userStats) return;
+    const link = `${window.location.origin}${window.location.pathname}?user=${encodeURIComponent(userStats.nexusId)}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   if (!userStats) return null;
   if (selectedGame) return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} />;
 
@@ -52,21 +69,40 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
     <div className="h-full flex flex-col bg-[#050507] text-gray-100 overflow-y-auto custom-scrollbar">
       <header className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-nexus-800">
         <div className="animate-fade-in">
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex flex-wrap items-center gap-3 mb-1">
             <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight">{greeting}</h1>
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
               isSyncing ? 'bg-nexus-accent/20 border-nexus-accent text-nexus-accent animate-pulse' : 
               isCloudConnected ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
             }`}>
               {isSyncing ? <Wifi size={12} /> : isCloudConnected ? <CloudCheck size={12} /> : <AlertCircle size={12} />}
-              {isSyncing ? 'SINCRONIZANDO NUVEM...' : isCloudConnected ? 'NEXUS CLOUD ATIVA' : 'MODO LOCAL APENAS'}
+              {isSyncing ? 'SINCRONIZANDO...' : isCloudConnected ? 'NEXUS CLOUD ATIVA' : 'MODO LOCAL'}
+            </div>
+            
+            <div className="flex gap-1.5">
+              <button 
+                onClick={copyId}
+                className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-400 hover:text-white hover:border-nexus-accent transition-all"
+                title="Copiar Nexus ID"
+              >
+                {copiedId ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                {userStats.nexusId}
+              </button>
+              <button 
+                onClick={copyInviteLink}
+                className="flex items-center gap-2 px-3 py-1 bg-nexus-accent/10 border border-nexus-accent/20 rounded-full text-[10px] font-bold text-nexus-accent hover:bg-nexus-accent/20 transition-all"
+                title="Copiar Link de Convite Direto"
+              >
+                {copiedLink ? <Check size={12} /> : <Link size={12} />}
+                {copiedLink ? 'LINK COPIADO!' : 'CONVIDAR AMIGO'}
+              </button>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full border border-yellow-500/20 text-xs font-bold uppercase tracking-widest">
               <Sparkles size={14} /> Prestige: {userStats.prestigePoints.toLocaleString()}
             </div>
-            <p className="text-[10px] text-gray-500 italic">Arquitetura Nexus V8 • Criptografado ponta-a-ponta.</p>
+            <p className="text-[10px] text-gray-500 italic">Compartilhe o link de convite para que amigos acessem seu legado.</p>
           </div>
         </div>
         <div className="flex items-center gap-3 mt-6 md:mt-0">
@@ -131,7 +167,7 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
             </div>
          </div>
 
-         {/* IA RECOMMENDATIONS - NEW SECTION */}
+         {/* IA RECOMMENDATIONS */}
          {recommendations.length > 0 && (
            <div className="animate-fade-in space-y-4">
               <h3 className="text-xl font-bold text-white flex items-center gap-2 px-2">
