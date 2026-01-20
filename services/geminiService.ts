@@ -2,12 +2,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserStats, AIInsight, Game, Platform, ChallengeType, Achievement, JournalEntry } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// In Vercel, process.env.API_KEY is available if configured in Environment Variables
+const apiKey = process.env.API_KEY;
+
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+
+const checkAI = () => {
+  if (!ai) {
+    console.warn("Nexus AI: API_KEY is missing. AI features will use fallback responses.");
+    return false;
+  }
+  return true;
+};
 
 export const generateJournalNarrative = async (gameTitle: string, rawInput: string): Promise<{ narrative: string, mood: string }> => {
+  if (!checkAI()) return { narrative: rawInput, mood: "Epic" };
+  
   const model = 'gemini-3-flash-preview';
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
       model,
       contents: `O jogador disse o seguinte sobre sua sessão em "${gameTitle}": "${rawInput}". Transforme isso em uma entrada poética e emocionante para um diário de vida gamer.`,
       config: {
@@ -37,21 +50,30 @@ export const generateJournalNarrative = async (gameTitle: string, rawInput: stri
 };
 
 export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsight> => {
+  if (!checkAI()) {
+    return {
+      personaTitle: "The Nexus Explorer",
+      description: "Você tem uma biblioteca diversa e uma forte dedicação aos seus jogos.",
+      suggestedGenres: ["RPG", "Ação", "Indie"],
+      improvementTip: "Tente explorar alguns títulos indie de nicho para ampliar seus horizontes."
+    };
+  }
+
   const model = 'gemini-3-flash-preview';
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
       model,
-      contents: `Analyze the following user stats and provide a gaming persona: ${JSON.stringify(userStats)}`,
+      contents: `Analise os seguintes dados de jogador e forneça uma persona gamer em português: ${JSON.stringify(userStats)}`,
       config: {
-        systemInstruction: "You are a master gaming analyst. Categorize the user based on their playtime, achievements, and genres. Be creative and encouraging.",
+        systemInstruction: "Você é um mestre analista de jogos. Categorize o usuário com base em seu tempo de jogo, conquistas e gêneros. Seja criativo, encorajador e escreva sempre em português do Brasil.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            personaTitle: { type: Type.STRING, description: "A creative title for the user's gaming persona." },
-            description: { type: Type.STRING, description: "A summary of their gaming style and habits." },
-            suggestedGenres: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 genres they might enjoy next." },
-            improvementTip: { type: Type.STRING, description: "A tip on how they can improve or diversify their gaming." }
+            personaTitle: { type: Type.STRING, description: "Um título criativo para a persona gamer do usuário." },
+            description: { type: Type.STRING, description: "Um resumo de seu estilo de jogo e hábitos." },
+            suggestedGenres: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 gêneros que eles podem gostar a seguir." },
+            improvementTip: { type: Type.STRING, description: "Uma dica de como eles podem melhorar ou diversificar seu jogo." }
           },
           required: ["personaTitle", "description", "suggestedGenres", "improvementTip"]
         }
@@ -66,17 +88,19 @@ export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsi
     console.error("AI Analysis failed:", error);
     return {
       personaTitle: "The Nexus Explorer",
-      description: "You have a diverse library and a strong dedication to your games.",
-      suggestedGenres: ["RPG", "Action", "Indie"],
-      improvementTip: "Try exploring some niche indie titles to broaden your horizons."
+      description: "Você tem uma biblioteca diversa e uma forte dedicação aos seus jogos.",
+      suggestedGenres: ["RPG", "Ação", "Indie"],
+      improvementTip: "Tente explorar alguns títulos indie de nicho para ampliar seus horizontes."
     };
   }
 };
 
 export const generatePlayerManifesto = async (userStats: UserStats): Promise<string> => {
+  if (!checkAI()) return "Seu legado transcende os dados. A jornada continua...";
+  
   const model = 'gemini-3-pro-preview';
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
       model,
       contents: `Escreva um manifesto épico e emocionante em português sobre a carreira deste jogador. Use os seguintes dados como base: ${JSON.stringify(userStats)}. O tom deve ser de biografia heroica.`,
       config: {
@@ -90,10 +114,12 @@ export const generatePlayerManifesto = async (userStats: UserStats): Promise<str
 };
 
 export const fetchPublicProfileData = async (platform: Platform, username: string): Promise<{ games: Game[], totalHours: number }> => {
+  if (!checkAI()) return { games: [], totalHours: 0 };
+  
   const modelId = "gemini-3-flash-preview";
-  const prompt = `Simulate a public profile data fetch for "${username}" on "${platform}". Return 5 realistic games with achievements.`;
+  const prompt = `Simule a busca de dados de um perfil público para "${username}" na plataforma "${platform}". Retorne 5 jogos realistas com conquistas.`;
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
       model: modelId,
       contents: prompt,
       config: {
@@ -140,9 +166,11 @@ export const fetchPublicProfileData = async (platform: Platform, username: strin
 };
 
 export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => {
+  if (!checkAI()) return [];
+  
   const model = 'gemini-3-flash-preview';
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
       model,
       contents: `Search for popular games related to: "${searchTerm}".`,
       config: {

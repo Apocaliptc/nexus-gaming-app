@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
   <head>
@@ -15,8 +16,8 @@
                 900: '#0f0f15',
                 800: '#181820',
                 700: '#23232f',
-                accent: '#8b5cf6', // Violet
-                secondary: '#06b6d4', // Cyan
+                accent: '#8b5cf6',
+                secondary: '#06b6d4',
                 success: '#10b981',
               }
             },
@@ -42,31 +43,34 @@
       body {
         background-color: #050507;
         color: #e4e4e7;
+        margin: 0;
+        padding: 0;
       }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
+      #root:empty {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #050507;
       }
-      ::-webkit-scrollbar-track {
-        background: #0f0f15;
+      #root:empty::after {
+        content: "";
+        width: 40px;
+        height: 40px;
+        border: 4px solid #1f2937;
+        border-top-color: #8b5cf6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
       }
-      ::-webkit-scrollbar-thumb {
-        background: #3f3f46;
-        border-radius: 4px;
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #52525b;
-      }
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: #2f3136;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #202225;
-        border-radius: 3px;
-      }
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #0f0f15; }
+      ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: #2f3136; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #202225; border-radius: 3px; }
     </style>
   <script type="importmap">
 {
@@ -83,5 +87,6 @@
 </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>
