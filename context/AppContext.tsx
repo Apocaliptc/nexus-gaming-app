@@ -19,6 +19,7 @@ interface AppContextType {
   signup: (email: string, password: string, nexusId: string) => Promise<void>;
   logout: () => void;
   updateCloudConfig: (url: string, key: string) => void;
+  isInitializing: boolean;
   isLoading: boolean;
   isSyncing: boolean;
   isCloudActive: boolean;
@@ -30,7 +31,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [userStats, setUserStatsState] = useState<UserStats | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isCloudActive, setIsCloudActive] = useState(nexusCloud.isCloudActive());
 
@@ -49,8 +51,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const session = await nexusCloud.getActiveSession();
         if (session) {
-          setCurrentUser({ email: session.nexusId });
           setUserStatsState(session);
+          setCurrentUser({ email: session.nexusId });
           const userFriends = await nexusCloud.getFriends(session.nexusId);
           setFriends(userFriends);
         }
@@ -58,7 +60,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.error("Erro durante a inicialização da sessão", e);
       } finally {
         setIsCloudActive(nexusCloud.isCloudActive());
-        setIsLoading(false);
+        setIsInitializing(false);
       }
     };
     init();
@@ -68,8 +70,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsLoading(true);
     try {
         const profile = await nexusCloud.login(email, password);
-        setCurrentUser({ email });
         setUserStatsState(profile);
+        setCurrentUser({ email });
         const userFriends = await nexusCloud.getFriends(profile.nexusId);
         setFriends(userFriends);
     } catch (e) {
@@ -84,8 +86,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsLoading(true);
     try {
         const profile = await nexusCloud.signup(email, password, nexusId);
-        setCurrentUser({ email });
         setUserStatsState(profile);
+        setCurrentUser({ email });
         setFriends([]);
     } catch (e) {
         throw e;
@@ -194,7 +196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toggleAchievement, login, signup, logout,
       updateCloudConfig,
       linkAccount, unlinkAccount, addManualGame, 
-      importNexusData, isLoading, isSyncing, isCloudActive
+      importNexusData, isInitializing, isLoading, isSyncing, isCloudActive
     }}>
       {children}
     </AppContext.Provider>

@@ -1,23 +1,34 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MOCK_DISCOVER_GAMES, MOCK_GAMES } from '../services/mockData';
-import { Game } from '../types';
-import { searchGamesWithAI } from '../services/geminiService';
-import { Search, Trophy, Info, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Game, Platform } from '../types';
+import { searchGamesWithAI, getTrendingGames } from '../services/geminiService';
+import { Search, Trophy, Info, Loader2, Sparkles, AlertCircle, Flame, TrendingUp, Zap, Filter, ChevronRight, Globe } from 'lucide-react';
 import { PlatformIcon } from './PlatformIcon';
 import { GameDetailView } from './GameDetailView';
 
 export const GameSearch: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Game[]>([]);
+  const [trendingGames, setTrendingGames] = useState<Game[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true);
   const [searched, setSearched] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
-  // Combine owned games and discoverable games for default view
-  const defaultGames = [...MOCK_DISCOVER_GAMES];
-  
-  const displayGames = (searched && searchResults.length > 0) ? searchResults : defaultGames;
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const trending = await getTrendingGames();
+        setTrendingGames(trending);
+      } catch (e) {
+        console.error("Failed to load trending", e);
+      } finally {
+        setIsLoadingTrending(false);
+      }
+    };
+    fetchTrending();
+  }, []);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -28,23 +39,8 @@ export const GameSearch: React.FC = () => {
     setSearchResults([]);
 
     try {
-        // First check local matches
-        const localMatches = [...MOCK_GAMES, ...MOCK_DISCOVER_GAMES].filter(g => 
-            g.title.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        // Then ask AI for more
         const aiResults = await searchGamesWithAI(searchTerm);
-        
-        // Merge unique games (prefer AI results for new discovery, but keep local ID if exists)
-        const combined = [...localMatches];
-        aiResults.forEach(aiGame => {
-            if (!combined.find(g => g.title.toLowerCase() === aiGame.title.toLowerCase())) {
-                combined.push(aiGame);
-            }
-        });
-
-        setSearchResults(combined);
+        setSearchResults(aiResults);
     } catch (error) {
         console.error("Search failed", error);
     } finally {
@@ -53,90 +49,160 @@ export const GameSearch: React.FC = () => {
   };
 
   if (selectedGame) {
-    return (
-      <div className="h-full relative">
-         <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} />
-      </div>
-    );
+    return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} isOwner={false} />;
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in text-gray-100 h-full flex flex-col">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-           <h2 className="text-3xl font-display font-bold text-white flex items-center gap-2">
-             Descobrir Jogos {isSearching && <Loader2 className="animate-spin text-nexus-accent" />}
+    <div className="p-6 md:p-10 space-y-10 animate-fade-in text-gray-100 h-full flex flex-col bg-[#050507] overflow-y-auto custom-scrollbar">
+      {/* Header & Search */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+        <div className="space-y-2">
+           <h2 className="text-4xl font-display font-bold text-white flex items-center gap-3">
+             Explorar Universo <Globe className="text-nexus-accent animate-pulse" />
            </h2>
-           <p className="text-gray-400">Pesquise títulos globais e visualize conquistas via Nexus AI.</p>
+           <p className="text-gray-400 text-lg">Descubra novos mundos e rastreie conquistas globais via Nexus Crawler.</p>
         </div>
-        <form onSubmit={handleSearch} className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-          <input 
-            type="text" 
-            placeholder="Pesquisar títulos, franquias..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-nexus-900 border border-nexus-700 rounded-xl pl-10 pr-4 py-3 text-white focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent transition-all outline-none shadow-lg"
-          />
+        
+        <form onSubmit={handleSearch} className="relative w-full lg:w-[450px] group">
+          <div className="absolute inset-0 bg-nexus-accent/20 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity rounded-2xl"></div>
+          <div className="relative bg-nexus-900 border border-nexus-700 rounded-2xl flex items-center px-4 py-4 focus-within:border-nexus-accent transition-all">
+            <Search className="text-gray-500 mr-3" size={22} />
+            <input 
+              type="text" 
+              placeholder="Pesquisar títulos, franquias ou gêneros..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-transparent border-none outline-none text-white w-full text-lg font-medium placeholder-gray-600"
+            />
+            {isSearching && <Loader2 className="animate-spin text-nexus-accent" size={20} />}
+          </div>
         </form>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-10 custom-scrollbar">
-        {searched && searchResults.length === 0 && !isSearching ? (
-             <div className="flex flex-col items-center justify-center py-20 text-gray-500 h-full">
-                <AlertCircle size={48} className="mb-4 opacity-20" />
-                <p>Nenhum jogo encontrado para "{searchTerm}". Tente outro termo.</p>
-             </div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {displayGames.map(game => (
-                <div key={game.id} className="bg-nexus-800 rounded-2xl border border-nexus-700 overflow-hidden hover:border-nexus-600 transition-all group flex flex-col hover:shadow-2xl hover:shadow-nexus-accent/10">
-                    <div className="relative h-48 overflow-hidden bg-nexus-900">
-                    <div className="absolute inset-0 bg-gradient-to-t from-nexus-800 to-transparent z-10"></div>
-                    <img 
-                        src={game.coverUrl} 
-                        alt={game.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/600x900?text=No+Cover'; }}
-                    />
-                    <div className="absolute bottom-3 left-3 z-20 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 flex items-center gap-1.5 shadow-lg">
-                        <PlatformIcon platform={game.platform} className="w-4 h-4 text-white" />
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">{game.platform}</span>
-                    </div>
-                    {game.id.startsWith('ai-gen') && (
-                        <div className="absolute top-3 right-3 z-20 bg-nexus-accent/20 backdrop-blur-md px-2 py-1 rounded-full border border-nexus-accent/30 text-[10px] font-bold text-nexus-accent flex items-center gap-1">
-                            <Sparkles size={10} /> AI FOUND
-                        </div>
-                    )}
+      {/* Main Content Area */}
+      {!searched ? (
+        <div className="space-y-12">
+          {/* Hype Radar Section */}
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+               <h3 className="text-2xl font-display font-bold text-white flex items-center gap-2">
+                 <Flame className="text-orange-500" /> Radar de Hype
+               </h3>
+               <div className="flex gap-2">
+                  <span className="px-3 py-1 bg-nexus-800 rounded-full text-[10px] font-bold text-gray-400 border border-nexus-700 uppercase">Live Crawling</span>
+               </div>
+            </div>
+
+            {isLoadingTrending ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="h-72 bg-nexus-800/50 rounded-3xl border border-nexus-700 animate-pulse"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {trendingGames.map((game: any) => (
+                  <div 
+                    key={game.id} 
+                    onClick={() => setSelectedGame(game)}
+                    className="relative group bg-nexus-800 rounded-[2rem] border border-nexus-700 overflow-hidden hover:border-nexus-accent transition-all cursor-pointer shadow-xl hover:shadow-nexus-accent/10"
+                  >
+                    <div className="h-56 relative overflow-hidden">
+                       <img src={game.coverUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                       <div className="absolute inset-0 bg-gradient-to-t from-nexus-800 via-transparent to-transparent"></div>
+                       
+                       {/* Hype Badge */}
+                       <div className="absolute top-4 right-4 bg-orange-600 text-white px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-lg border border-orange-400/50">
+                          <TrendingUp size={12} /> HYPE {game.hypeLevel || 95}%
+                       </div>
+
+                       <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                          <div className="p-2 bg-black/60 backdrop-blur-md rounded-xl border border-white/10">
+                             <PlatformIcon platform={game.platform} className="w-4 h-4" />
+                          </div>
+                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-black/40 px-2 py-1 rounded-lg backdrop-blur-md">{game.platform}</span>
+                       </div>
                     </div>
                     
-                    <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="text-lg font-bold text-white mb-1 leading-tight truncate" title={game.title}>{game.title}</h3>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {game.genres.slice(0, 3).map(g => (
-                        <span key={g} className="text-[10px] text-gray-400 bg-nexus-900 px-2 py-0.5 rounded border border-nexus-700">{g}</span>
-                        ))}
+                    <div className="p-6 space-y-3">
+                       <h4 className="text-lg font-bold text-white leading-tight group-hover:text-nexus-accent transition-colors truncate">{game.title}</h4>
+                       <div className="flex flex-wrap gap-2">
+                          {game.genres?.slice(0, 2).map((g: string) => (
+                            <span key={g} className="text-[10px] text-gray-500 font-bold border border-nexus-700 px-2 py-0.5 rounded">{g}</span>
+                          ))}
+                       </div>
                     </div>
-
-                    <div className="mt-auto space-y-3">
-                        <div className="flex items-center justify-between text-sm bg-nexus-900/50 p-2 rounded-lg border border-nexus-700/30">
-                            <span className="text-gray-400 flex items-center gap-1.5"><Trophy size={14} className="text-yellow-500"/> Total Trophies</span>
-                            <span className="font-mono font-bold text-white">{game.totalAchievements}</span>
-                        </div>
-                        
-                        <button 
-                            onClick={() => setSelectedGame(game)}
-                            className="w-full py-2 bg-nexus-accent/10 hover:bg-nexus-accent text-nexus-accent hover:text-white border border-nexus-accent/20 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2"
-                        >
-                        <Info size={16} /> Ver Detalhes
-                        </button>
-                    </div>
-                    </div>
-                </div>
+                  </div>
                 ))}
-            </div>
-        )}
-      </div>
+              </div>
+            )}
+          </section>
+
+          {/* Categories / Quick Filters */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+             <button onClick={() => { setSearchTerm('E-sports'); handleSearch(); }} className="p-6 bg-nexus-800 border border-nexus-700 rounded-3xl hover:bg-nexus-700 transition-all flex flex-col items-center gap-3 group">
+                <Zap className="text-nexus-accent group-hover:scale-110 transition-transform" size={32} />
+                <span className="font-bold text-sm">E-sports</span>
+             </button>
+             <button onClick={() => { setSearchTerm('Lançamentos 2025'); handleSearch(); }} className="p-6 bg-nexus-800 border border-nexus-700 rounded-3xl hover:bg-nexus-700 transition-all flex flex-col items-center gap-3 group">
+                <Flame className="text-orange-500 group-hover:scale-110 transition-transform" size={32} />
+                <span className="font-bold text-sm">Lançamentos</span>
+             </button>
+             <button onClick={() => { setSearchTerm('AAA RPG'); handleSearch(); }} className="p-6 bg-nexus-800 border border-nexus-700 rounded-3xl hover:bg-nexus-700 transition-all flex flex-col items-center gap-3 group">
+                <Sparkles className="text-yellow-400 group-hover:scale-110 transition-transform" size={32} />
+                <span className="font-bold text-sm">Blockbusters</span>
+             </button>
+             <button onClick={() => { setSearchTerm('Indie Gems'); handleSearch(); }} className="p-6 bg-nexus-800 border border-nexus-700 rounded-3xl hover:bg-nexus-700 transition-all flex flex-col items-center gap-3 group">
+                <TrendingUp className="text-nexus-secondary group-hover:scale-110 transition-transform" size={32} />
+                <span className="font-bold text-sm">Indie Gems</span>
+             </button>
+          </section>
+        </div>
+      ) : (
+        /* Search Results View */
+        <div className="space-y-8 pb-20">
+           <div className="flex items-center justify-between">
+              <button onClick={() => setSearched(false)} className="text-nexus-accent font-bold text-sm flex items-center gap-2 hover:underline">
+                 <ChevronRight size={16} className="rotate-180" /> Voltar para Tendências
+              </button>
+              <p className="text-gray-500 text-sm">Encontrados {searchResults.length} resultados para "{searchTerm}"</p>
+           </div>
+
+           {isSearching ? (
+             <div className="flex flex-col items-center justify-center py-24 space-y-4">
+                <Loader2 className="animate-spin text-nexus-accent" size={48} />
+                <p className="text-gray-500 animate-pulse">Sintonizando frequências do Nexus Crawler...</p>
+             </div>
+           ) : searchResults.length > 0 ? (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {searchResults.map(game => (
+                  <div key={game.id} onClick={() => setSelectedGame(game)} className="bg-nexus-800 border border-nexus-700 rounded-3xl overflow-hidden hover:border-nexus-accent transition-all group cursor-pointer">
+                     <div className="h-48 relative">
+                        <img src={game.coverUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute bottom-2 left-2 flex items-center gap-2">
+                           <div className="p-1.5 bg-black/60 rounded-lg border border-white/10">
+                              <PlatformIcon platform={game.platform} className="w-3 h-3" />
+                           </div>
+                        </div>
+                     </div>
+                     <div className="p-5">
+                        <h4 className="font-bold text-white truncate mb-2">{game.title}</h4>
+                        <div className="flex justify-between items-center text-xs">
+                           <span className="text-gray-500">{game.genres[0]}</span>
+                           <span className="text-nexus-accent font-bold flex items-center gap-1"><Trophy size={12} /> {game.totalAchievements} Conquistas</span>
+                        </div>
+                     </div>
+                  </div>
+                ))}
+             </div>
+           ) : (
+             <div className="text-center py-24 text-gray-600">
+                <AlertCircle size={48} className="mx-auto mb-4 opacity-20" />
+                <p>Nenhum jogo encontrado com este termo. Tente ser mais específico.</p>
+             </div>
+           )}
+        </div>
+      )}
     </div>
   );
 };

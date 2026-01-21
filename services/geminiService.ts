@@ -125,75 +125,52 @@ export const getGameRecommendations = async (userStats: UserStats): Promise<{tit
   }
 };
 
-export const generatePlayerManifesto = async (userStats: UserStats): Promise<string> => {
+export const getTrendingGames = async (): Promise<Game[]> => {
   const ai = getAiClient();
-  if (!ai) return "Seu legado transcende os dados. A jornada continua...";
-  
-  const model = 'gemini-3-pro-preview';
-  try {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: `Escreva um manifesto épico e emocionante em português sobre a carreira deste jogador. Use os seguintes dados como base: ${JSON.stringify(userStats)}. O tom deve ser de biografia heroica.`,
-      config: {
-        systemInstruction: "Você é um historiador de mundos virtuais.",
-      }
-    });
-    return response.text || "Sua jornada continua...";
-  } catch (error) {
-    return "Sua história é o que move o Nexus.";
-  }
-};
+  if (!ai) return [];
 
-export const fetchPublicProfileData = async (platform: Platform, username: string): Promise<{ games: Game[], totalHours: number }> => {
-  const ai = getAiClient();
-  if (!ai) return { games: [], totalHours: 0 };
-  
-  const modelId = "gemini-3-flash-preview";
-  const prompt = `Simule a busca de dados de um perfil público para "${username}" na plataforma "${platform}". Retorne 5 jogos realistas com conquistas.`;
+  const model = 'gemini-3-flash-preview';
   try {
     const response = await ai.models.generateContent({
-      model: modelId,
-      contents: prompt,
+      model,
+      contents: "Identifique os 8 jogos mais quentes (em hype) ou lançados nos últimos meses de 2024 e início de 2025 que estão dominando as discussões (PC, consoles).",
       config: {
+        tools: [{ googleSearch: {} }],
+        systemInstruction: "Você é um especialista em tendências da indústria de games. Use a busca do Google para encontrar quais jogos estão sendo mais comentados agora, quais bateram recordes de jogadores e quais são as tendências de 'hype'.",
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            games: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  hoursPlayed: { type: Type.NUMBER },
-                  achievementCount: { type: Type.NUMBER },
-                  totalAchievements: { type: Type.NUMBER },
-                  coverUrl: { type: Type.STRING },
-                  genres: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  achievements: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { id: { type: Type.STRING }, name: { type: Type.STRING }, description: { type: Type.STRING }, rarity: { type: Type.STRING } } } }
-                }
-              }
-            },
-            totalHours: { type: Type.NUMBER }
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              platform: { type: Type.STRING },
+              totalAchievements: { type: Type.NUMBER },
+              coverUrl: { type: Type.STRING },
+              genres: { type: Type.ARRAY, items: { type: Type.STRING } },
+              hypeLevel: { type: Type.NUMBER, description: "Nível de hype de 1 a 100" }
+            }
           }
         }
       }
     });
+    
     if (response.text) {
       const data = JSON.parse(response.text);
-      return {
-        totalHours: data.totalHours,
-        games: data.games.map((g: any) => ({
-          ...g,
-          id: `${platform}-${Date.now()}-${Math.random()}`,
-          platform: platform,
-          lastPlayed: new Date().toISOString()
-        }))
-      };
+      return data.map((g: any) => ({
+        ...g,
+        id: `trending-${Math.random()}`,
+        platform: g.platform as Platform || Platform.STEAM,
+        hoursPlayed: 0,
+        achievementCount: 0,
+        lastPlayed: new Date().toISOString(),
+        achievements: []
+      }));
     }
-    return { games: [], totalHours: 0 };
-  } catch (error) {
-    return { games: [], totalHours: 0 };
+    return [];
+  } catch (e) {
+    console.error("Failed to fetch trending games:", e);
+    return [];
   }
 };
 
@@ -205,8 +182,10 @@ export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => 
   try {
     const response = await ai.models.generateContent({
       model,
-      contents: `Search for popular games related to: "${searchTerm}".`,
+      contents: `Busque por jogos existentes ou futuros relacionados a: "${searchTerm}".`,
       config: {
+        tools: [{ googleSearch: {} }],
+        systemInstruction: "Você é o Oráculo do Nexus. Use a busca do Google para encontrar informações precisas sobre jogos reais, incluindo plataformas e capas. Se o jogo for de e-sport, destaque isso.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -223,8 +202,79 @@ export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => 
         }
       }
     });
-    return response.text ? JSON.parse(response.text).map((g: any) => ({ ...g, id: `ai-${Math.random()}`, platform: Platform.STEAM, hoursPlayed: 0, achievementCount: 0, lastPlayed: new Date().toISOString(), achievements: [] })) : [];
+    return response.text ? JSON.parse(response.text).map((g: any) => ({ ...g, id: `ai-${Math.random()}`, platform: g.platform as Platform || Platform.STEAM, hoursPlayed: 0, achievementCount: 0, lastPlayed: new Date().toISOString(), achievements: [] })) : [];
   } catch (error) {
     return [];
   }
 };
+
+export const fetchPublicProfileData = async (platform: Platform, username: string): Promise<{ games: Game[], totalHours: number }> => {
+    const ai = getAiClient();
+    if (!ai) return { games: [], totalHours: 0 };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: `Simule o rastreamento (scraping) de um perfil público de ${platform} para o usuário "${username}". Traga dados realistas baseados em perfis comuns dessa plataforma.`,
+            config: {
+                tools: [{ googleSearch: {} }],
+                systemInstruction: "Você simula um crawler de estatísticas gamer (estilo R6Tracker). Use o Google Search para encontrar padrões de jogos populares na plataforma e gere dados fictícios, mas plausíveis para este usuário.",
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        totalHours: { type: Type.NUMBER },
+                        games: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    title: { type: Type.STRING },
+                                    hoursPlayed: { type: Type.NUMBER },
+                                    achievementCount: { type: Type.NUMBER },
+                                    totalAchievements: { type: Type.NUMBER },
+                                    coverUrl: { type: Type.STRING },
+                                    genres: { type: Type.ARRAY, items: { type: Type.STRING } }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (response.text) {
+            const data = JSON.parse(response.text);
+            return {
+                totalHours: data.totalHours || 0,
+                games: data.games.map((g: any) => ({
+                    ...g,
+                    id: `sync-${Math.random()}`,
+                    platform,
+                    lastPlayed: new Date().toISOString(),
+                    achievements: []
+                }))
+            };
+        }
+        return { games: [], totalHours: 0 };
+    } catch (e) {
+        return { games: [], totalHours: 0 };
+    }
+};
+
+export const generatePlayerManifesto = async (stats: UserStats): Promise<string> => {
+    const ai = getAiClient();
+    if (!ai) return "Seu legado aguarda.";
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: `Escreva um manifesto épico e poético sobre o legado deste jogador com base em suas estatísticas: ${JSON.stringify(stats)}.`,
+            config: {
+                systemInstruction: "Você é o Poeta do Nexus. Escreva um texto emocionante em português do Brasil que exalte as conquistas, as horas de dedicação e a alma gamer do usuário."
+            }
+        });
+        return response.text || "Seu legado aguarda.";
+    } catch (e) {
+        return "Seu legado aguarda.";
+    }
+}

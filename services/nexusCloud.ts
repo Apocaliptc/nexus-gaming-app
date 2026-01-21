@@ -1,154 +1,200 @@
 
-import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, JournalEntry } from '../types';
+import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType } from '../types';
 
 /**
- * NEXUS CLOUD CORE
- * Sistema de persistência unificado. Utiliza Supabase via variáveis de ambiente.
+ * NEXUS CLOUD CORE - Universal Env Edition
+ * Detecta chaves de ambiente de múltiplos padrões (Vercel, Vite, React App).
  */
 
-const DB_CONFIG = {
-  url: (import.meta as any).env?.VITE_SUPABASE_URL || (window as any).process?.env?.VITE_SUPABASE_URL || '',
-  key: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (window as any).process?.env?.VITE_SUPABASE_ANON_KEY || '',
-  get isActive() { return !!this.url && !!this.key; }
+const getEnv = (key: string) => {
+  // Tenta pegar de várias formas possíveis que os bundlers injetam
+  return (process.env as any)[key] || 
+         (process.env as any)[`VITE_${key}`] || 
+         (process.env as any)[`REACT_APP_${key}`] || 
+         (process.env as any)[`PUBLIC_${key}`] ||
+         localStorage.getItem(`nexus_cloud_${key.toLowerCase()}`);
 };
 
+let SUPABASE_URL = getEnv('SUPABASE_URL') || 'https://xdwzlvnzgibgebcyxusy.supabase.co'; 
+let SUPABASE_KEY = getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhkd3psdm56Z2liZ2ViY3l4dXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5Mjg3NDQsImV4cCI6MjA4NDUwNDc0NH0.aQMfT_Zq5UiCMAnJc3YwH2-1Gnn0r9peSzdYb3SpChM';
+
 const headers = () => ({
-  'apikey': DB_CONFIG.key,
-  'Authorization': `Bearer ${DB_CONFIG.key}`,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation'
+  'apikey': SUPABASE_KEY,
+  'Content-Type': 'application/json'
+});
+
+const authHeaders = (token?: string) => ({
+  ...headers(),
+  'Authorization': `Bearer ${token || SUPABASE_KEY}`
 });
 
 export const nexusCloud = {
   isCloudActive() {
-    return DB_CONFIG.isActive;
+    // Retorna true se a URL não for a padrão ou se houver variáveis de ambiente setadas
+    return !!SUPABASE_URL && (!SUPABASE_URL.includes('SUA_URL') || !!getEnv('SUPABASE_URL'));
   },
 
   updateConfig(url: string, key: string) {
-    DB_CONFIG.url = url;
-    DB_CONFIG.key = key;
+    SUPABASE_URL = url;
+    SUPABASE_KEY = key;
+    localStorage.setItem('nexus_cloud_url', url);
+    localStorage.setItem('nexus_cloud_key', key);
   },
 
-  async signup(email: string, password: string, nexusId: string): Promise<UserStats> {
-    const stats = this.createInitialUser(nexusId);
-    localStorage.setItem(`nexus_auth_${email}`, JSON.stringify({ email, password, nexusId }));
-    localStorage.setItem('nexus_active_session', email);
-    
-    if (DB_CONFIG.isActive) {
-        await this.saveUser(stats);
-    } else {
-        localStorage.setItem(`nexus_db_user_${email}`, JSON.stringify(stats));
+  async ping(): Promise<boolean> {
+    if (!this.isCloudActive()) return false;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?limit=1`, {
+        method: 'GET',
+        headers: authHeaders()
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
     }
+  },
+
+  async requestSignup(emailRaw: string, password: string, nexusId: string): Promise<void> {
+    const email = emailRaw.toLowerCase().trim();
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({
+        email,
+        password,
+        options: { data: { nexus_id: nexusId } }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.msg || data.error_description || "Erro ao iniciar cadastro.");
+  },
+
+  async signup(emailRaw: string, password: string, nexusId: string): Promise<UserStats> {
+    await this.requestSignup(emailRaw, password, nexusId);
+    return this.createInitialUser(nexusId);
+  },
+
+  async verifyEmailToken(email: string, token: string): Promise<any> {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ email, token, type: 'signup' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || "Código de verificação inválido.");
+    return data;
+  },
+
+  async finalizeProfile(session: any, nexusId: string): Promise<UserStats> {
+    const email = session.user.email;
+    const stats = this.createInitialUser(nexusId);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+      method: 'POST',
+      headers: {
+        ...authHeaders(session.access_token),
+        'Prefer': 'resolution=merge-duplicates,return=representation'
+      },
+      body: JSON.stringify({
+        nexus_id: nexusId,
+        email: email,
+        total_hours: 0,
+        total_achievements: 0,
+        updated_at: new Date().toISOString()
+      })
+    });
+    localStorage.setItem('nexus_active_session', email);
+    localStorage.setItem(`nexus_db_user_${email.toLowerCase()}`, JSON.stringify(stats));
+    localStorage.setItem(`nexus_access_token`, session.access_token);
     return stats;
   },
 
-  async login(email: string, password?: string): Promise<UserStats> {
-    const authData = localStorage.getItem(`nexus_auth_${email}`);
-    
-    // Se já existe localmente, apenas valida a senha e retorna
-    if (authData) {
-        const auth = JSON.parse(authData);
-        if (password && auth.password !== password) throw new Error("Senha incorreta.");
-        localStorage.setItem('nexus_active_session', email);
-        const stats = await this.getLocalData(email) || this.createInitialUser(auth.nexusId);
+  async login(identifierRaw: string, password?: string): Promise<UserStats> {
+    const input = identifierRaw.trim().toLowerCase();
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ email: input, password })
+    });
+    const authData = await res.json();
+    if (!res.ok) throw new Error(authData.error_description || "Credenciais inválidas.");
+    const token = authData.access_token;
+    localStorage.setItem('nexus_access_token', token);
+    localStorage.setItem('nexus_active_session', authData.user.email);
+    const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.${authData.user.email}&select=*`, {
+      headers: authHeaders(token)
+    });
+    if (profileRes.ok) {
+      const profiles = await profileRes.json();
+      if (profiles.length > 0) {
+        const stats = this.mapRemoteProfile(profiles[0]);
+        localStorage.setItem(`nexus_db_user_${authData.user.email.toLowerCase()}`, JSON.stringify(stats));
         return stats;
-    }
-
-    // Se não existe localmente (Novo Navegador), busca na nuvem
-    if (DB_CONFIG.isActive) {
-      try {
-        const res = await fetch(`${DB_CONFIG.url}/rest/v1/profiles?email=eq.${email}`, { headers: headers() });
-        const profiles = await res.json();
-        
-        if (profiles && profiles.length > 0) {
-            const remoteProfile = profiles[0];
-            const stats = this.mapRemoteProfile(remoteProfile);
-            
-            // Importante: Salva as credenciais básicas e a sessão no novo navegador
-            localStorage.setItem(`nexus_auth_${email}`, JSON.stringify({ email, password: password || '', nexusId: stats.nexusId }));
-            localStorage.setItem('nexus_active_session', email);
-            localStorage.setItem(`nexus_db_user_${email}`, JSON.stringify(stats));
-            
-            return stats;
-        }
-      } catch (e) {
-        console.error("Nexus Cloud: Falha crítica na busca remota", e);
-        throw new Error("Erro de conexão com a Nuvem Nexus.");
       }
     }
-
-    throw new Error("Usuário não encontrado. Verifique suas credenciais.");
+    return this.createInitialUser(authData.user.user_metadata.nexus_id || input);
   },
 
   async saveUser(stats: UserStats): Promise<void> {
-    const email = localStorage.getItem('nexus_active_session');
-    if (email) localStorage.setItem(`nexus_db_user_${email}`, JSON.stringify(stats));
-    
-    if (!DB_CONFIG.isActive) return;
-
+    const email = localStorage.getItem('nexus_active_session')?.toLowerCase();
+    const token = localStorage.getItem('nexus_access_token');
+    if (!email || !token) return;
+    localStorage.setItem(`nexus_db_user_${email}`, JSON.stringify(stats));
     try {
-      await fetch(`${DB_CONFIG.url}/rest/v1/profiles`, {
-        method: 'POST',
-        headers: { ...headers(), 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({
-          nexus_id: stats.nexusId,
-          email: email,
-          total_hours: stats.totalHours,
-          total_achievements: stats.totalAchievements,
-          platinum_count: stats.platinumCount,
-          prestige_points: stats.prestigePoints,
-          games_owned: stats.gamesOwned,
-          linked_accounts: stats.linkedAccounts,
-          platforms_connected: stats.platformsConnected,
-          updated_at: new Date().toISOString()
-        })
-      });
-    } catch (e) {
-      console.warn("Nexus Cloud: Sincronização falhou.", e);
-    }
+        await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+            method: 'POST',
+            headers: { ...authHeaders(token), 'Prefer': 'resolution=merge-duplicates' },
+            body: JSON.stringify({
+                nexus_id: stats.nexusId,
+                email: email,
+                total_hours: stats.totalHours,
+                total_achievements: stats.totalAchievements,
+                updated_at: new Date().toISOString()
+            })
+        });
+    } catch (e) { console.error("Cloud sync failed"); }
   },
 
   async getActiveSession(): Promise<UserStats | null> {
     const email = localStorage.getItem('nexus_active_session');
-    if (!email) return null;
+    const token = localStorage.getItem('nexus_access_token');
+    if (!email || !token) return null;
     try {
-        return await this.login(email);
-    } catch {
+        const local = localStorage.getItem(`nexus_db_user_${email.toLowerCase()}`);
+        if (local) return JSON.parse(local);
         return null;
-    }
+    } catch (e) { return null; }
   },
 
   async getUser(nexusId: string): Promise<UserStats | null> {
-    if (DB_CONFIG.isActive) {
-        try {
-            const res = await fetch(`${DB_CONFIG.url}/rest/v1/profiles?nexus_id=eq.${nexusId}`, { headers: headers() });
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=ilike.${nexusId}`, { headers: authHeaders() });
+        if (res.ok) {
             const profiles = await res.json();
             if (profiles && profiles.length > 0) return this.mapRemoteProfile(profiles[0]);
-        } catch (e) { return null; }
-    }
+        }
+    } catch (e) { return null; }
     return null;
   },
 
   async searchGlobalUsers(query: string): Promise<Friend[]> {
-    if (DB_CONFIG.isActive) {
-       try {
-         const res = await fetch(`${DB_CONFIG.url}/rest/v1/profiles?nexus_id=ilike.*${query}*&limit=10`, { headers: headers() });
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=ilike.*${query}*&limit=10`, { headers: authHeaders() });
+      if (res.ok) {
          const profiles = await res.json();
          return profiles.map((p: any) => ({
-            id: p.nexus_id,
-            nexusId: p.nexus_id,
-            username: p.nexus_id.replace('@', ''),
-            avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nexus_id}`,
-            status: 'online',
-            totalTrophies: p.total_achievements,
-            platinumCount: p.platinum_count,
-            totalHours: p.total_hours,
-            gamesOwned: p.games_owned,
-            topGenres: ['Gamer'],
-            compatibilityScore: 50
+             id: p.nexus_id,
+             nexusId: p.nexus_id,
+             username: p.nexus_id.replace('@', ''),
+             avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nexus_id}`,
+             status: 'online',
+             totalTrophies: p.total_achievements || 0,
+             totalHours: p.total_hours || 0,
+             gamesOwned: p.games_owned || 0,
+             topGenres: ['Gamer'],
+             compatibilityScore: 50
          }));
-       } catch (e) { return []; }
-    }
+      }
+    } catch (e) { return []; }
     return [];
   },
 
@@ -165,21 +211,14 @@ export const nexusCloud = {
     }
   },
 
-  async getGlobalFeed(): Promise<ActivityEvent[]> {
-    return [
-      {
-        id: 'f1',
-        type: ActivityType.PLATINUM,
-        userId: 'u1',
-        username: 'Faker',
-        userAvatar: 'https://i.pravatar.cc/150?u=faker',
-        timestamp: new Date().toISOString(),
-        details: { gameTitle: 'League of Legends', gameCover: 'https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Aatrox_0.jpg' },
-        likes: 15400,
-        comments: 890,
-        hasLiked: false
-      }
-    ];
+  async getGlobalFeed(): Promise<ActivityEvent[]> { return []; },
+
+  async listAllCloudUsers(): Promise<any[]> {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=email,nexus_id,updated_at&order=updated_at.desc`, { headers: authHeaders() });
+      if (!res.ok) throw new Error("Erro de acesso.");
+      return await res.json();
+    } catch (e: any) { throw e; }
   },
 
   mapRemoteProfile(p: any): UserStats {
@@ -189,21 +228,13 @@ export const nexusCloud = {
          totalHours: p.total_hours || 0,
          totalAchievements: p.total_achievements || 0,
          platinumCount: p.platinum_count || 0,
-         prestigePoints: p.prestige_points || 100,
          gamesOwned: p.games_owned || 0,
-         linkedAccounts: p.linked_accounts || [],
-         platformsConnected: p.platforms_connected || []
      };
-  },
-
-  async getLocalData(email: string): Promise<UserStats | null> {
-    const data = localStorage.getItem(`nexus_db_user_${email}`);
-    return data ? JSON.parse(data) : null;
   },
 
   createInitialUser(nexusId: string): UserStats {
     return {
-      nexusId,
+      nexusId: nexusId.startsWith('@') ? nexusId : `@${nexusId}`,
       totalHours: 0,
       totalAchievements: 0,
       platinumCount: 0,

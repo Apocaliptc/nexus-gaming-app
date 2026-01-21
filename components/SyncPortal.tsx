@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Platform, Game } from '../types';
 import { fetchPublicProfileData } from '../services/geminiService';
-import { Loader2, Zap, Check, ShieldCheck, Globe, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Zap, Check, ShieldCheck, Globe, AlertCircle, RefreshCw, Info } from 'lucide-react';
 import { PlatformIcon } from './PlatformIcon';
 
 interface Props {
@@ -30,25 +30,26 @@ export const SyncPortal: React.FC<Props> = ({ platform, username, onComplete, on
       
       // Step 2: Fetching
       setStatus('fetching');
-      addLog(`Buscando metadados para o usuário: ${username}`);
+      addLog(`Rastreando perfil público: "${username}" via Nexus Crawler...`);
+      addLog(`Certifique-se de que seu perfil na ${platform} está definido como PÚBLICO.`);
       const data = await fetchPublicProfileData(platform, username);
       setProgress(40);
       
       // Step 3: Processing (Gemini simulated logic)
       setStatus('processing');
-      addLog(`IA do Nexus processando ${data.games.length} títulos encontrados...`);
+      addLog(`Analisando dados rastreados de ${data.games.length} jogos...`);
       await new Promise(r => setTimeout(r, 2000));
       setProgress(75);
       
       // Step 4: Saving
       setStatus('saving');
-      addLog(`Sincronizando conquistas e horas com a Nuvem Nexus...`);
+      addLog(`Consolidando estatísticas na sua Nuvem Nexus...`);
       await new Promise(r => setTimeout(r, 1500));
       setProgress(100);
       
       // Step 5: Done
       setStatus('done');
-      addLog(`Sincronização concluída com sucesso.`);
+      addLog(`Sincronização concluída. Legado atualizado.`);
       await new Promise(r => setTimeout(r, 1000));
       
       if (isMounted) onComplete(data.games, data.totalHours);
@@ -73,12 +74,12 @@ export const SyncPortal: React.FC<Props> = ({ platform, username, onComplete, on
           <div className="space-y-2">
              <h2 className="text-3xl font-display font-bold text-white">
                 {status === 'connecting' && 'Conectando ao Provedor...'}
-                {status === 'fetching' && 'Extraindo Dados...'}
+                {status === 'fetching' && 'Iniciando Crawler...'}
                 {status === 'processing' && 'Analisando Legado...'}
                 {status === 'saving' && 'Gravando na Nuvem...'}
                 {status === 'done' && 'Sincronizado!'}
              </h2>
-             <p className="text-gray-400 font-medium">Conta: {username} na {platform}</p>
+             <p className="text-gray-400 font-medium">Usuário: {username} | Plataforma: {platform}</p>
           </div>
 
           <div className="w-full bg-nexus-900 h-3 rounded-full overflow-hidden border border-nexus-800">
@@ -94,6 +95,13 @@ export const SyncPortal: React.FC<Props> = ({ platform, username, onComplete, on
                    {log}
                 </div>
              ))}
+          </div>
+
+          <div className="p-4 bg-nexus-secondary/5 border border-nexus-secondary/20 rounded-xl flex items-start gap-3 text-left">
+             <Info className="text-nexus-secondary shrink-0" size={16} />
+             <p className="text-[10px] text-gray-400 leading-tight">
+                <strong>Nota Técnica:</strong> Este processo simula o rastreamento de perfis públicos (estilo Tracker.gg). Se seus dados não aparecerem, verifique se seu perfil na {platform} está configurado como 'Público' nas opções de privacidade.
+             </p>
           </div>
 
           {status !== 'done' && (
