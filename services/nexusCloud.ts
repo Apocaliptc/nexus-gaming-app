@@ -1,6 +1,6 @@
 
 import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType } from '../types';
-import { MOCK_USER_STATS, MOCK_AMIGO_STATS } from './mockData';
+import { MOCK_USER_STATS, MOCK_AMIGO_STATS, MOCK_GERON_STATS } from './mockData';
 
 // Helper para normalizar Nexus ID: sempre minúsculo e com @
 const normalizeId = (id: string) => {
@@ -100,6 +100,13 @@ export const nexusCloud = {
   async login(identifierRaw: string, password?: string): Promise<UserStats> {
     const input = identifierRaw.trim().toLowerCase();
     
+    // LOGIN OVERRIDE PARA USUÁRIO GERON
+    if (input === 'advocaciageron@gmail.com' && password === 'Lucatiel123*') {
+      localStorage.setItem('nexus_active_session', input);
+      localStorage.setItem(`nexus_db_user_${input}`, JSON.stringify(MOCK_GERON_STATS));
+      return MOCK_GERON_STATS;
+    }
+
     if (input === 'apocaliptc' || input === '@apocaliptc' || input.includes('apocaliptc')) {
        const local = localStorage.getItem(`nexus_db_user_${input}`);
        if (local) return JSON.parse(local);
@@ -188,6 +195,7 @@ export const nexusCloud = {
     if (email) {
         const local = localStorage.getItem(`nexus_db_user_${email}`);
         if (local) return JSON.parse(local);
+        if (email === 'advocaciageron@gmail.com') return MOCK_GERON_STATS;
         if (email.includes('apocaliptc')) return MOCK_USER_STATS;
         if (email.includes('amigo')) return MOCK_AMIGO_STATS;
     }
@@ -199,6 +207,7 @@ export const nexusCloud = {
     const local = localStorage.getItem(`nexus_db_user_${nId.toLowerCase()}`);
     if (local) return JSON.parse(local);
 
+    if (nId === '@geron_adv') return MOCK_GERON_STATS;
     if (nId === '@apocaliptc') return MOCK_USER_STATS;
     if (nId === '@amigo_imaginário') return MOCK_AMIGO_STATS;
 
@@ -306,9 +315,18 @@ export const nexusCloud = {
     const nId = normalizeId(nexusId);
     const data = localStorage.getItem(`nexus_friends_${nId.toLowerCase()}`);
     const localFriends = data ? JSON.parse(data) : [];
+    
+    // AMBIENTE ALPHA: Se a lista local estiver vazia, aplicamos os vínculos padrão de teste
     if (localFriends.length === 0) {
-        if (nId === '@apocaliptc') return [this.mapStatsToFriend(MOCK_AMIGO_STATS)];
+        if (nId === '@apocaliptc') {
+            // No Alpha, Apocaliptc agora vê Geron e o Amigo Imaginário por padrão
+            return [
+                this.mapStatsToFriend(MOCK_GERON_STATS),
+                this.mapStatsToFriend(MOCK_AMIGO_STATS)
+            ];
+        }
         if (nId === '@amigo_imaginário') return [this.mapStatsToFriend(MOCK_USER_STATS)];
+        if (nId === '@geron_adv') return [this.mapStatsToFriend(MOCK_USER_STATS)];
     }
     return localFriends;
   },
@@ -343,6 +361,7 @@ export const nexusCloud = {
 
     if (q.includes('apoc')) results.push(this.mapStatsToFriend(MOCK_USER_STATS));
     if (q.includes('amigo')) results.push(this.mapStatsToFriend(MOCK_AMIGO_STATS));
+    if (q.includes('geron')) results.push(this.mapStatsToFriend(MOCK_GERON_STATS));
 
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=ilike.*${query}*&limit=10`, { headers: authHeaders() });

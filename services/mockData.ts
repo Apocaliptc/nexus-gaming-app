@@ -71,6 +71,30 @@ export const MOCK_USER_STATS: UserStats = {
   }
 };
 
+export const MOCK_GERON_STATS: UserStats = {
+  ...MOCK_USER_STATS,
+  nexusId: '@geron_adv',
+  totalHours: 120,
+  totalAchievements: 450,
+  platinumCount: 2,
+  prestigePoints: 500,
+  gamesOwned: 12,
+  recentGames: [
+    { id: 'g1', title: 'Black Myth: Wukong', platform: Platform.STEAM, hoursPlayed: 45, lastPlayed: '2024-03-24', achievementCount: 12, totalAchievements: 81, coverUrl: 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2358720/library_600x900.jpg', genres: ['Action', 'RPG'], achievements: generateAchievements('Black Myth', 12, 81) }
+  ],
+  rig: {
+    cpu: 'Intel i9-14900K',
+    gpu: 'RTX 4090',
+    mainPlatform: Platform.STEAM
+  },
+  backlog: {
+    unplayedGamesCount: 5,
+    estimatedTimeToClear: 150,
+    monetaryValueLost: 120,
+    nextTarget: 'Cyberpunk 2077'
+  }
+};
+
 export const MOCK_AMIGO_STATS: UserStats = {
   ...MOCK_USER_STATS,
   nexusId: '@amigo_imaginário',
