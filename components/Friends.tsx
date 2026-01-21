@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Friend, Platform } from '../types';
-import { Users, Plus, Trophy, Medal, Crown, Clock, Gamepad2, X, Search, UserPlus, UserCheck, Loader2, Globe } from 'lucide-react';
+import { Users, Plus, Trophy, Medal, Crown, Clock, Gamepad2, X, Search, UserPlus, UserCheck, Loader2, Globe, UserMinus } from 'lucide-react';
 import { ProfileScreen } from './ProfileScreen';
 import { useAppContext } from '../context/AppContext';
 import { nexusCloud } from '../services/nexusCloud';
 
 export const Friends: React.FC = () => {
-  const { friends, addFriend, userStats } = useAppContext();
+  const { friends, addFriend, removeFriend, userStats } = useAppContext();
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,8 +15,8 @@ export const Friends: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Friend[]>([]);
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'list'>('list');
 
-  // Load friends from context or initial fetch
-  const sortedByTrophies = [...friends, { ...userStats, id: 'me', username: 'Você', status: 'online', avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats?.nexusId}`, compatibilityScore: 0 } as any].sort((a, b) => b.totalTrophies - a.totalTrophies);
+  // Friends sorted for leaderboard
+  const sortedByTrophies = [...friends, { ...userStats, id: 'me', username: 'Você', status: 'online', avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats?.nexusId}`, compatibilityScore: 0 } as any].sort((a, b) => (b.totalTrophies || 0) - (a.totalTrophies || 0));
   
   const handleSearchUsers = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +89,7 @@ export const Friends: React.FC = () => {
           <div className="space-y-3">
             {searchResults.length > 0 ? (
               searchResults.map(result => {
-                const isAlreadyFriend = friends.some(f => f.id === result.id);
+                const isAlreadyFriend = friends.some(f => f.nexusId.toLowerCase() === result.nexusId.toLowerCase());
                 const isMe = result.nexusId === userStats?.nexusId;
                 return (
                   <div key={result.id} className="bg-nexus-900/50 p-4 rounded-xl border border-nexus-700 flex items-center justify-between hover:bg-nexus-900 transition-all">
@@ -101,14 +101,26 @@ export const Friends: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => openExternalProfile(result.nexusId)} className="px-3 py-1.5 bg-nexus-800 hover:bg-nexus-700 text-white rounded-lg text-xs font-bold border border-nexus-700">Ver Perfil</button>
-                      {!isMe && !isAlreadyFriend && (
-                        <button 
-                          onClick={() => addFriend(result)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-nexus-accent hover:bg-nexus-accent/80 text-white rounded-lg text-xs font-bold transition-all"
-                        >
-                          <UserPlus size={14} /> Adicionar
-                        </button>
+                      <button onClick={() => openExternalProfile(result.nexusId)} className="px-3 py-1.5 bg-nexus-800 hover:bg-nexus-700 text-white rounded-lg text-xs font-bold border border-nexus-700">Perfil</button>
+                      {!isMe && (
+                        isAlreadyFriend ? (
+                          <button 
+                            onClick={() => removeFriend(result.nexusId)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 text-green-500 border border-green-500/30 rounded-lg text-xs font-bold group"
+                          >
+                            <UserCheck size={14} className="group-hover:hidden" />
+                            <UserMinus size={14} className="hidden group-hover:block" />
+                            <span className="group-hover:hidden">Amigo</span>
+                            <span className="hidden group-hover:block">Remover</span>
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => addFriend(result)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-nexus-accent hover:bg-nexus-accent/80 text-white rounded-lg text-xs font-bold transition-all"
+                          >
+                            <UserPlus size={14} /> Adicionar
+                          </button>
+                        )
                       )}
                     </div>
                   </div>
@@ -150,7 +162,7 @@ export const Friends: React.FC = () => {
               onClick={() => setActiveTab('list')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'list' ? 'bg-nexus-accent text-white shadow-lg' : 'bg-nexus-800 text-gray-400 hover:text-white'}`}
             >
-              Meus Amigos
+              Meus Amigos ({friends.length})
             </button>
             <button 
               onClick={() => setActiveTab('leaderboard')}
@@ -178,7 +190,7 @@ export const Friends: React.FC = () => {
               ) : (
                 friends.map((friend) => (
                   <div 
-                     key={friend.id} 
+                     key={friend.nexusId} 
                      onClick={() => openExternalProfile(friend.nexusId)}
                      className="bg-nexus-800 p-4 rounded-xl border border-nexus-700 flex items-center gap-4 hover:border-nexus-600 transition-all group cursor-pointer hover:shadow-lg hover:bg-nexus-700/50"
                   >
@@ -203,7 +215,7 @@ export const Friends: React.FC = () => {
         {activeTab === 'leaderboard' && (
            <div className="space-y-4 pb-8">
                {sortedByTrophies.map((user, idx) => (
-                   <div key={user.nexusId} className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${idx === 0 ? 'bg-gradient-to-r from-yellow-500/10 to-nexus-800 border-yellow-500/50 shadow-yellow-500/5' : 'bg-nexus-800 border-nexus-700'}`}>
+                   <div key={user.nexusId} onClick={() => openExternalProfile(user.nexusId)} className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-gradient-to-r from-yellow-500/10 to-nexus-800 border-yellow-500/50 shadow-yellow-500/5' : 'bg-nexus-800 border-nexus-700 hover:border-nexus-accent'}`}>
                       <div className="w-10 font-display font-bold text-3xl text-gray-600 text-center">{idx + 1}</div>
                       <img src={user.avatarUrl} className="w-14 h-14 rounded-full border-2 border-white/5" />
                       <div className="flex-1">

@@ -1,15 +1,15 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserStats, Platform, LinkedAccount, Game, Friend, ActivityEvent } from '../types';
 import { nexusCloud } from '../services/nexusCloud';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AppContextType {
   currentUser: any | null;
   userStats: UserStats | null;
   setUserStats: (stats: UserStats | ((prev: UserStats | null) => UserStats | null)) => void;
   friends: Friend[];
-  addFriend: (friend: Friend) => void;
-  removeFriend: (friendId: string) => void;
+  addFriend: (friend: Friend) => Promise<void>;
+  removeFriend: (friendNexusId: string) => Promise<void>;
   toggleAchievement: (gameId: string, achievementId: string) => void;
   linkAccount: (platform: Platform, username: string, games: Game[], totalHours: number) => void;
   unlinkAccount: (platform: Platform) => void;
@@ -100,6 +100,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     setCurrentUser(null);
     setUserStatsState(null);
+    setFriends([]);
     localStorage.removeItem('nexus_active_session');
     setIsCloudActive(nexusCloud.isCloudActive());
   };
@@ -150,14 +151,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const addFriend = (friend: Friend) => {
+  const addFriend = async (friend: Friend) => {
     if (!userStats) return;
-    nexusCloud.addFriend(userStats.nexusId, friend);
-    setFriends(prev => prev.find(f => f.nexusId === friend.nexusId) ? prev : [...prev, friend]);
+    const updated = await nexusCloud.addFriend(userStats.nexusId, friend);
+    setFriends(updated);
   };
 
-  const removeFriend = (friendId: string) => {
-    setFriends(prev => prev.filter(f => f.id !== friendId));
+  const removeFriend = async (friendNexusId: string) => {
+    if (!userStats) return;
+    const updated = await nexusCloud.removeFriend(userStats.nexusId, friendNexusId);
+    setFriends(updated);
   };
 
   const linkAccount = (platform: Platform, username: string, games: Game[], totalHours: number) => {

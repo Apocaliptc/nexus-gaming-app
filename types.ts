@@ -16,7 +16,23 @@ export enum ActivityType {
   GAME_STARTED = 'game_started',
   COLLECTION_ADD = 'collection_add',
   POST = 'post',
-  JOURNAL = 'journal'
+  JOURNAL = 'journal',
+  VIDEO = 'video',
+  STREAM = 'stream',
+  CHALLENGE = 'challenge'
+}
+
+// Added missing CollectionItem interface used in components/Collection.tsx
+export interface CollectionItem {
+  id: string;
+  ownerId: string;
+  name: string;
+  type: string;
+  condition: string;
+  status: string;
+  imageUrl: string;
+  value: number;
+  dateAdded: string;
 }
 
 export interface JournalEntry {
@@ -36,32 +52,43 @@ export enum SuggestionStatus {
   REJECTED = 'rejected'
 }
 
-export enum ChallengeType {
-  SPEEDRUN = 'speedrun',
-  COLLECTION = 'collection',
-  DIFFICULTY = 'difficulty',
-  SOCIAL = 'social'
-}
-
-// Added missing Challenge interface to fix compilation errors
-export interface Challenge {
+export interface CommunitySuggestion {
   id: string;
   title: string;
   description: string;
-  type: ChallengeType;
-  points: number;
-  status: 'active' | 'completed' | 'expired';
+  authorId: string;
+  authorName: string;
+  votes: number;
+  status: SuggestionStatus;
+  category: string;
+  createdAt: string;
+  aiFeasibilityScore: number;
+  aiComment: string;
 }
 
-export interface Milestone {
+export interface RigSpecs {
+  cpu?: string;
+  gpu?: string;
+  ram?: string;
+  mainPlatform: Platform;
+  setupImage?: string;
+}
+
+export interface BacklogAnalysis {
+  unplayedGamesCount: number;
+  estimatedTimeToClear: number; // hours
+  monetaryValueLost: number; // simulated $
+  nextTarget: string;
+}
+
+export interface GlobalRaid {
   id: string;
-  date: string;
   title: string;
-  description: string;
-  icon: string;
-  type: 'achievement' | 'milestone' | 'evolution' | 'journal';
-  gameTitle?: string;
-  importance: 'normal' | 'high' | 'legendary';
+  target: number;
+  current: number;
+  reward: string;
+  deadline: string;
+  type: 'hours' | 'achievements' | 'platinums';
 }
 
 export interface UserStats {
@@ -82,6 +109,8 @@ export interface UserStats {
   weeklyActivity: { day: string; hours: number }[];
   monthlyActivity: { month: string; hours: number }[];
   skills: { subject: string; A: number; fullMark: number }[];
+  rig?: RigSpecs;
+  backlog?: BacklogAnalysis;
 }
 
 export interface LinkedAccount {
@@ -130,6 +159,7 @@ export interface Friend {
   weeklyActivity?: { day: string; hours: number }[];
   monthlyActivity?: { month: string; hours: number }[];
   skills?: { subject: string; value: number }[];
+  rig?: RigSpecs;
 }
 
 export interface AIInsight {
@@ -137,33 +167,6 @@ export interface AIInsight {
   description: string;
   suggestedGenres: string[];
   improvementTip: string;
-}
-
-export interface CollectionItem {
-  id: string;
-  ownerId: string;
-  name: string;
-  type: string;
-  condition: string;
-  status: 'collection' | 'trade' | 'sale' | string;
-  imageUrl: string;
-  value: number;
-  dateAdded: string;
-}
-
-export interface CommunitySuggestion {
-  id: string;
-  title: string;
-  description: string;
-  authorId: string;
-  authorName: string;
-  votes: number;
-  status: SuggestionStatus;
-  category: 'feature' | 'integration' | 'ui' | 'social';
-  createdAt: string;
-  aiFeasibilityScore?: number;
-  aiComment?: string;
-  hasVoted?: boolean;
 }
 
 export interface ActivityEvent {
@@ -179,33 +182,22 @@ export interface ActivityEvent {
     achievementName?: string;
     content?: string;
     platform?: Platform;
+    videoUrl?: string;
+    viewers?: number;
+    challengeGoal?: string;
   };
   likes: number;
   comments?: number;
   hasLiked?: boolean;
 }
 
-export interface GlobalStats {
-  averageHours: number;
-  averageAchievements: number;
-  topGenres: { name: string; value: number }[];
-  activityTrend: { day: string; hours: number }[];
-  monthlyActivity: { month: string; hours: number }[];
-  skills: { subject: string; value: number }[];
-}
-
-export interface Quest {
+export interface Milestone {
   id: string;
+  date: string;
   title: string;
-  rewardXP: number;
-  progress: number;
-  total: number;
-}
-
-export interface PartySuggestion {
-  id: string;
-  friendId?: string;
-  friendName: string;
-  friendAvatar: string;
-  game: string;
+  description: string;
+  icon: string;
+  type: 'achievement' | 'milestone' | 'evolution' | 'journal';
+  gameTitle?: string;
+  importance: 'normal' | 'high' | 'legendary';
 }

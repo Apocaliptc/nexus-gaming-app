@@ -1,13 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { UserStats, AIInsight, Platform, Game, ActivityEvent, ActivityType } from '../types';
+import { UserStats, AIInsight, Platform, Game } from '../types';
 import { analyzeGamingProfile, getGameRecommendations } from '../services/geminiService';
 import { PlatformIcon } from './PlatformIcon';
 import { useAppContext } from '../context/AppContext';
-import { 
-  BarChart, Bar, XAxis, Tooltip, ResponsiveContainer
-} from 'recharts';
-import { Sparkles, Activity, Trophy, Clock, BrainCircuit, Plus, Loader2, Calendar, ChevronRight, Globe, History, Mail, AlertCircle, CheckCircle, ExternalLink, Database, Wifi, CloudCheck, Star, Copy, Check, Link, ShieldAlert } from 'lucide-react';
+import { MOCK_RAID } from '../services/mockData';
+import { Sparkles, Activity, Trophy, Clock, BrainCircuit, Plus, Loader2, Calendar, ChevronRight, Globe, History, Mail, AlertCircle, CheckCircle, ExternalLink, Database, Wifi, CloudCheck, Star, Copy, Check, Link, ShieldAlert, LayoutDashboard, Ghost, Target, Zap, Swords } from 'lucide-react';
 import { GameDetailView } from './GameDetailView';
 
 export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ onNavigate }) => {
@@ -18,14 +16,16 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [greeting, setGreeting] = useState('');
   const [copiedId, setCopiedId] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 5) setGreeting(`Jogando até tarde, ${userStats?.nexusId}?`);
-    else if (hour < 12) setGreeting(`Bom dia, ${userStats?.nexusId}!`);
-    else if (hour < 18) setGreeting(`Boa tarde, ${userStats?.nexusId}.`);
-    else setGreeting(`Boa noite, ${userStats?.nexusId}. Hora de jogar!`);
+    const rawName = userStats?.nexusId || 'Gamer';
+    const cleanName = rawName.split('@').filter(s => s.length > 0)[0] || rawName.replace('@', '');
+    
+    if (hour < 5) setGreeting(`Jogando até tarde, ${cleanName}?`);
+    else if (hour < 12) setGreeting(`Bom dia, ${cleanName}!`);
+    else if (hour < 18) setGreeting(`Boa tarde, ${cleanName}.`);
+    else setGreeting(`Boa noite, ${cleanName}. Hora de jogar!`);
   }, [userStats?.nexusId]);
 
   const handleGenerateInsight = async () => {
@@ -38,177 +38,125 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
       ]);
       setAiInsight(insight);
       setRecommendations(recs);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingAi(false);
-    }
-  };
-
-  const copyId = () => {
-    if (!userStats) return;
-    navigator.clipboard.writeText(userStats.nexusId);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
-  };
-
-  const copyInviteLink = () => {
-    if (!userStats) return;
-    const link = `${window.location.origin}${window.location.pathname}?user=${encodeURIComponent(userStats.nexusId)}`;
-    navigator.clipboard.writeText(link);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    } catch (e) { console.error(e); } finally { setLoadingAi(false); }
   };
 
   if (!userStats) return null;
   if (selectedGame) return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} />;
 
+  const raidProgress = Math.round((MOCK_RAID.current / MOCK_RAID.target) * 100);
+
   return (
     <div className="h-full flex flex-col bg-[#050507] text-gray-100 overflow-y-auto custom-scrollbar">
-      <header className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-nexus-800">
+      <header className="p-6 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-nexus-800">
         <div className="animate-fade-in w-full md:w-auto">
           <div className="flex flex-wrap items-center gap-3 mb-1">
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight">{greeting}</h1>
-            
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight">{greeting}</h1>
             {isSyncing && (
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border border-nexus-accent bg-nexus-accent/10 text-nexus-accent animate-pulse">
                 <Wifi size={12} /> SINCRONIZANDO...
               </div>
             )}
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-              <button 
-                onClick={copyId}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-gray-400 hover:text-white hover:border-nexus-accent transition-all"
-              >
-                {copiedId ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+          <div className="flex items-center gap-2 mt-4">
+              <span className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-400">
                 {userStats.nexusId}
-              </button>
-              <button 
-                onClick={copyInviteLink}
-                className="flex items-center gap-2 px-3 py-1.5 bg-nexus-accent/10 border border-nexus-accent/20 rounded-xl text-[10px] font-bold text-nexus-accent hover:bg-nexus-accent/20 transition-all"
-              >
-                {copiedLink ? <Check size={12} /> : <Link size={12} />}
-                {copiedLink ? 'LINK COPIADO!' : 'CONVIDAR AMIGO'}
-              </button>
+              </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-6 md:mt-0">
-           {loadingAi ? (
-             <div className="flex items-center gap-2 px-5 py-2.5 bg-nexus-800 rounded-xl text-nexus-accent border border-nexus-accent/20">
-               <Loader2 className="animate-spin" size={18} /> Orquestrando IA...
-             </div>
-           ) : (
-             <button onClick={handleGenerateInsight} className="flex items-center gap-2 px-5 py-2.5 bg-nexus-accent hover:bg-nexus-accent/90 text-white rounded-xl transition-all font-bold text-sm shadow-lg shadow-nexus-accent/20">
-                <BrainCircuit size={18} /> IA de Perfil
-             </button>
-           )}
-        </div>
+        <button onClick={handleGenerateInsight} className="flex items-center gap-2 px-6 py-3 bg-nexus-accent hover:bg-nexus-accent/90 text-white rounded-2xl transition-all font-bold text-sm shadow-xl shadow-nexus-accent/20">
+           {loadingAi ? <Loader2 className="animate-spin" size={20} /> : <BrainCircuit size={20} />} IA de Perfil
+        </button>
       </header>
 
-      <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto w-full">
-         {/* KPI Cards */}
-         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700 shadow-xl">
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">Horas Totais</p>
-                <h3 className="text-3xl font-display font-bold text-white text-center">{userStats.totalHours}h</h3>
-              </div>
-              <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700 shadow-xl">
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">Conquistas</p>
-                <h3 className="text-3xl font-display font-bold text-white text-center">{userStats.totalAchievements}</h3>
-              </div>
-              <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700 shadow-xl">
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">Platinas</p>
-                <h3 className="text-3xl font-display font-bold text-white text-center">{userStats.platinumCount}</h3>
-              </div>
-              <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700 shadow-xl">
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">Contas</p>
-                <h3 className="text-3xl font-display font-bold text-white text-center">{userStats.linkedAccounts.length}</h3>
-              </div>
-            </div>
-
-            <div className="lg:col-span-4">
-               <div 
-                 onClick={() => onNavigate?.('chronos')}
-                 className="bg-gradient-to-br from-indigo-900/40 to-nexus-900 p-6 rounded-[2rem] border border-nexus-700 shadow-xl cursor-pointer group hover:border-nexus-accent transition-all h-full"
-               >
-                 <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <h4 className="text-xs font-bold text-nexus-secondary uppercase tracking-widest mb-1 flex items-center gap-2">
-                        <History size={14} /> Memória Ativa
-                      </h4>
-                      <h3 className="text-xl font-display font-bold text-white mb-2">Seu Diário de Bordo.</h3>
-                      <p className="text-xs text-gray-400 leading-relaxed italic">
-                        {userStats.journalEntries.length > 0 ? `Você possui ${userStats.journalEntries.length} crônicas registradas.` : 'Comece a registrar sua jornada para imortalizá-la.'}
-                      </p>
-                    </div>
-                    <div className="mt-4 flex items-center gap-2 text-xs font-bold text-nexus-accent group-hover:translate-x-1 transition-transform">
-                       Abrir Chronos <ChevronRight size={14} />
-                    </div>
-                 </div>
+      <div className="p-6 md:p-10 space-y-10 max-w-[1600px] mx-auto w-full">
+         
+         {/* Row 1: Nexus Raids Banner */}
+         <div className="bg-gradient-to-r from-nexus-accent/20 via-nexus-900 to-nexus-secondary/20 p-8 rounded-[3rem] border border-nexus-700 shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none"></div>
+            <Swords className="absolute -bottom-10 -right-10 text-nexus-accent opacity-5 group-hover:scale-110 transition-transform" size={300} />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+               <div className="space-y-4 max-w-xl">
+                  <span className="px-3 py-1 bg-red-600 text-white text-[10px] font-bold rounded-full animate-pulse">RAID GLOBAL ATIVA</span>
+                  <h3 className="text-3xl font-display font-bold text-white">{MOCK_RAID.title}</h3>
+                  <p className="text-gray-400 text-sm">A comunidade está unida para alcançar a meta. Participe e ganhe recompensas exclusivas.</p>
+                  <div className="flex items-center gap-2 text-nexus-accent text-xs font-bold uppercase tracking-widest">
+                     <Target size={16} /> Objetivo: {MOCK_RAID.target} horas totais
+                  </div>
+               </div>
+               
+               <div className="w-full md:w-80 text-center md:text-right space-y-4">
+                  <div className="flex justify-between items-end mb-2">
+                     <span className="text-nexus-accent font-bold text-4xl">{raidProgress}%</span>
+                     <span className="text-gray-500 text-xs font-bold">{MOCK_RAID.current} / {MOCK_RAID.target}</span>
+                  </div>
+                  <div className="h-4 bg-nexus-900 rounded-full border border-nexus-800 overflow-hidden">
+                     <div className="h-full bg-gradient-to-r from-nexus-accent to-nexus-secondary shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-1000" style={{ width: `${raidProgress}%` }}></div>
+                  </div>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Recompensa: {MOCK_RAID.reward}</p>
                </div>
             </div>
          </div>
 
-         {/* Latest Activities */}
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-nexus-800 p-6 rounded-[2.5rem] border border-nexus-700 shadow-xl">
-               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                 <Activity className="text-nexus-accent" size={20} /> Atividade Recente
-               </h3>
-               <div className="space-y-4">
-                  {userStats.recentGames.length > 0 ? userStats.recentGames.slice(0, 3).map(game => (
-                    <div key={game.id} onClick={() => setSelectedGame(game)} className="flex items-center gap-4 p-4 bg-nexus-900/50 rounded-2xl border border-nexus-700/50 hover:bg-nexus-900 transition-all cursor-pointer">
-                       <img src={game.coverUrl} className="w-12 h-16 object-cover rounded-lg" />
-                       <div className="flex-1">
-                          <h4 className="font-bold text-white text-sm">{game.title}</h4>
-                          <p className="text-xs text-gray-500">{game.platform} • {game.hoursPlayed}h</p>
+         {/* Row 2: Stats & Backlog Exorcist */}
+         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-nexus-800 p-8 rounded-[2rem] border border-nexus-700 shadow-2xl">
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Horas</p>
+                <h3 className="text-4xl font-display font-bold text-white">{userStats.totalHours}</h3>
+              </div>
+              <div className="bg-nexus-800 p-8 rounded-[2rem] border border-nexus-700 shadow-2xl">
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Conquistas</p>
+                <h3 className="text-4xl font-display font-bold text-white">{userStats.totalAchievements}</h3>
+              </div>
+              
+              {/* Backlog Exorcist Card */}
+              <div className="col-span-2 bg-gradient-to-br from-[#121218] to-black p-8 rounded-[2rem] border border-nexus-700 shadow-2xl relative overflow-hidden group">
+                 <Ghost className="absolute -bottom-6 -right-6 text-white/5 group-hover:rotate-12 transition-transform" size={150} />
+                 <div className="relative z-10">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                       <Ghost size={16} className="text-nexus-secondary" /> Backlog Exorcist
+                    </h4>
+                    <div className="flex justify-between items-end mb-4">
+                       <div>
+                          <p className="text-4xl font-display font-bold text-white">{userStats.backlog?.unplayedGamesCount}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Jogos Intocados</p>
                        </div>
                        <div className="text-right">
-                          <p className="text-xs font-bold text-nexus-secondary">{game.totalAchievements > 0 ? Math.round((game.achievementCount/game.totalAchievements)*100) : 0}%</p>
-                          <p className="text-[10px] text-gray-600 uppercase font-bold">Progresso</p>
+                          <p className="text-lg font-bold text-red-500">${userStats.backlog?.monetaryValueLost}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Dívida Gamer</p>
                        </div>
                     </div>
-                  )) : (
-                    <div className="py-10 text-center text-gray-600 italic text-sm">Nenhum jogo vinculado ainda.</div>
-                  )}
-               </div>
+                    <div className="bg-nexus-900/50 p-3 rounded-xl border border-nexus-800 flex items-center gap-3">
+                       <Zap size={14} className="text-yellow-500" />
+                       <span className="text-xs text-gray-400">Próximo Exorcismo: <strong className="text-white">{userStats.backlog?.nextTarget}</strong></span>
+                    </div>
+                 </div>
+              </div>
             </div>
 
-            <div className="bg-nexus-800 p-6 rounded-[2.5rem] border border-nexus-700 shadow-xl">
-               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                 <Sparkles className="text-yellow-500" size={20} /> IA Insight
-               </h3>
-               {aiInsight ? (
-                 <div className="space-y-4 animate-fade-in">
-                    <div className="bg-nexus-accent/10 p-4 rounded-2xl border border-nexus-accent/20">
-                       <h4 className="text-nexus-accent font-display font-bold text-lg mb-1">{aiInsight.personaTitle}</h4>
-                       <p className="text-sm text-gray-300 leading-relaxed">{aiInsight.description}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                       <div className="bg-nexus-900 p-3 rounded-xl border border-nexus-700">
-                          <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Sugestões</p>
-                          <div className="flex flex-wrap gap-1.5">
-                             {aiInsight.suggestedGenres.map(g => (
-                               <span key={g} className="text-[10px] px-2 py-0.5 bg-nexus-800 rounded border border-nexus-700 text-gray-300">{g}</span>
-                             ))}
-                          </div>
-                       </div>
-                       <div className="bg-nexus-900 p-3 rounded-xl border border-nexus-700">
-                          <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Dica de Mestre</p>
-                          <p className="text-[11px] text-gray-400 italic">{aiInsight.improvementTip}</p>
-                       </div>
+            <div className="lg:col-span-4 h-full">
+               <div 
+                 onClick={() => onNavigate?.('chronos')}
+                 className="bg-nexus-900 p-8 rounded-[2.5rem] border border-nexus-700 shadow-2xl h-full cursor-pointer group hover:border-nexus-accent transition-all relative overflow-hidden"
+               >
+                 <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <History size={180} />
+                 </div>
+                 <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div>
+                      <h4 className="text-xs font-bold text-nexus-accent uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <History size={16} /> Nexus Chronos
+                      </h4>
+                      <h3 className="text-2xl font-display font-bold text-white mb-3">Imortalize sua jornada.</h3>
+                      <p className="text-gray-400 text-sm italic">
+                        Transforme suas vitórias em crônicas épicas com nossa IA de narração.
+                      </p>
                     </div>
                  </div>
-               ) : (
-                 <div className="flex flex-col items-center justify-center py-10 opacity-50">
-                    <BrainCircuit size={48} className="mb-4 text-gray-600" />
-                    <p className="text-sm text-gray-500">Gere uma análise para ver sua persona gamer.</p>
-                 </div>
-               )}
+               </div>
             </div>
          </div>
       </div>

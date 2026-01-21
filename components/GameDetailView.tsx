@@ -1,9 +1,10 @@
 
 import React, { useState, useMemo } from 'react';
-import { Game } from '../types';
-import { Trophy, ChevronLeft, Search, ArrowUpDown, Clock, Lock, Check, Info, Sparkles } from 'lucide-react';
+import { Game, Achievement } from '../types';
+import { Trophy, ChevronLeft, Search, ArrowUpDown, Clock, Lock, Check, Info, Sparkles, BrainCircuit, X, Loader2 } from 'lucide-react';
 import { PlatformIcon } from './PlatformIcon';
 import { useAppContext } from '../context/AppContext';
+import { getAchievementTip } from '../services/geminiService';
 
 type SortOption = 'date_desc' | 'date_asc' | 'rarity_desc' | 'rarity_asc';
 type FilterOption = 'all' | 'unlocked' | 'locked';
@@ -11,7 +12,7 @@ type FilterOption = 'all' | 'unlocked' | 'locked';
 interface Props {
   game: Game;
   onClose: () => void;
-  isOwner?: boolean; // We'll default to true if it's from the library
+  isOwner?: boolean;
 }
 
 export const GameDetailView: React.FC<Props> = ({ game: initialGame, onClose, isOwner = true }) => {
@@ -19,15 +20,18 @@ export const GameDetailView: React.FC<Props> = ({ game: initialGame, onClose, is
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<FilterOption>('all');
   const [sort, setSort] = useState<SortOption>('date_desc');
+  
+  // Oracle Modal state
+  const [oracleAchievement, setOracleAchievement] = useState<Achievement | null>(null);
+  const [oracleTip, setOracleTip] = useState<string>('');
+  const [isLoadingTip, setIsLoadingTip] = useState(false);
 
-  // Sync with current global state if it's the owner's game
   const game = isOwner 
     ? (userStats.recentGames.find(g => g.id === initialGame.id) || initialGame)
     : initialGame;
 
   const filteredAchievements = useMemo(() => {
     let list = game.achievements || [];
-
     if (filter === 'unlocked') list = list.filter(a => a.unlockedAt);
     if (filter === 'locked') list = list.filter(a => !a.unlockedAt);
     if (searchTerm) list = list.filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -48,6 +52,21 @@ export const GameDetailView: React.FC<Props> = ({ game: initialGame, onClose, is
   const handleToggle = (achId: string) => {
     if (!isOwner) return;
     toggleAchievement(game.id, achId);
+  };
+
+  const handleAskOracle = async (e: React.MouseEvent, ach: Achievement) => {
+    e.stopPropagation();
+    setOracleAchievement(ach);
+    setIsLoadingTip(true);
+    setOracleTip('');
+    try {
+      const tip = await getAchievementTip(game.title, ach.name, ach.description);
+      setOracleTip(tip);
+    } catch (err) {
+      setOracleTip("Erro ao conectar com o Oráculo.");
+    } finally {
+      setIsLoadingTip(false);
+    }
   };
 
   return (
@@ -87,9 +106,9 @@ export const GameDetailView: React.FC<Props> = ({ game: initialGame, onClose, is
 
            {isOwner && (
               <div className="bg-nexus-accent/10 border border-nexus-accent/30 rounded-xl p-3 flex items-center gap-3 max-w-xs ml-auto">
-                 <Sparkles className="text-nexus-accent shrink-0" size={20} />
+                 <BrainCircuit className="text-nexus-accent shrink-0" size={20} />
                  <p className="text-[10px] text-nexus-accent font-bold uppercase leading-tight">
-                    Modo Manual Ativado: Clique nas conquistas abaixo para informar seu progresso.
+                    Oracle Insight Habilitado: Peça dicas clicando no Oráculo em troféus trancados.
                  </p>
               </div>
            )}
@@ -157,7 +176,7 @@ export const GameDetailView: React.FC<Props> = ({ game: initialGame, onClose, is
                        <h4 className={`font-bold text-sm md:text-base ${ach.unlockedAt ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>{ach.name}</h4>
                        <p className="text-xs md:text-sm text-gray-500 line-clamp-1">{ach.description}</p>
                     </div>
-                    <div className="text-right flex flex-col items-end gap-1">
+                    <div className="text-right flex flex-col items-end gap-2">
                        {ach.rarity && (
                           <span className={`text-[10px] md:text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
                              ach.rarity === 'Ultra Rare' ? 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' : 
@@ -167,20 +186,80 @@ export const GameDetailView: React.FC<Props> = ({ game: initialGame, onClose, is
                              {ach.rarity}
                           </span>
                        )}
-                       {ach.unlockedAt ? (
-                          <span className="text-[10px] text-nexus-accent font-bold flex items-center gap-1 animate-fade-in">
-                             <Check size={12} /> CONQUISTADO
-                          </span>
-                       ) : isOwner && (
-                          <span className="text-[10px] text-gray-600 font-bold group-hover:text-nexus-accent transition-colors">
-                            CLIQUE PARA MARCAR
-                          </span>
-                       )}
+                       
+                       <div className="flex items-center gap-2">
+                          {!ach.unlockedAt && (
+                             <button 
+                               onClick={(e) => handleAskOracle(e, ach)}
+                               className="p-2 bg-nexus-accent/20 hover:bg-nexus-accent text-nexus-accent hover:text-white rounded-lg transition-all border border-nexus-accent/30 shadow-lg shadow-nexus-accent/10 group/oracle"
+                               title="Dicas do Oráculo"
+                             >
+                                <BrainCircuit size={16} className="group-hover/oracle:scale-110 transition-transform" />
+                             </button>
+                          )}
+                          {ach.unlockedAt ? (
+                             <span className="text-[10px] text-nexus-accent font-bold flex items-center gap-1 animate-fade-in">
+                                <Check size={12} /> CONQUISTADO
+                             </span>
+                          ) : isOwner && (
+                             <span className="text-[10px] text-gray-600 font-bold group-hover:text-nexus-accent transition-colors">
+                               MARCAR
+                             </span>
+                          )}
+                       </div>
                     </div>
                  </div>
               ))
            )}
         </div>
+
+        {/* Oracle Strategy Modal Overlay */}
+        {oracleAchievement && (
+           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+              <div className="bg-nexus-900 w-full max-w-lg rounded-[2.5rem] border border-nexus-accent/30 shadow-2xl overflow-hidden relative">
+                 <button onClick={() => setOracleAchievement(null)} className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white hover:bg-nexus-800 rounded-full transition-all">
+                    <X size={20} />
+                 </button>
+
+                 <div className="p-8 space-y-6">
+                    <div className="flex items-center gap-4">
+                       <div className="w-16 h-16 bg-nexus-accent/20 rounded-2xl flex items-center justify-center text-nexus-accent border border-nexus-accent/30">
+                          <BrainCircuit size={32} />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-bold text-nexus-accent uppercase tracking-[0.3em] mb-1">Estratégia do Oráculo</p>
+                          <h3 className="text-xl font-display font-bold text-white">{oracleAchievement.name}</h3>
+                          <p className="text-xs text-gray-500 font-mono italic">Jogo: {game.title}</p>
+                       </div>
+                    </div>
+
+                    <div className="bg-nexus-800/50 p-6 rounded-[2rem] border border-nexus-700 min-h-[150px] relative overflow-hidden">
+                       <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                          <Sparkles size={100} />
+                       </div>
+                       
+                       {isLoadingTip ? (
+                          <div className="flex flex-col items-center justify-center h-full gap-4 py-10">
+                             <Loader2 className="animate-spin text-nexus-accent" size={32} />
+                             <p className="text-xs text-gray-500 font-mono animate-pulse uppercase tracking-widest">Consultando arquivos do Nexus...</p>
+                          </div>
+                       ) : (
+                          <div className="text-gray-300 text-sm leading-relaxed prose prose-invert max-w-none prose-p:my-2 prose-strong:text-nexus-accent">
+                             <div className="whitespace-pre-wrap">{oracleTip}</div>
+                          </div>
+                       )}
+                    </div>
+
+                    <button 
+                      onClick={() => setOracleAchievement(null)}
+                      className="w-full py-4 bg-nexus-accent hover:bg-nexus-accent/90 text-white font-bold rounded-2xl transition-all shadow-xl shadow-nexus-accent/20 flex items-center justify-center gap-2"
+                    >
+                       ENTENDIDO
+                    </button>
+                 </div>
+              </div>
+           </div>
+        )}
      </div>
   );
 };

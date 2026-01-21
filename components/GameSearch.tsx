@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { MOCK_DISCOVER_GAMES, MOCK_GAMES } from '../services/mockData';
+// Fixed: Removed MOCK_GAMES which was not exported from mockData.ts
+import { MOCK_DISCOVER_GAMES } from '../services/mockData';
 import { Game, Platform } from '../types';
 import { searchGamesWithAI, getTrendingGames } from '../services/geminiService';
 import { Search, Trophy, Info, Loader2, Sparkles, AlertCircle, Flame, TrendingUp, Zap, Filter, ChevronRight, Globe } from 'lucide-react';
