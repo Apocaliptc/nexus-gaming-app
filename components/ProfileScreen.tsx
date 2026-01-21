@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Friend, Game, UserStats, Platform } from '../types';
+import { Friend, Game, UserStats, Platform, Testimonial } from '../types';
 import { nexusCloud } from '../services/nexusCloud';
 import { GameDetailView } from './GameDetailView';
 import { NexusIDCard } from './NexusIDCard';
-import { ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, UserPlus, UserCheck, Target, Swords as SwordsIcon, Shield, Activity, Monitor, Cpu, Box } from 'lucide-react';
+import { ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, UserPlus, UserCheck, Target, Swords as SwordsIcon, Shield, Activity, Monitor, Cpu, Box, Send, Star, Award, ShieldAlert } from 'lucide-react';
 import { PlatformIcon } from './PlatformIcon';
 import { useAppContext } from '../context/AppContext';
 import { 
@@ -20,10 +20,16 @@ interface ProfileProps {
 
 export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfile: isOwnProfileProp, onClose, onChallenge }) => {
   const { userStats: currentUserStats, friends, addFriend, removeFriend } = useAppContext();
-  const [profileTab, setProfileTab] = useState<'overview' | 'games' | 'synergy'>('overview');
+  const [profileTab, setProfileTab] = useState<'overview' | 'games' | 'synergy' | 'testimonials'>('overview');
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [fullUserStats, setFullUserStats] = useState<UserStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Testimonials state
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [newTestimonial, setNewTestimonial] = useState('');
+  const [selectedVibe, setSelectedVibe] = useState<'pro' | 'mvp' | 'legend'>('pro');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isOwnProfile = isOwnProfileProp || (currentUserStats?.nexusId === profileData.nexusId);
   const isAlreadyFriend = useMemo(() => friends.some(f => f.nexusId.toLowerCase() === profileData.nexusId.toLowerCase()), [friends, profileData.nexusId]);
@@ -31,8 +37,12 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
   useEffect(() => {
     const loadFullData = async () => {
       setIsLoading(true);
-      const data = await nexusCloud.getUser(profileData.nexusId);
-      setFullUserStats(data);
+      const [stats, wall] = await Promise.all([
+        nexusCloud.getUser(profileData.nexusId),
+        nexusCloud.getTestimonials(profileData.nexusId)
+      ]);
+      setFullUserStats(stats);
+      setTestimonials(wall);
       setIsLoading(false);
     };
     loadFullData();
@@ -83,6 +93,31 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
     return { percentage, sharedGames: shared, radarChartData, rank: percentage > 30 ? 'Strike Team Ready' : 'Companheiros' };
   }, [currentUserStats, fullUserStats, isOwnProfile]);
 
+  const handleSendTestimonial = async () => {
+    if (!newTestimonial.trim() || !currentUserStats || isOwnProfile) return;
+    setIsSubmitting(true);
+    
+    const testimonial: Testimonial = {
+      id: `t-${Date.now()}`,
+      fromNexusId: currentUserStats.nexusId,
+      fromName: currentUserStats.nexusId.replace('@', ''),
+      fromAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserStats.nexusId}`,
+      content: newTestimonial,
+      timestamp: new Date().toISOString(),
+      vibe: selectedVibe
+    };
+
+    try {
+      await nexusCloud.saveTestimonial(profileData.nexusId, testimonial);
+      setTestimonials(prev => [testimonial, ...prev]);
+      setNewTestimonial('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) return <div className="h-full flex items-center justify-center bg-[#050507]"><Loader2 className="animate-spin text-nexus-accent" size={48} /></div>;
   if (selectedGame) return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} isOwner={isOwnProfile} />;
 
@@ -119,6 +154,10 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
             <button onClick={() => setProfileTab('overview')} className={`py-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${profileTab === 'overview' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Visão Geral</button>
             <button onClick={() => setProfileTab('games')} className={`py-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${profileTab === 'games' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Biblioteca</button>
             {synergyData && <button onClick={() => setProfileTab('synergy')} className={`py-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${profileTab === 'synergy' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Sinergia</button>}
+            <button onClick={() => setProfileTab('testimonials')} className={`py-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${profileTab === 'testimonials' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+               Depoimentos
+               <span className="bg-nexus-accent/20 text-nexus-accent text-[10px] px-1.5 py-0.5 rounded-full">{testimonials.length}</span>
+            </button>
           </div>
       </div>
 
@@ -141,7 +180,6 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
                         </div>
                       </div>
                       
-                      {/* Rig Showcase Section */}
                       <div className="space-y-6">
                         <h3 className="text-2xl font-display font-bold text-white flex items-center gap-2">
                           <Monitor className="text-nexus-secondary" size={24} /> Rig Showcase
@@ -175,6 +213,92 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
                 <div className="lg:col-span-4">
                    <NexusIDCard stats={displayStats} insight={null} />
                 </div>
+            </div>
+          )}
+
+          {profileTab === 'testimonials' && (
+            <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20">
+               <div className="bg-nexus-900/50 p-8 rounded-[3rem] border border-nexus-700 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <Award size={120} />
+                  </div>
+                  
+                  <div className="relative z-10 space-y-6">
+                     <h3 className="text-3xl font-display font-bold text-white">Mural de Honra</h3>
+                     <p className="text-gray-400">Depoimentos públicos de outros jogadores sobre este legado.</p>
+
+                     {!isOwnProfile && (
+                        <div className="space-y-4 bg-nexus-800/50 p-6 rounded-3xl border border-nexus-700 shadow-xl">
+                           <div className="flex items-center gap-2 mb-2">
+                              <Sparkles className="text-nexus-accent" size={16} />
+                              <span className="text-xs font-bold text-white uppercase tracking-widest">Deixar um Depoimento</span>
+                           </div>
+                           <textarea 
+                             value={newTestimonial}
+                             onChange={(e) => setNewTestimonial(e.target.value)}
+                             placeholder="Conte ao mundo sobre suas jogatinas com este usuário..."
+                             className="w-full bg-nexus-900 border border-nexus-700 rounded-2xl p-4 text-white focus:border-nexus-accent outline-none h-24 resize-none text-sm"
+                           />
+                           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                              <div className="flex bg-nexus-900 p-1 rounded-xl border border-nexus-700">
+                                 {(['pro', 'mvp', 'legend'] as const).map(v => (
+                                    <button 
+                                      key={v}
+                                      onClick={() => setSelectedVibe(v)}
+                                      className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${selectedVibe === v ? 'bg-nexus-accent text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                                    >
+                                       {v}
+                                    </button>
+                                 ))}
+                              </div>
+                              <button 
+                                onClick={handleSendTestimonial}
+                                disabled={isSubmitting || !newTestimonial.trim()}
+                                className="w-full md:w-auto px-8 py-3 bg-nexus-accent hover:bg-nexus-accent/80 text-white font-bold rounded-xl transition-all shadow-xl shadow-nexus-accent/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                 {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                                 Publicar no Mural
+                              </button>
+                           </div>
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+               <div className="space-y-4">
+                  {testimonials.length === 0 ? (
+                    <div className="text-center py-20 bg-nexus-800/10 border border-nexus-700 border-dashed rounded-[3rem]">
+                       <MessageSquare size={48} className="mx-auto mb-4 opacity-10" />
+                       <p className="text-gray-500 italic">O mural ainda está vazio. Seja o primeiro a eternizar este legado!</p>
+                    </div>
+                  ) : (
+                    testimonials.map((t) => (
+                      <div key={t.id} className="bg-nexus-800 border border-nexus-700 p-6 rounded-[2rem] flex gap-6 hover:border-nexus-accent transition-all animate-fade-in group relative overflow-hidden">
+                         <div className={`absolute top-0 right-0 p-4 opacity-5 pointer-events-none transition-opacity group-hover:opacity-10`}>
+                            {t.vibe === 'legend' ? <Crown size={80} /> : t.vibe === 'mvp' ? <Award size={80} /> : <Zap size={80} />}
+                         </div>
+                         
+                         <img src={t.fromAvatar} className="w-16 h-16 rounded-2xl border-2 border-nexus-700 shrink-0" />
+                         <div className="flex-1 space-y-2">
+                            <div className="flex items-center justify-between">
+                               <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-white text-lg">@{t.fromName}</h4>
+                                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase border ${
+                                    t.vibe === 'legend' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
+                                    t.vibe === 'mvp' ? 'bg-nexus-secondary/10 border-nexus-secondary/20 text-nexus-secondary' :
+                                    'bg-nexus-accent/10 border-nexus-accent/20 text-nexus-accent'
+                                  }`}>
+                                     {t.vibe}
+                                  </span>
+                               </div>
+                               <span className="text-[10px] text-gray-600 font-mono">{new Date(t.timestamp).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-gray-300 text-sm leading-relaxed italic">"{t.content}"</p>
+                         </div>
+                      </div>
+                    ))
+                  )}
+               </div>
             </div>
           )}
 

@@ -22,7 +22,16 @@ export enum ActivityType {
   CHALLENGE = 'challenge'
 }
 
-// Added missing CollectionItem interface used in components/Collection.tsx
+export interface Testimonial {
+  id: string;
+  fromNexusId: string;
+  fromName: string;
+  fromAvatar: string;
+  content: string;
+  timestamp: string;
+  vibe: 'pro' | 'mvp' | 'legend';
+}
+
 export interface CollectionItem {
   id: string;
   ownerId: string;
@@ -111,6 +120,7 @@ export interface UserStats {
   skills: { subject: string; A: number; fullMark: number }[];
   rig?: RigSpecs;
   backlog?: BacklogAnalysis;
+  testimonials?: Testimonial[];
 }
 
 export interface LinkedAccount {

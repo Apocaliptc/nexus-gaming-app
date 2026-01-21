@@ -6,7 +6,7 @@ import { generatePlayerManifesto, generateJournalNarrative } from '../services/g
 import { useAppContext } from '../context/AppContext';
 
 export const NexusChronos: React.FC = () => {
-  const { userStats, setUserStats } = useAppContext();
+  const { userStats, saveJournalMemory } = useAppContext();
   const [manifesto, setManifesto] = useState<string | null>(null);
   const [loadingManifesto, setLoadingManifesto] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
@@ -22,11 +22,11 @@ export const NexusChronos: React.FC = () => {
   };
 
   const emotionalAnalysis = useMemo(() => {
-    if (!userStats?.journalEntries) return { mainMood: 'Equilibrado', description: 'O Oráculo aguarda sua primeira crônica.' };
+    if (!userStats?.journalEntries || userStats.journalEntries.length === 0) return { mainMood: 'Equilibrado', description: 'O Oráculo aguarda sua primeira crônica.' };
     const moods = userStats.journalEntries.map(e => e.mood);
     const counts = moods.reduce((acc, mood) => { acc[mood] = (acc[mood] || 0) + 1; return acc; }, {} as Record<string, number>);
-    // Added explicit cast to resolve arithmetic operation error on entry values
-    const main = Object.entries(counts).sort((a,b) => (b[1] as any) - (a[1] as any))[0]?.[0] || 'Zen';
+    const sorted = Object.entries(counts).sort((a,b) => (b[1] as any) - (a[1] as any));
+    const main = sorted[0]?.[0] || 'Zen';
     return { mainMood: main, description: `Seu legado recente é majoritariamente ${main}. Isso reflete uma jornada de alta imersão emocional.` };
   }, [userStats?.journalEntries]);
 
@@ -45,7 +45,7 @@ export const NexusChronos: React.FC = () => {
     try {
       const { narrative, mood } = await generateJournalNarrative(gameTitle, rawInput);
       const newEntry: JournalEntry = { id: `journal-${Date.now()}`, date: new Date().toISOString(), gameTitle, rawInput, narrative, mood };
-      setUserStats({ ...userStats, journalEntries: [newEntry, ...(userStats.journalEntries || [])] });
+      saveJournalMemory(newEntry);
       setShowCreator(false); setGameTitle(''); setRawInput('');
     } catch (e) { console.error(e); } finally { setLoadingNarrative(false); }
   };
@@ -70,7 +70,6 @@ export const NexusChronos: React.FC = () => {
         </div>
       </div>
 
-      {/* Emotional Heatmap Card */}
       <div className="mb-12 bg-nexus-800/40 border border-nexus-700 p-8 rounded-[2.5rem] relative overflow-hidden group">
          <div className="absolute inset-0 bg-gradient-to-r from-nexus-accent/10 to-transparent opacity-20"></div>
          <Activity className="absolute -top-6 -right-6 text-nexus-accent opacity-5" size={150} />

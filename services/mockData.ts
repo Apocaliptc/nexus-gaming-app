@@ -71,40 +71,6 @@ export const MOCK_USER_STATS: UserStats = {
   }
 };
 
-export const MOCK_GERON_STATS: UserStats = {
-  ...MOCK_USER_STATS,
-  nexusId: '@geron_adv',
-  totalHours: 120,
-  totalAchievements: 450,
-  platinumCount: 2,
-  prestigePoints: 500,
-  gamesOwned: 12,
-  recentGames: [
-    { id: 'g1', title: 'Black Myth: Wukong', platform: Platform.STEAM, hoursPlayed: 45, lastPlayed: '2024-03-24', achievementCount: 12, totalAchievements: 81, coverUrl: 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2358720/library_600x900.jpg', genres: ['Action', 'RPG'], achievements: generateAchievements('Black Myth', 12, 81) }
-  ],
-  rig: {
-    cpu: 'Intel i9-14900K',
-    gpu: 'RTX 4090',
-    mainPlatform: Platform.STEAM
-  },
-  backlog: {
-    unplayedGamesCount: 5,
-    estimatedTimeToClear: 150,
-    monetaryValueLost: 120,
-    nextTarget: 'Cyberpunk 2077'
-  }
-};
-
-export const MOCK_AMIGO_STATS: UserStats = {
-  ...MOCK_USER_STATS,
-  nexusId: '@amigo_imaginário',
-  rig: {
-    cpu: 'Intel i7-13700K',
-    gpu: 'RTX 3070',
-    mainPlatform: Platform.PSN
-  }
-};
-
 export const MOCK_FRIENDS: Friend[] = [
   {
     id: '@amigo_imaginário',
@@ -120,10 +86,52 @@ export const MOCK_FRIENDS: Friend[] = [
     topGenres: ['Sports', 'FPS'],
     compatibilityScore: 100,
     rig: { mainPlatform: Platform.PSN, gpu: 'RTX 3070' }
+  },
+  {
+    id: '@geron_adv',
+    nexusId: '@geron_adv',
+    username: 'Geron Adv',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=geron',
+    status: 'offline',
+    totalTrophies: 450,
+    platinumCount: 2,
+    totalHours: 120,
+    gamesOwned: 12,
+    topGenres: ['Action', 'RPG'],
+    compatibilityScore: 85
   }
 ];
 
-export const MOCK_GLOBAL_USERS: Friend[] = MOCK_FRIENDS;
+export const MOCK_GLOBAL_USERS: Friend[] = [
+  ...MOCK_FRIENDS,
+  {
+    id: '@cyber_ghost',
+    nexusId: '@cyber_ghost',
+    username: 'Cyber Ghost',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ghost',
+    status: 'ingame',
+    totalTrophies: 3200,
+    platinumCount: 22,
+    totalHours: 4500,
+    gamesOwned: 150,
+    topGenres: ['Stealth', 'Sci-Fi'],
+    compatibilityScore: 40
+  },
+  {
+    id: '@tifa_lockheart',
+    nexusId: '@tifa_lockheart',
+    username: 'Tifa Lockheart',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=tifa',
+    status: 'online',
+    totalTrophies: 8900,
+    platinumCount: 112,
+    totalHours: 12000,
+    gamesOwned: 450,
+    topGenres: ['Fighting', 'RPG'],
+    compatibilityScore: 95
+  }
+];
+
 export const MOCK_DISCOVER_GAMES: Game[] = [];
 export const MOCK_GLOBAL_STATS: any = {
   averageHours: 920,
