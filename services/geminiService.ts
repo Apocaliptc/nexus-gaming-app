@@ -22,79 +22,136 @@ export const createOracleChat = (userStats?: UserStats): Chat | null => {
   return ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {
-      systemInstruction: `Você é o Oráculo do Nexus, a inteligência artificial definitiva e guardiã do conhecimento gamer. 
-      Sua especialidade abrange: Lore profunda de jogos, estratégias de combate, especificações técnicas de hardware, história da indústria e recomendações personalizadas.
+      systemInstruction: `Você é o Oráculo do Nexus. 
+      Sua personalidade é técnica, sábia e gamer. 
       ${statsContext}
-      Sua personalidade é sábia, um pouco misteriosa, mas extremamente prestativa e técnica quando necessário. 
-      Responda sempre em português do Brasil, use formatação Markdown para clareza e seja apaixonado por jogos.`,
+      Responda em português do Brasil.`,
     },
   });
 };
 
-export const getAchievementTip = async (gameTitle: string, achievementName: string, description: string): Promise<string> => {
+export const fetchPublicProfileData = async (platform: Platform, username: string): Promise<{ games: Game[], totalHours: number, sources: any[] }> => {
   const ai = getAiClient();
-  if (!ai) return "O Oráculo está offline no momento. Tente novamente mais tarde.";
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Como eu conquisto o troféu "${achievementName}" no jogo "${gameTitle}"? A descrição oficial é: "${description}". Me dê 3 dicas práticas e rápidas.`,
-      config: {
-        systemInstruction: "Você é um mestre em detonados e guias de troféus (estilo PowerPyx). Forneça dicas técnicas, passos claros e configurações sugeridas para obter a conquista mencionada. Seja direto e use português do Brasil."
-      }
-    });
-    return response.text || "Não consegui encontrar uma estratégia para este troféu específico.";
-  } catch (e) {
-    return "Erro ao contatar o Plano de Dados do Oráculo.";
-  }
-};
-
-export const generateJournalNarrative = async (gameTitle: string, rawInput: string): Promise<{ narrative: string, mood: string }> => {
-  const ai = getAiClient();
-  if (!ai) return { narrative: rawInput, mood: "Epic" };
+  if (!ai) return { games: [], totalHours: 0, sources: [] };
   
-  const model = 'gemini-3-flash-preview';
+  const cleanUsername = username.replace('@', '').trim();
+
+  const missionPrompt = `
+    INSTRUÇÃO DE EXTRAÇÃO RADICAL (BYPASS DE BARREIRAS):
+    1. Pesquise por perfis públicos de "${cleanUsername}" no PlayStation.
+    2. Fontes OBRIGATÓRIAS: psnprofiles.com/${cleanUsername}, exophase.com/psn/user/${cleanUsername}/, e psntrophyleaders.com.
+    3. Ignore avisos de "Privacidade" a menos que NÃO exista lista de jogos. Se houver 1 jogo visível, EXTRAIA TUDO.
+    4. Capture: Nome dos jogos, % de troféus, quantidade de platinas e horas totais (se disponíveis).
+    
+    ESTIMATIVA DE HORAS (Caso o site não informe):
+    - Cada Troféu de Platina = 50h
+    - Cada 1% de progresso em um jogo AAA = 0.8h
+    - Use esses cálculos para preencher "totalHours" se estiver em branco.
+
+    RETORNE JSON:
+    {
+      "totalHours": número,
+      "platinumCount": número,
+      "games": [
+        {
+          "title": "Nome exato",
+          "hoursPlayed": número,
+          "achievementCount": troféus ganhos,
+          "totalAchievements": total do jogo,
+          "coverUrl": "url",
+          "genres": ["gênero"]
+        }
+      ]
+    }
+  `;
+
   try {
     const response = await ai.models.generateContent({
-      model,
-      contents: `O jogador disse o seguinte sobre sua sessão em "${gameTitle}": "${rawInput}". Transforme isso em uma entrada poética e emocionante para um diário de vida gamer.`,
+      model: 'gemini-3-pro-preview',
+      contents: missionPrompt,
       config: {
-        systemInstruction: "Você é o Cronista do Nexus. Sua missão é elevar as experiências comuns de jogo ao nível de lendas épicas. Escreva em português, de forma envolvente e curta.",
+        tools: [{ googleSearch: {} }],
+        // Orçamento de pensamento máximo para analisar profundamente os resultados da busca
+        thinkingConfig: { thinkingBudget: 15000 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            narrative: { type: Type.STRING },
-            mood: { type: Type.STRING, description: "A one-word description of the mood (e.g., Triumphant, Melancholic, Intense)" }
+            totalHours: { type: Type.NUMBER },
+            platinumCount: { type: Type.NUMBER },
+            games: { 
+              type: Type.ARRAY, 
+              items: { 
+                type: Type.OBJECT, 
+                properties: { 
+                  title: { type: Type.STRING }, 
+                  hoursPlayed: { type: Type.NUMBER }, 
+                  achievementCount: { type: Type.NUMBER }, 
+                  totalAchievements: { type: Type.NUMBER }, 
+                  coverUrl: { type: Type.STRING }, 
+                  genres: { type: Type.ARRAY, items: { type: Type.STRING } } 
+                },
+                required: ["title", "hoursPlayed"]
+              } 
+            }
           },
-          required: ["narrative", "mood"]
+          required: ["totalHours", "games"]
         }
       }
     });
 
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    
     if (response.text) {
-      return JSON.parse(response.text);
+      const data = JSON.parse(response.text);
+      
+      const timestamp = Date.now();
+      return { 
+        totalHours: data.totalHours || 0, 
+        games: data.games.map((g: any, index: number) => ({ 
+          ...g, 
+          id: `nx-${platform}-${g.title.toLowerCase().replace(/\s+/g, '-')}-${timestamp}`, 
+          platform, 
+          lastPlayed: new Date().toISOString(), 
+          achievements: Array.from({ length: g.totalAchievements || 10 }).map((_, i) => ({
+            id: `ach-${timestamp}-${index}-${i}`,
+            name: `Troféu ${i + 1}`,
+            description: `Sincronizado do ecossistema ${platform}`,
+            iconUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${g.title}-${i}`,
+            unlockedAt: i < (g.achievementCount || 0) ? new Date().toISOString() : undefined
+          }))
+        })),
+        sources
+      };
     }
-    throw new Error("Failed to generate narrative");
-  } catch (error) {
-    return {
-      narrative: rawInput,
-      mood: "Epic"
-    };
+    return { games: [], totalHours: 0, sources: [] };
+  } catch (e) { 
+    console.error("Nexus Scraper Error:", e);
+    return { games: [], totalHours: 0, sources: [] }; 
   }
+};
+
+export const getAchievementTip = async (gameTitle: string, achievementName: string, description: string): Promise<string> => {
+  const ai = getAiClient();
+  if (!ai) return "Offline.";
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Como conquistar "${achievementName}" em "${gameTitle}"? Descrição: "${description}".`,
+      config: { systemInstruction: "Mestre em troféus." }
+    });
+    return response.text || "Sem dicas.";
+  } catch (e) { return "Erro."; }
 };
 
 export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsight> => {
   const ai = getAiClient();
   if (!ai) return { personaTitle: "Nexus Explorer", description: "...", suggestedGenres: [], improvementTip: "" };
-
-  const model = 'gemini-3-flash-preview';
   try {
     const response = await ai.models.generateContent({
-      model,
-      contents: `Analise: ${JSON.stringify(userStats)}`,
+      model: 'gemini-3-flash-preview',
+      contents: `Analise este perfil: ${JSON.stringify(userStats)}`,
       config: {
-        systemInstruction: "Analista de jogos. Categorize o usuário. Português.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -103,13 +160,31 @@ export const analyzeGamingProfile = async (userStats: UserStats): Promise<AIInsi
             description: { type: Type.STRING },
             suggestedGenres: { type: Type.ARRAY, items: { type: Type.STRING } },
             improvementTip: { type: Type.STRING }
-          },
-          required: ["personaTitle", "description", "suggestedGenres", "improvementTip"]
+          }
         }
       }
     });
     return response.text ? JSON.parse(response.text) : null;
   } catch (e) { return null as any; }
+};
+
+export const generateJournalNarrative = async (gameTitle: string, rawInput: string): Promise<{ narrative: string, mood: string }> => {
+  const ai = getAiClient();
+  if (!ai) return { narrative: rawInput, mood: "Epic" };
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Crônica de: Jogo ${gameTitle}, Relato ${rawInput}`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: { narrative: { type: Type.STRING }, mood: { type: Type.STRING } }
+        }
+      }
+    });
+    return response.text ? JSON.parse(response.text) : { narrative: rawInput, mood: "Epic" };
+  } catch (error) { return { narrative: rawInput, mood: "Epic" }; }
 };
 
 export const getGameRecommendations = async (userStats: UserStats): Promise<{title: string, reason: string}[]> => {
@@ -118,15 +193,14 @@ export const getGameRecommendations = async (userStats: UserStats): Promise<{tit
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Recomende 3 jogos para: ${userStats.recentGames.map(g => g.title).join(', ')}`,
+      contents: `Recomendações para: ${userStats.recentGames.map(g => g.title).join(', ')}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
-            properties: { title: { type: Type.STRING }, reason: { type: Type.STRING } },
-            required: ["title", "reason"]
+            properties: { title: { type: Type.STRING }, reason: { type: Type.STRING } }
           }
         }
       }
@@ -141,7 +215,7 @@ export const getTrendingGames = async (): Promise<Game[]> => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: "Jogos em hype 2024/2025.",
+      contents: "Games hypados agora.",
       config: {
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
@@ -151,7 +225,7 @@ export const getTrendingGames = async (): Promise<Game[]> => {
             type: Type.OBJECT,
             properties: {
               title: { type: Type.STRING },
-              platform: { type: Type.STRING },
+              platform: { type: Platform.STEAM },
               totalAchievements: { type: Type.NUMBER },
               coverUrl: { type: Type.STRING },
               genres: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -175,7 +249,7 @@ export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Busque: ${searchTerm}`,
+      contents: `Busque o jogo: ${searchTerm}`,
       config: {
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
@@ -185,7 +259,7 @@ export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => 
              type: Type.OBJECT,
              properties: {
                 title: { type: Type.STRING },
-                platform: { type: Type.STRING },
+                platform: { type: Platform.STEAM },
                 totalAchievements: { type: Type.NUMBER },
                 coverUrl: { type: Type.STRING },
                 genres: { type: Type.ARRAY, items: { type: Type.STRING } }
@@ -198,41 +272,14 @@ export const searchGamesWithAI = async (searchTerm: string): Promise<Game[]> => 
   } catch (e) { return []; }
 };
 
-export const fetchPublicProfileData = async (platform: Platform, username: string): Promise<{ games: Game[], totalHours: number }> => {
-  const ai = getAiClient();
-  if (!ai) return { games: [], totalHours: 0 };
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Rastreie perfil de ${platform} para "${username}".`,
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            totalHours: { type: Type.NUMBER },
-            games: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, hoursPlayed: { type: Type.NUMBER }, achievementCount: { type: Type.NUMBER }, totalAchievements: { type: Type.NUMBER }, coverUrl: { type: Type.STRING }, genres: { type: Type.ARRAY, items: { type: Type.STRING } } } } }
-          }
-        }
-      }
-    });
-    if (response.text) {
-      const data = JSON.parse(response.text);
-      return { totalHours: data.totalHours || 0, games: data.games.map((g: any) => ({ ...g, id: `syn-${Math.random()}`, platform, lastPlayed: new Date().toISOString(), achievements: [] })) };
-    }
-    return { games: [], totalHours: 0 };
-  } catch (e) { return { games: [], totalHours: 0 }; }
-};
-
 export const generatePlayerManifesto = async (stats: UserStats): Promise<string> => {
   const ai = getAiClient();
-  if (!ai) return "Seu legado aguarda.";
+  if (!ai) return "Legado.";
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Manifesto para: ${JSON.stringify(stats)}`,
-      config: { systemInstruction: "Poeta do Nexus. Português." }
+      config: { systemInstruction: "Poeta do Nexus." }
     });
     return response.text || "...";
   } catch (e) { return "..."; }

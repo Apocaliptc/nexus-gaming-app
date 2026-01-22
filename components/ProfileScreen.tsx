@@ -4,7 +4,7 @@ import { Friend, Game, UserStats, Platform, Testimonial } from '../types';
 import { nexusCloud } from '../services/nexusCloud';
 import { GameDetailView } from './GameDetailView';
 import { NexusIDCard } from './NexusIDCard';
-import { ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, UserPlus, UserCheck, Target, Swords as SwordsIcon, Shield, Activity, Monitor, Cpu, Box, Send, Star, Award, ShieldAlert, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, UserPlus, UserCheck, Target, Swords as SwordsIcon, Shield, Activity, Monitor, Cpu, Box, Send, Star, Award, ShieldAlert, AlertCircle, Play } from 'lucide-react';
 import { PlatformIcon } from './PlatformIcon';
 import { useAppContext } from '../context/AppContext';
 import { 
@@ -125,6 +125,31 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
     }
   };
 
+  const handleActionNotification = async (type: 'challenge' | 'invite') => {
+    if (!currentUserStats || isOwnProfile) return;
+    setIsSubmitting(true);
+    try {
+      await nexusCloud.sendNotification({
+        id: `act-${Date.now()}`,
+        userId: profileData.nexusId,
+        type: type,
+        fromId: currentUserStats.nexusId,
+        fromName: currentUserStats.nexusId.replace('@', ''),
+        fromAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserStats.nexusId}`,
+        content: type === 'challenge' 
+          ? `lançou um desafio de legado para você! Você aceita a disputa?` 
+          : `convidou você para uma sessão de jogo sincronizada agora.`,
+        timestamp: new Date().toISOString(),
+        read: false
+      });
+      alert(type === 'challenge' ? "Desafio lançado no Nexus!" : "Convite enviado com sucesso.");
+    } catch (e) {
+      setError("Falha ao comunicar com o Nexus Core.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) return <div className="h-full flex items-center justify-center bg-[#050507]"><Loader2 className="animate-spin text-nexus-accent" size={48} /></div>;
   if (selectedGame) return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} isOwner={isOwnProfile} />;
 
@@ -145,13 +170,36 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
           <div className="h-64 md:h-80 w-full relative overflow-hidden bg-gradient-to-br from-nexus-900 via-nexus-800 to-black">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay z-10"></div>
           </div>
-          <div className="px-6 md:px-10 -mt-24 relative z-30 flex flex-col md:flex-row items-end gap-8 pb-8">
-              <div className="w-48 h-48 rounded-[2.5rem] border-4 border-[#050507] bg-nexus-800 shadow-2xl overflow-hidden">
-                  <img src={profileData.avatarUrl} className="w-full h-full object-cover" />
+          <div className="px-6 md:px-10 -mt-32 relative z-30 flex flex-col md:flex-row items-end gap-8 pb-8">
+              <div className="w-56 h-56 rounded-[3rem] border-8 border-[#050507] bg-nexus-800 shadow-2xl overflow-hidden relative group">
+                  <img src={profileData.avatarUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <span className="text-[10px] font-bold text-nexus-accent uppercase tracking-widest">ID Verificado</span>
+                  </div>
               </div>
-              <div className="flex-1 pb-2 w-full text-center md:text-left">
-                  <h2 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight">{profileData.username}</h2>
-                  <p className="text-gray-400 font-medium italic">Explorador do Nexus</p>
+              <div className="flex-1 pb-4 w-full text-center md:text-left space-y-2">
+                  <div className="flex flex-col md:flex-row items-center gap-4">
+                     <h2 className="text-5xl md:text-6xl font-display font-bold text-white tracking-tighter leading-none">{profileData.username}</h2>
+                     {!isOwnProfile && (
+                        <div className="flex gap-2">
+                           <button 
+                             onClick={() => handleActionNotification('challenge')}
+                             className="p-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-2xl border border-red-500/30 transition-all shadow-lg"
+                             title="Desafiar Legado"
+                           >
+                              <Swords size={20} />
+                           </button>
+                           <button 
+                             onClick={() => handleActionNotification('invite')}
+                             className="p-3 bg-nexus-secondary/10 hover:bg-nexus-secondary text-nexus-secondary hover:text-white rounded-2xl border border-nexus-secondary/30 transition-all shadow-lg"
+                             title="Convidar para Jogar"
+                           >
+                              <Play size={20} />
+                           </button>
+                        </div>
+                     )}
+                  </div>
+                  <p className="text-gray-400 font-medium italic text-lg opacity-80">{profileData.nexusId} — Sintonizado na Nuvem</p>
               </div>
           </div>
       </div>

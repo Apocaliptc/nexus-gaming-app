@@ -19,7 +19,6 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, nexusId: string) => Promise<void>;
   logout: () => void;
-  updateCloudConfig: (url: string, key: string) => void;
   isInitializing: boolean;
   isLoading: boolean;
   isSyncing: boolean;
@@ -35,7 +34,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isInitializing, setIsInitializing] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isCloudActive, setIsCloudActive] = useState(nexusCloud.isCloudActive());
+  const [isCloudActive, setIsCloudActive] = useState(true);
 
   const setUserStats = (update: UserStats | ((prev: UserStats | null) => UserStats | null)) => {
     setIsSyncing(true);
@@ -60,9 +59,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setFriends(userFriends);
         }
       } catch (e) {
-        console.error("Erro durante a inicialização da sessão", e);
+        console.error("Erro durante a inicialização", e);
       } finally {
-        setIsCloudActive(nexusCloud.isCloudActive());
         setIsInitializing(false);
       }
     };
@@ -80,7 +78,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
         throw e;
     } finally {
-        setIsCloudActive(nexusCloud.isCloudActive());
         setIsLoading(false);
     }
   };
@@ -95,7 +92,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
         throw e;
     } finally {
-        setIsCloudActive(nexusCloud.isCloudActive());
         setIsLoading(false);
     }
   };
@@ -107,9 +103,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFriends([]);
   };
 
-  const updateCloudConfig = (url: string, key: string) => {
-    nexusCloud.updateConfig(url, key);
-    setIsCloudActive(nexusCloud.isCloudActive());
+  // Fix: Implement missing addFriend function to manage friend connections
+  const addFriend = async (friend: Friend) => {
+    if (!userStats) return;
+    await nexusCloud.addFriend(userStats.nexusId, friend);
+    setFriends(prev => [...prev, friend]);
+  };
+
+  // Fix: Implement missing removeFriend function to manage friend connections
+  const removeFriend = async (friendNexusId: string) => {
+    if (!userStats) return;
+    await nexusCloud.removeFriend(userStats.nexusId, friendNexusId);
+    setFriends(prev => prev.filter(f => f.nexusId !== friendNexusId));
+  };
+
+  // Fix: Implement missing toggleAchievement function to update game progress
+  const toggleAchievement = (gameId: string, achievementId: string) => {
+    setUserStats(prev => {
+      if (!prev) return null;
+      const updatedGames = prev.recentGames.map(game => {
+        if (game.id === gameId) {
+          const updatedAchievements = (game.achievements || []).map(ach => {
+            if (ach.id === achievementId) {
+              return {
+                ...ach,
+                unlockedAt: ach.unlockedAt ? undefined : new Date().toISOString()
+              };
+            }
+            return ach;
+          });
+          
+          const unlockedCount = updatedAchievements.filter(a => a.unlockedAt).length;
+          
+          return {
+            ...game,
+            achievements: updatedAchievements,
+            achievementCount: unlockedCount
+          };
+        }
+        return game;
+      });
+
+      const totalAch = updatedGames.reduce((sum, g) => sum + g.achievementCount, 0);
+      const totalPlat = updatedGames.filter(g => g.achievementCount === g.totalAchievements && g.totalAchievements > 0).length;
+
+      return {
+        ...prev,
+        recentGames: updatedGames,
+        totalAchievements: totalAch,
+        platinumCount: totalPlat
+      };
+    });
+  };
+
+  // Fix: Implement missing importNexusData function for profile portability
+  const importNexusData = (json: string): boolean => {
+    try {
+      const stats = JSON.parse(json) as UserStats;
+      if (stats.nexusId) {
+        setUserStats(stats);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   };
 
   const addManualGame = async (game: Game) => {
@@ -118,13 +176,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await nexusCloud.saveGame(userStats.nexusId, game);
     setUserStatsState(prev => {
       if (!prev) return null;
-      return {
+      const allGames = [game, ...prev.recentGames];
+      const next = {
         ...prev,
-        recentGames: [game, ...prev.recentGames],
-        totalHours: (prev.totalHours || 0) + (game.hoursPlayed || 0),
-        totalAchievements: (prev.totalAchievements || 0) + (game.achievementCount || 0),
-        gamesOwned: (prev.gamesOwned || 0) + 1
+        recentGames: allGames,
+        totalHours: allGames.reduce((acc, g) => acc + (g.hoursPlayed || 0), 0),
+        totalAchievements: allGames.reduce((acc, g) => acc + (g.achievementCount || 0), 0),
+        gamesOwned: allGames.length
       };
+      nexusCloud.saveUser(next);
+      return next;
     });
     setTimeout(() => setIsSyncing(false), 800);
   };
@@ -143,98 +204,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => setIsSyncing(false), 800);
   };
 
-  const importNexusData = (json: string): boolean => {
-    try {
-      const data = JSON.parse(json);
-      if (data.nexusId) {
-        setUserStats(data);
-        return true;
-      }
-      return false;
-    } catch (e) { return false; }
-  };
-
-  const toggleAchievement = (gameId: string, achievementId: string) => {
-    setUserStats(prev => {
-      if (!prev) return null;
-      const updatedGames = prev.recentGames.map(game => {
-        if (game.id !== gameId) return game;
-        const updatedAchievements = (game.achievements || []).map(ach => {
-          if (ach.id !== achievementId) return ach;
-          const isUnlocked = !!ach.unlockedAt;
-          const unlockedAt = isUnlocked ? undefined : new Date().toISOString();
-          return { ...ach, unlockedAt };
-        });
-        const gameUpd = { ...game, achievements: updatedAchievements, achievementCount: updatedAchievements.filter(a => a.unlockedAt).length };
-        nexusCloud.saveGame(prev.nexusId, gameUpd);
-        return gameUpd;
-      });
-      return { ...prev, recentGames: updatedGames, totalAchievements: updatedGames.reduce((acc, g) => acc + g.achievementCount, 0) };
-    });
-  };
-
-  const addFriend = async (friend: Friend) => {
-    if (!userStats) return;
-    setIsSyncing(true);
-    await nexusCloud.addFriend(userStats.nexusId, friend);
-    setFriends(prev => [...prev.filter(f => f.nexusId !== friend.nexusId), friend]);
-    setIsSyncing(false);
-  };
-
-  const removeFriend = async (friendNexusId: string) => {
-    if (!userStats) return;
-    setIsSyncing(true);
-    await nexusCloud.removeFriend(userStats.nexusId, friendNexusId);
-    setFriends(prev => prev.filter(f => f.nexusId !== friendNexusId));
-    setIsSyncing(false);
-  };
-
   const linkAccount = (platform: Platform, username: string, games: Game[], totalHours: number) => {
     if (!userStats) return;
-    setUserStats(prev => {
+    setIsSyncing(true);
+    
+    setUserStatsState(prev => {
       if (!prev) return null;
-      const existingIds = new Set(prev.recentGames.map(g => g.title + g.platform));
-      const newGames = games.filter(g => !existingIds.has(g.title + g.platform));
       
-      return {
+      // Criar mapa para evitar duplicatas (chave: titulo + plataforma)
+      const gameMap = new Map<string, Game>();
+      
+      // 1. Manter jogos de OUTRAS plataformas que já estavam lá
+      prev.recentGames.forEach(g => {
+        if (g.platform !== platform) {
+          const key = `${g.title.toLowerCase()}-${g.platform}`;
+          gameMap.set(key, g);
+        }
+      });
+      
+      // 2. Adicionar os NOVOS jogos encontrados pela IA para esta plataforma
+      games.forEach(newGame => {
+        const key = `${newGame.title.toLowerCase()}-${newGame.platform}`;
+        gameMap.set(key, newGame);
+      });
+      
+      const mergedGames = Array.from(gameMap.values());
+      
+      // 3. RECÁLCULO TOTAL ABSOLUTO
+      const newTotalHours = mergedGames.reduce((acc, g) => acc + (g.hoursPlayed || 0), 0);
+      const newTotalAchievements = mergedGames.reduce((acc, g) => acc + (g.achievementCount || 0), 0);
+      const newPlatinumCount = mergedGames.filter(g => g.achievementCount === g.totalAchievements && g.totalAchievements > 0).length;
+
+      const updatedStats: UserStats = {
         ...prev,
-        linkedAccounts: [...prev.linkedAccounts.filter(a => a.platform !== platform), { platform, username }],
-        platformsConnected: Array.from(new Set([...prev.platformsConnected, platform])),
-        recentGames: [...newGames, ...prev.recentGames],
-        totalHours: (prev.totalHours || 0) + totalHours,
-        gamesOwned: (prev.gamesOwned || 0) + newGames.length,
-        totalAchievements: (prev.totalAchievements || 0) + newGames.reduce((acc, g) => acc + g.achievementCount, 0)
-      };
-    });
-  };
-
-  const unlinkAccount = (platform: Platform) => {
-    setUserStats(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        linkedAccounts: prev.linkedAccounts.filter(a => a.platform !== platform),
-        platformsConnected: prev.platformsConnected.filter(p => p !== platform),
-      };
-    });
-  };
-
-  return (
-    <AppContext.Provider value={{ 
-      currentUser, userStats, setUserStats, 
-      friends, addFriend, removeFriend,
-      toggleAchievement, login, signup, logout,
-      updateCloudConfig, saveJournalMemory,
-      linkAccount, unlinkAccount, addManualGame, 
-      importNexusData, isInitializing, isLoading, isSyncing, isCloudActive
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
-};
-
-export const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (context === undefined) throw new Error('useAppContext error');
-  return context;
-};
+        linkedAccounts: [...prev

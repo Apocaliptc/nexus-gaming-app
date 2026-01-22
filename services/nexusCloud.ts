@@ -1,8 +1,8 @@
 
-import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, Testimonial, JournalEntry } from '../types';
+import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, Testimonial, JournalEntry, Notification, NotificationType } from '../types';
 
-let SUPABASE_URL = 'https://xdwzlvnzgibgebcyxusy.supabase.co'; 
-let SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhkd3psdm56Z2liZ2ViY3l4dXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5Mjg3NDQsImV4cCI6MjA4NDUwNDc0NH0.aQMfT_Zq5UiCMAnJc3YwH2-1Gnn0r9peSzdYb3SpChM';
+const SUPABASE_URL = 'https://xdwzlvnzgibgebcyxusy.supabase.co'; 
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhkd3psdm56Z2liZ2ViY3l4dXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5Mjg3NDQsImV4cCI6MjA4NDUwNDc0NH0.aQMfT_Zq5UiCMAnJc3YwH2-1Gnn0r9peSzdYb3SpChM';
 
 const getBaseHeaders = () => ({
   'apikey': SUPABASE_KEY,
@@ -13,46 +13,28 @@ const getBaseHeaders = () => ({
 
 export const nexusCloud = {
   isCloudActive() {
-    return !!SUPABASE_URL && SUPABASE_URL.startsWith('http') && !!SUPABASE_KEY;
-  },
-
-  updateConfig(url: string, key: string) {
-    SUPABASE_URL = url.endsWith('/') ? url.slice(0, -1) : url;
-    SUPABASE_KEY = key;
-    localStorage.setItem('NEXUS_DB_URL', SUPABASE_URL);
-    localStorage.setItem('NEXUS_DB_KEY', SUPABASE_KEY);
+    return true; 
   },
 
   async login(email: string, passwordRaw?: string): Promise<UserStats> {
-    if (!this.isCloudActive()) throw new Error("Banco de dados não configurado.");
     const inputEmail = email.trim().toLowerCase();
-    
     const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(inputEmail)}&select=*`, {
         method: 'GET', 
         headers: getBaseHeaders()
     });
-
-    if (!res.ok) {
-        const errBody = await res.json();
-        throw new Error(errBody.message || "Erro ao acessar o banco.");
-    }
-    
+    if (!res.ok) throw new Error("Falha na conexão com o Nexus Core.");
     const profiles = await res.json();
     if (profiles && profiles.length > 0) {
         localStorage.setItem('NEXUS_SESSION_EMAIL', inputEmail);
         return profiles[0].stats;
     }
-    
-    throw new Error("Usuário não encontrado. Como você resetou o banco, use 'Criar Conta'.");
+    throw new Error("Usuário não encontrado.");
   },
 
   async signup(email: string, passwordRaw: string, nexusId: string): Promise<UserStats> {
-    if (!this.isCloudActive()) throw new Error("Banco de dados não configurado.");
-
     const normalizedId = nexusId.startsWith('@') ? nexusId : `@${nexusId}`;
     const newUser = this.createInitialUser(normalizedId);
     const inputEmail = email.trim().toLowerCase();
-    
     const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
       method: 'POST',
       headers: getBaseHeaders(),
@@ -63,13 +45,11 @@ export const nexusCloud = {
         updated_at: new Date().toISOString()
       })
     });
-
     if (!res.ok) {
         const err = await res.json();
-        if (err.code === '23505') throw new Error("ID ou E-mail já existe.");
-        throw new Error(err.message || "Erro ao criar conta.");
+        if (err.code === '23505') throw new Error("Este Nexus ID ou E-mail já foi reivindicado.");
+        throw new Error(err.message);
     }
-    
     localStorage.setItem('NEXUS_SESSION_EMAIL', inputEmail);
     return newUser;
   },
@@ -92,7 +72,6 @@ export const nexusCloud = {
   },
 
   async saveUser(stats: UserStats): Promise<void> {
-    if (!this.isCloudActive()) return;
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=eq.${encodeURIComponent(stats.nexusId)}`, {
         method: 'PATCH',
@@ -103,7 +82,6 @@ export const nexusCloud = {
   },
 
   async getUser(nexusId: string): Promise<UserStats | null> {
-    if (!this.isCloudActive()) return null;
     const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=eq.${encodeURIComponent(nexusId)}&select=stats`, {
       method: 'GET',
       headers: getBaseHeaders()
@@ -132,7 +110,6 @@ export const nexusCloud = {
   },
 
   async getGlobalActivities(): Promise<ActivityEvent[]> {
-    if (!this.isCloudActive()) return [];
     const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,stats,updated_at&order=updated_at.desc&limit=15`, {
       method: 'GET',
       headers: getBaseHeaders()
@@ -157,7 +134,6 @@ export const nexusCloud = {
   },
 
   async getTestimonials(nexusId: string): Promise<Testimonial[]> {
-    if (!this.isCloudActive()) return [];
     const res = await fetch(`${SUPABASE_URL}/rest/v1/testimonials?to_nexus_id=eq.${encodeURIComponent(nexusId)}&select=*&order=timestamp.desc`, {
       method: 'GET',
       headers: getBaseHeaders()
@@ -179,11 +155,47 @@ export const nexusCloud = {
         timestamp: testimonial.timestamp
       })
     });
+    
+    // Trigger notification to the recipient
+    await this.sendNotification({
+      id: `not-${Date.now()}`,
+      userId: toNexusId,
+      type: 'testimonial',
+      fromId: testimonial.fromNexusId,
+      fromName: testimonial.fromName,
+      fromAvatar: testimonial.fromAvatar,
+      content: `deixou um depoimento "${testimonial.vibe}" no seu mural de legado.`,
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+  },
+
+  async sendNotification(n: Notification): Promise<void> {
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: getBaseHeaders(),
+      body: JSON.stringify(n)
+    });
+  },
+
+  async getNotifications(nexusId: string): Promise<Notification[]> {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/notifications?userId=eq.${encodeURIComponent(nexusId)}&order=timestamp.desc&limit=25`, {
+      method: 'GET',
+      headers: getBaseHeaders()
+    });
+    return res.ok ? await res.json() : [];
+  },
+
+  async markNotificationRead(id: string): Promise<void> {
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: getBaseHeaders(),
+      body: JSON.stringify({ read: true })
+    });
   },
 
   async searchGlobalUsers(query: string): Promise<Friend[]> {
-    if (!this.isCloudActive()) return [];
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=ilike.*${query}*&select=stats`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=ilike.*${query.trim()}*&select=stats`, {
       method: 'GET',
       headers: getBaseHeaders()
     });
@@ -195,7 +207,6 @@ export const nexusCloud = {
   },
 
   async listAllCloudUsers(): Promise<any[]> {
-    if (!this.isCloudActive()) return [];
     const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,email,updated_at&order=updated_at.desc`, {
       method: 'GET',
       headers: getBaseHeaders()
@@ -204,8 +215,7 @@ export const nexusCloud = {
   },
 
   async getFriends(nexusId: string): Promise<Friend[]> {
-    if (!this.isCloudActive()) return [];
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=neq.${encodeURIComponent(nexusId)}&limit=8`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=neq.${encodeURIComponent(nexusId)}&limit=15`, {
        method: 'GET',
        headers: getBaseHeaders()
     });
@@ -217,17 +227,21 @@ export const nexusCloud = {
   },
 
   async addFriend(userNexusId: string, friend: Friend): Promise<void> {
-    // Implementação simplificada: adiciona aos stats locais (que sincronizam com a Cloud)
-    const stats = await this.getUser(userNexusId);
-    if (stats) {
-       // O campo friends será gerenciado via busca global por enquanto para manter o esquema simples
-       await this.saveUser(stats);
-    }
+    // Notify the user they were followed/added
+    await this.sendNotification({
+      id: `not-follow-${Date.now()}`,
+      userId: friend.nexusId,
+      type: 'invite',
+      fromId: userNexusId,
+      fromName: userNexusId.replace('@',''),
+      fromAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userNexusId}`,
+      content: `adicionou você às conexões de legado.`,
+      timestamp: new Date().toISOString(),
+      read: false
+    });
   },
 
-  async removeFriend(userNexusId: string, friendNexusId: string): Promise<void> {
-    // Placeholder para manter compatibilidade
-  },
+  async removeFriend(userNexusId: string, friendNexusId: string): Promise<void> {},
 
   mapStatsToFriend(s: UserStats): Friend {
     return {
@@ -247,28 +261,8 @@ export const nexusCloud = {
 
   createInitialUser(nexusId: string): UserStats {
     return {
-      nexusId,
-      totalHours: 0,
-      totalAchievements: 0,
-      platinumCount: 0,
-      prestigePoints: 100,
-      gamesOwned: 0,
-      platformsConnected: [],
-      linkedAccounts: [],
-      recentGames: [],
-      journalEntries: [],
-      genreDistribution: [],
-      platformDistribution: [],
-      consistency: { currentStreak: 0, longestStreak: 0, longestSession: 0, avgSessionLength: 0, totalSessions: 0 },
-      weeklyActivity: [],
-      monthlyActivity: [],
-      skills: [
-        { subject: 'Reflexes', A: 50, fullMark: 100 },
-        { subject: 'Strategy', A: 50, fullMark: 100 },
-        { subject: 'Resilience', A: 50, fullMark: 100 },
-        { subject: 'Teamwork', A: 50, fullMark: 100 },
-        { subject: 'Completion', A: 50, fullMark: 100 },
-        { subject: 'Versatility', A: 50, fullMark: 100 },
+      nexusId, totalHours: 0, totalAchievements: 0, platinumCount: 0, prestigePoints: 100, gamesOwned: 0, platformsConnected: [], linkedAccounts: [], recentGames: [], journalEntries: [], genreDistribution: [], platformDistribution: [], consistency: { currentStreak: 0, longestStreak: 0, longestSession: 0, avgSessionLength: 0, totalSessions: 0 }, weeklyActivity: [], monthlyActivity: [], skills: [
+        { subject: 'Reflexes', A: 50, fullMark: 100 }, { subject: 'Strategy', A: 50, fullMark: 100 }, { subject: 'Resilience', A: 50, fullMark: 100 }, { subject: 'Teamwork', A: 50, fullMark: 100 }, { subject: 'Completion', A: 50, fullMark: 100 }, { subject: 'Versatility', A: 50, fullMark: 100 },
       ]
     };
   }

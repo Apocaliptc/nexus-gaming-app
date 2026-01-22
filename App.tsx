@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Users, LogOut, Compass, BarChart2, Grid, 
   Trophy, Loader2, Lock, AtSign, AlertCircle, X, UserCircle, 
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
-  Server, Copy, Check, History, Globe, User, ShieldCheck, MessageSquare
+  Server, Copy, Check, History, Globe, User, ShieldCheck, MessageSquare,
+  Bell
 } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Friends } from './components/Friends';
@@ -19,12 +20,15 @@ import { NexusOracle } from './components/NexusOracle';
 import { CloudExplorer } from './components/CloudExplorer';
 import { ProfileScreen } from './components/ProfileScreen';
 import { NexusChat } from './components/NexusChat';
+import { NotificationCenter } from './components/NotificationCenter';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { nexusCloud } from './services/nexusCloud';
 
-const SQL_HELP_SCRIPT = `-- SCRIPT DE RESET TOTAL E FORÇADO (INCLUINDO CHAT)
+const SQL_HELP_SCRIPT = `-- SCRIPT DE RESET TOTAL E SOBERANO
 DROP TABLE IF EXISTS profiles CASCADE;
 DROP TABLE IF EXISTS testimonials CASCADE;
 DROP TABLE IF EXISTS chat_messages CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
 
 CREATE TABLE profiles (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -55,13 +59,27 @@ CREATE TABLE chat_messages (
   timestamp timestamp with time zone DEFAULT now()
 );
 
+CREATE TABLE notifications (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  "userId" text NOT NULL,
+  type text NOT NULL,
+  "fromId" text NOT NULL,
+  "fromName" text NOT NULL,
+  "fromAvatar" text NOT NULL,
+  content text NOT NULL,
+  timestamp timestamp with time zone DEFAULT now(),
+  read boolean DEFAULT false
+);
+
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Acesso Publico Profiles" ON profiles FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso Publico Testimonials" ON testimonials FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso Publico Chat" ON chat_messages FOR ALL TO anon USING (true) WITH CHECK (true);`;
+CREATE POLICY "Acesso Publico Chat" ON chat_messages FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso Publico Notifications" ON notifications FOR ALL TO anon USING (true) WITH CHECK (true);`;
 
 const LoginScreen: React.FC = () => {
   const { login, signup } = useAppContext();
@@ -144,25 +162,28 @@ const LoginScreen: React.FC = () => {
 
 const MainApp: React.FC = () => {
   const { logout, userStats, isSyncing } = useAppContext();
-  // Alterado de 'dashboard' para 'pulse' para que o app inicie no Feed Global
   const [activeTab, setActiveTab] = useState('pulse');
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (userStats) {
+      const pollNotifs = async () => {
+        const notifs = await nexusCloud.getNotifications(userStats.nexusId);
+        setUnreadCount(notifs.filter(n => !n.read).length);
+      };
+      pollNotifs();
+      const interval = setInterval(pollNotifs, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [userStats]);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard onNavigate={setActiveTab} />;
       case 'profile': return userStats ? <ProfileScreen profileData={{
-        id: userStats.nexusId,
-        nexusId: userStats.nexusId,
-        username: userStats.nexusId.replace('@', ''),
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats.nexusId}`,
-        status: 'online',
-        totalTrophies: userStats.totalAchievements,
-        platinumCount: userStats.platinumCount,
-        totalHours: userStats.totalHours,
-        gamesOwned: userStats.gamesOwned,
-        topGenres: [],
-        compatibilityScore: 100
+        id: userStats.nexusId, nexusId: userStats.nexusId, username: userStats.nexusId.replace('@', ''), avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats.nexusId}`, status: 'online', totalTrophies: userStats.totalAchievements, platinumCount: userStats.platinumCount, totalHours: userStats.totalHours, gamesOwned: userStats.gamesOwned, topGenres: [], compatibilityScore: 100
       }} isOwnProfile={true} /> : null;
+      case 'notifications': return <NotificationCenter onReadUpdate={setUnreadCount} />;
       case 'chat': return <NexusChat />;
       case 'library': return <GameLibrary />;
       case 'achievements': return <Achievements />;
@@ -182,13 +203,13 @@ const MainApp: React.FC = () => {
     { id: 'pulse', icon: Activity, label: 'Feed Pulse' },
     { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
     { id: 'profile', icon: User, label: 'Meu Perfil' },
+    { id: 'notifications', icon: Bell, label: 'Alertas', badge: unreadCount },
     { id: 'chat', icon: MessageSquare, label: 'Comms' },
     { id: 'library', icon: Grid, label: 'Biblioteca' },
-    { id: 'achievements', icon: Trophy, label: 'Conquistas' },
-    { id: 'stats', icon: BarChart2, label: 'Análise' },
   ];
 
   const exploreItems = [
+    { id: 'achievements', icon: Trophy, label: 'Conquistas' },
     { id: 'discover', icon: Compass, label: 'Crawler' },
     { id: 'friends', icon: Users, label: 'Conexões' },
     { id: 'chronos', icon: History, label: 'Chronos' },
@@ -225,6 +246,11 @@ const MainApp: React.FC = () => {
               >
                 <item.icon size={22} className={activeTab === item.id ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'} />
                 <span className="font-bold text-sm hidden md:block">{item.label}</span>
+                {item.badge && item.badge > 0 && (
+                  <div className="absolute right-3 top-3 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-nexus-900 shadow-lg">
+                    {item.badge}
+                  </div>
+                )}
                 {activeTab === item.id && <div className="absolute right-2 w-1.5 h-1.5 bg-white rounded-full hidden md:block"></div>}
               </button>
             ))}

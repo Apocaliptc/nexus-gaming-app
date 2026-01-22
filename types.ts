@@ -22,6 +22,21 @@ export enum ActivityType {
   CHALLENGE = 'challenge'
 }
 
+export type NotificationType = 'testimonial' | 'challenge' | 'invite' | 'mention' | 'system';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  fromId: string;
+  fromName: string;
+  fromAvatar: string;
+  content: string;
+  timestamp: string;
+  read: boolean;
+  link?: string;
+}
+
 // Chat Related Types
 export type ChannelType = 'public' | 'private' | 'dm';
 

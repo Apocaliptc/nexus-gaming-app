@@ -1,23 +1,24 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Camera, Link2, Unlink, Check, Save, RefreshCw, Smartphone, Monitor, Gamepad2, Database, Shield, Lock, ChevronDown, ChevronUp, AlertCircle, Globe, CloudCheck, ExternalLink, Server, Key, Wifi, WifiOff, Loader2, Sparkles, UserCircle, Info, Zap, Settings as SettingsIcon } from 'lucide-react';
+import { User, Camera, Link2, Unlink, Check, Save, RefreshCw, Smartphone, Monitor, Gamepad2, Database, Shield, Lock, ChevronDown, ChevronUp, AlertCircle, Globe, CloudCheck, ExternalLink, Server, Key, Wifi, WifiOff, Loader2, Sparkles, UserCircle, Info, Zap, Settings as SettingsIcon, Search } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { Platform } from '../types';
 import { PlatformIcon } from './PlatformIcon';
 import { SyncPortal } from './SyncPortal';
 
 export const Settings: React.FC = () => {
-  const { userStats, setUserStats, linkAccount, unlinkAccount, updateCloudConfig, isCloudActive } = useAppContext();
+  const { userStats, setUserStats, linkAccount, unlinkAccount } = useAppContext();
   
   const [displayName, setDisplayName] = useState('');
   const [nexusId, setNexusId] = useState('');
   const [avatarSeed, setAvatarSeed] = useState('default');
   const [isSaving, setIsSaving] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  
+  // Crawler State
   const [syncingPlatform, setSyncingPlatform] = useState<{platform: Platform, username: string} | null>(null);
-
-  const [dbUrl, setDbUrl] = useState('');
-  const [dbKey, setDbKey] = useState('');
+  const [crawlerPlatform, setCrawlerPlatform] = useState<Platform>(Platform.STEAM);
+  const [crawlerUsername, setCrawlerUsername] = useState('');
 
   useEffect(() => {
     if (userStats) {
@@ -27,24 +28,10 @@ export const Settings: React.FC = () => {
     }
   }, [userStats]);
 
-  const handleUpdateCloud = () => {
-     if (!dbUrl || !dbKey) {
-        alert("Por favor, preencha a URL e a KEY do Supabase.");
-        return;
-     }
-     updateCloudConfig(dbUrl, dbKey);
-     alert("Configurações de nuvem atualizadas! Tente fazer login ou cadastrar agora.");
-  };
-
   const handleSaveProfile = () => {
-    if (!isCloudActive) {
-        alert("Erro: Você precisa configurar o Banco de Dados abaixo antes de salvar seu perfil.");
-        return;
-    }
     setIsSaving(true);
     const normalizedNewId = nexusId.startsWith('@') ? nexusId : `@${nexusId}`;
     
-    // Simula salvamento
     setTimeout(() => {
       setUserStats(prev => prev ? { ...prev, nexusId: normalizedNewId } : null);
       setIsSaving(false);
@@ -53,10 +40,16 @@ export const Settings: React.FC = () => {
     }, 800);
   };
 
+  const handleStartCrawler = () => {
+    if (!crawlerUsername.trim()) return;
+    setSyncingPlatform({ platform: crawlerPlatform, username: crawlerUsername });
+  };
+
   const handleSyncComplete = (games: any[], hours: number) => {
     if (syncingPlatform) {
       linkAccount(syncingPlatform.platform, syncingPlatform.username, games, hours);
       setSyncingPlatform(null);
+      setCrawlerUsername('');
     }
   };
 
@@ -67,60 +60,8 @@ export const Settings: React.FC = () => {
          <h1 className="text-4xl font-display font-bold text-white flex items-center gap-3">
             <SettingsIcon className="text-nexus-accent" /> Configurações
          </h1>
-         <p className="text-gray-400">Configure a espinha dorsal do seu Nexus.</p>
+         <p className="text-gray-400">Configure sua identidade e sincronize seu legado.</p>
       </header>
-
-      {/* CONECTIVIDADE SUPABASE */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between border-b border-nexus-800 pb-4">
-          <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-            <Database className="text-nexus-secondary" /> Conexão Supabase
-          </h2>
-          <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${isCloudActive ? 'bg-green-500/10 border-green-500/30 text-green-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
-             {isCloudActive ? 'CONECTADO' : 'DESCONECTADO'}
-          </div>
-        </div>
-
-        <div className="bg-nexus-900 border border-nexus-800 rounded-3xl p-8 space-y-6">
-           <div className="p-4 bg-nexus-secondary/5 border border-nexus-secondary/20 rounded-2xl flex items-start gap-3">
-              <Info className="text-nexus-secondary shrink-0" size={18} />
-              <div className="text-xs text-gray-400 space-y-2">
-                 <p>O Nexus utiliza a API REST do Supabase. Obtenha os dados em <strong>Project Settings > API</strong> no seu painel Supabase.</p>
-                 <p className="text-nexus-accent">Certifique-se de executar o SQL de criação de tabelas antes de tentar conectar!</p>
-              </div>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Supabase Project URL</label>
-                 <input 
-                   type="text" 
-                   value={dbUrl}
-                   onChange={e => setDbUrl(e.target.value)}
-                   className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-5 py-4 text-white focus:border-nexus-secondary outline-none transition-all"
-                   placeholder="https://abc.supabase.co"
-                 />
-              </div>
-              <div className="space-y-2">
-                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Anon Key (Public API Key)</label>
-                 <input 
-                   type="password" 
-                   value={dbKey}
-                   onChange={e => setDbKey(e.target.value)}
-                   className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-5 py-4 text-white focus:border-nexus-secondary outline-none transition-all"
-                   placeholder="eyJhbGciOiJIUzI1NiIsIn..."
-                 />
-              </div>
-           </div>
-
-           <button 
-             onClick={handleUpdateCloud}
-             className="w-full py-4 bg-nexus-secondary hover:bg-nexus-secondary/80 text-white font-bold rounded-2xl transition-all shadow-xl shadow-nexus-secondary/20 flex items-center justify-center gap-2"
-           >
-              <Zap size={18} /> Aplicar Configurações de Nuvem
-           </button>
-        </div>
-      </section>
 
       {/* PERFIL */}
       <section className="space-y-6">
@@ -171,6 +112,128 @@ export const Settings: React.FC = () => {
                     {isSaving ? 'Gravando...' : (showSaved ? 'Sincronizado!' : 'Salvar Alterações')}
                  </button>
               </div>
+           </div>
+        </div>
+      </section>
+
+      {/* NEXUS CRAWLER - CONEXÃO INTELIGENTE */}
+      <section className="space-y-6">
+        <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+            <Search className="text-nexus-accent" /> Nexus Crawler (Auto-Track)
+        </h2>
+        <div className="bg-nexus-900 border border-nexus-800 rounded-[2.5rem] p-8 space-y-6 shadow-xl relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform pointer-events-none">
+              <Globe size={150} />
+           </div>
+           
+           <div className="max-w-xl space-y-4 relative z-10">
+              <p className="text-gray-400 text-sm">
+                O Oráculo Nexus pode rastrear seus dados públicos de forma automática. <strong>Não precisamos da sua senha</strong>, apenas do seu nome de usuário público.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] px-1">Plataforma</label>
+                    <select 
+                      value={crawlerPlatform}
+                      onChange={(e) => setCrawlerPlatform(e.target.value as Platform)}
+                      className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-4 py-3.5 text-white focus:border-nexus-accent outline-none appearance-none"
+                    >
+                       {[Platform.STEAM, Platform.PSN, Platform.XBOX, Platform.BATTLENET, Platform.EPIC].map(p => (
+                         <option key={p} value={p}>{p}</option>
+                       ))}
+                    </select>
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] px-1">ID / Username Público</label>
+                    <input 
+                      type="text" 
+                      value={crawlerUsername}
+                      onChange={(e) => setCrawlerUsername(e.target.value)}
+                      placeholder="Ex: @dragonSlayer"
+                      className="w-full bg-nexus-800 border border-nexus-700 rounded-xl px-4 py-3.5 text-white focus:border-nexus-accent outline-none"
+                    />
+                 </div>
+              </div>
+
+              <button 
+                onClick={handleStartCrawler}
+                disabled={!crawlerUsername.trim()}
+                className="flex items-center gap-2 px-8 py-4 bg-nexus-accent hover:bg-nexus-accent/80 text-white rounded-2xl transition-all font-bold shadow-xl shadow-nexus-accent/20 disabled:opacity-50"
+              >
+                 <Zap size={20} /> Iniciar Rastreamento IA
+              </button>
+           </div>
+        </div>
+      </section>
+
+      {/* CONTAS VINCULADAS */}
+      <section className="space-y-6">
+         <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+            <Link2 className="text-nexus-secondary" /> Ecossistemas Conectados
+         </h2>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {userStats?.linkedAccounts.map((account) => (
+              <div key={account.platform} className="bg-nexus-900 border border-nexus-800 p-6 rounded-3xl flex items-center justify-between group">
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-nexus-800 rounded-2xl flex items-center justify-center border border-nexus-700">
+                       <PlatformIcon platform={account.platform} className="w-6 h-6" />
+                    </div>
+                    <div>
+                       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{account.platform}</p>
+                       <p className="text-white font-bold">{account.username}</p>
+                    </div>
+                 </div>
+                 <button 
+                   onClick={() => unlinkAccount(account.platform)}
+                   className="p-3 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                 >
+                    <Unlink size={20} />
+                 </button>
+              </div>
+            ))}
+
+            {userStats?.platformsConnected.length === 0 && (
+              <div className="col-span-full py-12 text-center bg-nexus-900 border border-nexus-800 border-dashed rounded-[3rem]">
+                 <WifiOff size={48} className="mx-auto mb-4 opacity-10" />
+                 <p className="text-gray-500 italic">Nenhum ecossistema conectado. Use o Crawler acima para começar.</p>
+              </div>
+            )}
+         </div>
+      </section>
+
+      {/* SEGURANÇA E INFORMAÇÕES */}
+      <section className="space-y-6">
+        <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+            <Shield className="text-nexus-success" /> Segurança & Cloud
+        </h2>
+        <div className="bg-nexus-900 border border-nexus-800 rounded-3xl p-8 space-y-4">
+           <div className="flex items-center justify-between py-4 border-b border-nexus-800">
+              <div className="flex items-center gap-3">
+                 <Server className="text-gray-500" size={20} />
+                 <div>
+                    <p className="text-sm font-bold text-white">Status da Nuvem Soberana</p>
+                    <p className="text-xs text-nexus-success">Online e Sincronizado</p>
+                 </div>
+              </div>
+              <div className="px-3 py-1 bg-nexus-success/10 text-nexus-success border border-nexus-success/20 rounded-full text-[10px] font-bold uppercase tracking-widest">Master</div>
+           </div>
+           
+           <div className="flex items-center justify-between py-4">
+              <div className="flex items-center gap-3">
+                 <Database className="text-gray-500" size={20} />
+                 <div>
+                    <p className="text-sm font-bold text-white">Redundância de Dados</p>
+                    <p className="text-xs text-gray-500">Supabase Nexus Core Primary</p>
+                 </div>
+              </div>
+           </div>
+
+           <div className="pt-4 p-4 bg-nexus-accent/5 border border-nexus-accent/20 rounded-2xl flex items-start gap-3">
+              <Info className="text-nexus-accent shrink-0" size={18} />
+              <p className="text-xs text-gray-400">
+                Seu legado gamer é armazenado de forma criptografada na Nuvem Nexus. O Crawler não possui acesso às suas senhas, apenas extrai dados públicos para compor seu Hall da Fama.
+              </p>
            </div>
         </div>
       </section>
