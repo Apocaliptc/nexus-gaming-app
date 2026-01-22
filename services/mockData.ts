@@ -99,6 +99,19 @@ export const MOCK_FRIENDS: Friend[] = [
     gamesOwned: 12,
     topGenres: ['Action', 'RPG'],
     compatibilityScore: 85
+  },
+  {
+    id: '@fernando_ultra',
+    nexusId: '@fernando_ultra',
+    username: 'Fernando',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=fernando',
+    status: 'online',
+    totalTrophies: 3400,
+    platinumCount: 25,
+    totalHours: 1250,
+    gamesOwned: 88,
+    topGenres: ['RPG', 'Action'],
+    compatibilityScore: 92
   }
 ];
 

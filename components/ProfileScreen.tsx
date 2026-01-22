@@ -4,7 +4,7 @@ import { Friend, Game, UserStats, Platform, Testimonial } from '../types';
 import { nexusCloud } from '../services/nexusCloud';
 import { GameDetailView } from './GameDetailView';
 import { NexusIDCard } from './NexusIDCard';
-import { ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, UserPlus, UserCheck, Target, Swords as SwordsIcon, Shield, Activity, Monitor, Cpu, Box, Send, Star, Award, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, UserPlus, UserCheck, Target, Swords as SwordsIcon, Shield, Activity, Monitor, Cpu, Box, Send, Star, Award, ShieldAlert, AlertCircle } from 'lucide-react';
 import { PlatformIcon } from './PlatformIcon';
 import { useAppContext } from '../context/AppContext';
 import { 
@@ -30,20 +30,26 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
   const [newTestimonial, setNewTestimonial] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<'pro' | 'mvp' | 'legend'>('pro');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isOwnProfile = isOwnProfileProp || (currentUserStats?.nexusId === profileData.nexusId);
-  const isAlreadyFriend = useMemo(() => friends.some(f => f.nexusId.toLowerCase() === profileData.nexusId.toLowerCase()), [friends, profileData.nexusId]);
 
   useEffect(() => {
     const loadFullData = async () => {
       setIsLoading(true);
-      const [stats, wall] = await Promise.all([
-        nexusCloud.getUser(profileData.nexusId),
-        nexusCloud.getTestimonials(profileData.nexusId)
-      ]);
-      setFullUserStats(stats);
-      setTestimonials(wall);
-      setIsLoading(false);
+      setError(null);
+      try {
+        const [stats, wall] = await Promise.all([
+          nexusCloud.getUser(profileData.nexusId),
+          nexusCloud.getTestimonials(profileData.nexusId)
+        ]);
+        setFullUserStats(stats);
+        setTestimonials(wall);
+      } catch (err) {
+        console.warn("Falha ao carregar dados da nuvem.");
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadFullData();
   }, [profileData.nexusId]);
@@ -96,6 +102,7 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
   const handleSendTestimonial = async () => {
     if (!newTestimonial.trim() || !currentUserStats || isOwnProfile) return;
     setIsSubmitting(true);
+    setError(null);
     
     const testimonial: Testimonial = {
       id: `t-${Date.now()}`,
@@ -111,8 +118,8 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
       await nexusCloud.saveTestimonial(profileData.nexusId, testimonial);
       setTestimonials(prev => [testimonial, ...prev]);
       setNewTestimonial('');
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setError(err.message || "Erro de produção: Conexão com o banco falhou.");
     } finally {
       setIsSubmitting(false);
     }
@@ -162,62 +169,18 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
       </div>
 
       <div className="p-6 md:p-10 space-y-12 pb-24">
-          {profileTab === 'overview' && displayStats && (
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
-                <div className="lg:col-span-8 space-y-12">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-6">
-                        <h3 className="text-2xl font-display font-bold text-white">Estatísticas Vitais</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Imersão</p>
-                                <p className="text-3xl font-mono text-white font-bold">{displayStats.totalHours}h</p>
-                            </div>
-                            <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Legado</p>
-                                <p className="text-3xl font-mono text-white font-bold">{displayStats.totalAchievements}</p>
-                            </div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-6">
-                        <h3 className="text-2xl font-display font-bold text-white flex items-center gap-2">
-                          <Monitor className="text-nexus-secondary" size={24} /> Rig Showcase
-                        </h3>
-                        <div className="bg-gradient-to-br from-nexus-800 to-nexus-900 p-6 rounded-3xl border border-nexus-700 relative overflow-hidden group">
-                           <Cpu className="absolute -top-4 -right-4 text-white/5 group-hover:scale-110 transition-transform" size={100} />
-                           <div className="space-y-4 relative z-10">
-                              <div className="flex items-center gap-3">
-                                 <div className="p-2 bg-nexus-900 rounded-xl border border-nexus-700"><Cpu size={18} className="text-nexus-accent" /></div>
-                                 <div>
-                                    <p className="text-[8px] text-gray-500 font-bold uppercase">CPU</p>
-                                    <p className="text-xs font-bold text-white">{displayStats.rig?.cpu || 'Não revelado'}</p>
-                                 </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                 <div className="p-2 bg-nexus-900 rounded-xl border border-nexus-700"><Activity size={18} className="text-nexus-secondary" /></div>
-                                 <div>
-                                    <p className="text-[8px] text-gray-500 font-bold uppercase">GPU</p>
-                                    <p className="text-xs font-bold text-white">{displayStats.rig?.gpu || 'Não revelado'}</p>
-                                 </div>
-                              </div>
-                              <div className="pt-4 border-t border-nexus-700 flex items-center justify-between">
-                                 <span className="text-[10px] font-bold text-gray-600 uppercase">Ecosistema Principal</span>
-                                 <PlatformIcon platform={displayStats.rig?.mainPlatform || Platform.STEAM} />
-                              </div>
-                           </div>
-                        </div>
-                      </div>
-                   </div>
-                </div>
-                <div className="lg:col-span-4">
-                   <NexusIDCard stats={displayStats} insight={null} />
-                </div>
-            </div>
-          )}
-
           {profileTab === 'testimonials' && (
             <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20">
+               {error && (
+                  <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-3xl flex items-center gap-4 text-red-500 animate-fade-in">
+                     <AlertCircle size={24} />
+                     <div>
+                        <p className="font-bold">Não foi possível salvar:</p>
+                        <p className="text-xs">{error}</p>
+                     </div>
+                  </div>
+               )}
+
                <div className="bg-nexus-900/50 p-8 rounded-[3rem] border border-nexus-700 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-8 opacity-5">
                     <Award size={120} />
@@ -301,51 +264,55 @@ export const ProfileScreen: React.FC<ProfileProps> = ({ profileData, isOwnProfil
                </div>
             </div>
           )}
-
-          {profileTab === 'synergy' && synergyData && (
-              <div className="max-w-6xl mx-auto space-y-12 pb-20 animate-fade-in">
-                  <div className="text-center space-y-6">
-                      <div className="inline-flex items-center gap-6 px-10 py-6 bg-nexus-accent/10 border border-nexus-accent/30 rounded-[3rem] shadow-2xl relative group">
-                          <Heart className="text-red-500 animate-pulse" size={32} />
-                          <div>
-                             <h3 className="text-2xl font-display font-bold text-white">DNA Gamer: <span className="text-nexus-accent">{synergyData.rank}</span></h3>
-                             <p className="text-[10px] text-nexus-accent/60 font-bold uppercase tracking-[0.2em]">Match em Tempo Real</p>
-                          </div>
-                          {synergyData.percentage > 25 && (
-                             <button className="ml-6 px-6 py-3 bg-nexus-accent text-white font-bold rounded-2xl flex items-center gap-2 shadow-xl shadow-nexus-accent/40 animate-bounce hover:animate-none transition-all">
-                                <SwordsIcon size={18} /> ASSEMBLE STRIKE TEAM
-                             </button>
-                          )}
+          
+          {profileTab === 'overview' && displayStats && (
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div className="lg:col-span-8 space-y-12">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-6">
+                        <h3 className="text-2xl font-display font-bold text-white">Estatísticas Vitais</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700">
+                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Imersão</p>
+                                <p className="text-3xl font-mono text-white font-bold">{displayStats.totalHours}h</p>
+                            </div>
+                            <div className="bg-nexus-800 p-6 rounded-3xl border border-nexus-700">
+                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Legado</p>
+                                <p className="text-3xl font-mono text-white font-bold">{displayStats.totalAchievements}</p>
+                            </div>
+                        </div>
                       </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                      <div className="lg:col-span-7 bg-nexus-800/40 border border-nexus-700 rounded-[3rem] p-8 relative overflow-hidden group">
-                          <div className="h-[450px] w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={synergyData.radarChartData}>
-                                      <PolarGrid stroke="#23232f" />
-                                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} />
-                                      <PolarRadiusAxis angle={45} domain={[0, 100]} tick={false} axisLine={false} />
-                                      <Radar name="Você" dataKey="A" stroke="#8b5cf6" strokeWidth={3} fill="#8b5cf6" fillOpacity={0.4} />
-                                      <Radar name={profileData.username} dataKey="B" stroke="#06b6d4" strokeWidth={3} fill="#06b6d4" fillOpacity={0.4} />
-                                      <RechartsTooltip contentStyle={{ backgroundColor: '#0f0f15', border: '1px solid #23232f', borderRadius: '12px' }} />
-                                  </RadarChart>
-                              </ResponsiveContainer>
-                          </div>
+                      
+                      <div className="space-y-6">
+                        <h3 className="text-2xl font-display font-bold text-white flex items-center gap-2">
+                          <Monitor className="text-nexus-secondary" size={24} /> Rig Showcase
+                        </h3>
+                        <div className="bg-gradient-to-br from-nexus-800 to-nexus-900 p-6 rounded-3xl border border-nexus-700 relative overflow-hidden group">
+                           <Cpu className="absolute -top-4 -right-4 text-white/5 group-hover:scale-110 transition-transform" size={100} />
+                           <div className="space-y-4 relative z-10">
+                              <div className="flex items-center gap-3">
+                                 <div className="p-2 bg-nexus-900 rounded-xl border border-nexus-700"><Cpu size={18} className="text-nexus-accent" /></div>
+                                 <div>
+                                    <p className="text-[8px] text-gray-500 font-bold uppercase">CPU</p>
+                                    <p className="text-xs font-bold text-white">{displayStats.rig?.cpu || 'Não revelado'}</p>
+                                 </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                 <div className="p-2 bg-nexus-900 rounded-xl border border-nexus-700"><Activity size={18} className="text-nexus-secondary" /></div>
+                                 <div>
+                                    <p className="text-[8px] text-gray-500 font-bold uppercase">GPU</p>
+                                    <p className="text-xs font-bold text-white">{displayStats.rig?.gpu || 'Não revelado'}</p>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
                       </div>
-
-                      <div className="lg:col-span-5 space-y-6">
-                         <div className="bg-nexus-accent/10 border border-nexus-accent/30 p-8 rounded-[3rem] relative overflow-hidden group">
-                            <Sparkles className="absolute -top-4 -right-4 text-nexus-accent opacity-10" size={100} />
-                            <h4 className="text-nexus-accent font-bold uppercase tracking-[0.2em] text-[10px] mb-4">Oracle Synergy Analysis</h4>
-                            <p className="text-gray-300 italic text-sm leading-relaxed">
-                               "Sua Strike Team é mais eficiente em {synergyData.radarChartData.sort((a,b) => (b.A+b.B) - (a.A+a.B))[0].subject}. Sugiro uma sessão imediata de {synergyData.sharedGames[0]?.title || 'cooperação estratégica'} para maximizar o legado mútuo."
-                            </p>
-                         </div>
-                      </div>
-                  </div>
-              </div>
+                   </div>
+                </div>
+                <div className="lg:col-span-4">
+                   <NexusIDCard stats={displayStats} insight={null} />
+                </div>
+            </div>
           )}
       </div>
     </div>

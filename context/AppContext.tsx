@@ -101,12 +101,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    nexusCloud.logout();
     setCurrentUser(null);
     setUserStatsState(null);
     setFriends([]);
-    localStorage.removeItem('nexus_active_session');
-    localStorage.removeItem('nexus_access_token');
-    setIsCloudActive(nexusCloud.isCloudActive());
   };
 
   const updateCloudConfig = (url: string, key: string) => {
@@ -118,39 +116,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!userStats) return;
     setIsSyncing(true);
     await nexusCloud.saveGame(userStats.nexusId, game);
-    await nexusCloud.postActivity(userStats.nexusId, {
-        type: ActivityType.COLLECTION_ADD,
-        details: { gameTitle: game.title, gameCover: game.coverUrl, content: `Adicionou ${game.title} ao seu legado.` }
-    });
-    setUserStats(prev => {
+    setUserStatsState(prev => {
       if (!prev) return null;
       return {
         ...prev,
         recentGames: [game, ...prev.recentGames],
-        totalHours: prev.totalHours + game.hoursPlayed,
-        totalAchievements: prev.totalAchievements + game.achievementCount,
+        totalHours: (prev.totalHours || 0) + (game.hoursPlayed || 0),
+        totalAchievements: (prev.totalAchievements || 0) + (game.achievementCount || 0),
         gamesOwned: (prev.gamesOwned || 0) + 1
       };
     });
-    setIsSyncing(false);
+    setTimeout(() => setIsSyncing(false), 800);
   };
 
   const saveJournalMemory = async (entry: JournalEntry) => {
     if (!userStats) return;
     setIsSyncing(true);
     await nexusCloud.saveJournalEntry(userStats.nexusId, entry);
-    await nexusCloud.postActivity(userStats.nexusId, {
-        type: ActivityType.JOURNAL,
-        details: { gameTitle: entry.gameTitle, content: entry.narrative }
-    });
-    setUserStats(prev => {
+    setUserStatsState(prev => {
       if (!prev) return null;
       return {
         ...prev,
         journalEntries: [entry, ...(prev.journalEntries || [])]
       };
     });
-    setIsSyncing(false);
+    setTimeout(() => setIsSyncing(false), 800);
   };
 
   const importNexusData = (json: string): boolean => {
@@ -173,14 +163,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (ach.id !== achievementId) return ach;
           const isUnlocked = !!ach.unlockedAt;
           const unlockedAt = isUnlocked ? undefined : new Date().toISOString();
-          
-          if (!isUnlocked) {
-              nexusCloud.postActivity(prev.nexusId, {
-                  type: ActivityType.ACHIEVEMENT,
-                  details: { gameTitle: game.title, gameCover: game.coverUrl, content: `Conquistou: ${ach.name}` }
-              });
-          }
-
           return { ...ach, unlockedAt };
         });
         const gameUpd = { ...game, achievements: updatedAchievements, achievementCount: updatedAchievements.filter(a => a.unlockedAt).length };
@@ -194,16 +176,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addFriend = async (friend: Friend) => {
     if (!userStats) return;
     setIsSyncing(true);
-    const updated = await nexusCloud.addFriend(userStats.nexusId, friend);
-    setFriends(updated);
+    await nexusCloud.addFriend(userStats.nexusId, friend);
+    setFriends(prev => [...prev.filter(f => f.nexusId !== friend.nexusId), friend]);
     setIsSyncing(false);
   };
 
   const removeFriend = async (friendNexusId: string) => {
     if (!userStats) return;
     setIsSyncing(true);
-    const updated = await nexusCloud.removeFriend(userStats.nexusId, friendNexusId);
-    setFriends(updated);
+    await nexusCloud.removeFriend(userStats.nexusId, friendNexusId);
+    setFriends(prev => prev.filter(f => f.nexusId !== friendNexusId));
     setIsSyncing(false);
   };
 
@@ -214,12 +196,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const existingIds = new Set(prev.recentGames.map(g => g.title + g.platform));
       const newGames = games.filter(g => !existingIds.has(g.title + g.platform));
       
-      newGames.forEach(g => nexusCloud.saveGame(prev.nexusId, g));
-
       return {
         ...prev,
         linkedAccounts: [...prev.linkedAccounts.filter(a => a.platform !== platform), { platform, username }],
-        platformsConnected: [...prev.platformsConnected.filter(p => p !== platform), platform],
+        platformsConnected: Array.from(new Set([...prev.platformsConnected, platform])),
         recentGames: [...newGames, ...prev.recentGames],
         totalHours: (prev.totalHours || 0) + totalHours,
         gamesOwned: (prev.gamesOwned || 0) + newGames.length,

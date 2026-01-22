@@ -22,6 +22,28 @@ export enum ActivityType {
   CHALLENGE = 'challenge'
 }
 
+// Chat Related Types
+export type ChannelType = 'public' | 'private' | 'dm';
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  content: string;
+  timestamp: string;
+  isAi?: boolean;
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  description: string;
+  type: ChannelType;
+  icon?: string;
+}
+
 export interface Testimonial {
   id: string;
   fromNexusId: string;
