@@ -307,6 +307,47 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
 
               <div className="lg:col-span-8 space-y-8 md:space-y-12">
                  
+                 {/* SINERGIA GAMER (Efeito Glow Premium) */}
+                 {synergyData && (
+                    <div className="bg-nexus-900 border border-nexus-accent/30 rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 relative overflow-hidden group shadow-[0_0_50px_rgba(139,92,246,0.1)] animate-fade-in">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-nexus-accent/10 to-transparent opacity-50"></div>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+                           <div className="text-center md:text-left space-y-6 flex-1">
+                              <div className="space-y-2">
+                                 <p className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em]">Protocolo de Sincronia v4.2</p>
+                                 <h3 className="text-3xl md:text-4xl font-display font-bold text-white flex items-center gap-4 justify-center md:justify-start">
+                                    <Target className="text-nexus-accent" /> Sinergia Gamer
+                                 </h3>
+                              </div>
+
+                              <div className="flex items-center gap-8 justify-center md:justify-start">
+                                 <div className="relative">
+                                    <div className={`w-32 h-32 rounded-full border-4 ${synergyData.percentage > 70 ? 'border-nexus-accent animate-pulse shadow-[0_0_30px_rgba(139,92,246,0.6)]' : 'border-nexus-accent/20'} flex items-center justify-center shadow-2xl relative bg-nexus-900/80`}>
+                                       <span className="text-4xl font-display font-bold text-white relative z-10">{synergyData.percentage}%</span>
+                                    </div>
+                                    <Zap size={24} className="absolute -bottom-2 -right-2 text-nexus-accent animate-bounce" />
+                                 </div>
+                                 <div className="space-y-2 max-w-xs">
+                                    <p className="text-gray-300 text-xl font-medium leading-tight">Match de DNA Sintonizado</p>
+                                    <p className="text-xs text-gray-500 italic">"Vocês compartilham trajetórias digitais similares em gêneros e estilo de jogo."</p>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="h-64 w-64 flex-shrink-0 bg-black/20 rounded-[3rem] p-6 border border-white/5 shadow-inner group-hover:shadow-[0_0_30px_rgba(6,182,212,0.2)] transition-shadow">
+                              <ResponsiveContainer width="100%" height="100%">
+                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={synergyData.radarChartData}>
+                                    <PolarGrid stroke="#23232f" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 9, fontWeight: 'bold' }} />
+                                    <Radar name="Você" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
+                                    <Radar name={targetId?.replace('@','')} dataKey="B" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
+                                 </RadarChart>
+                              </ResponsiveContainer>
+                           </div>
+                        </div>
+                    </div>
+                 )}
+
                  {/* TOP 5 IMERSÃO */}
                  <div className="bg-nexus-900 border border-nexus-800 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl relative overflow-hidden group">
                     <div className="flex items-center justify-between mb-8 px-2">
@@ -378,7 +419,7 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                                 <div className="flex-1 min-w-0">
                                    <div className="flex items-center gap-2 mb-1">
                                       <h4 className="font-bold text-white text-xs md:text-sm">@{t.fromName}</h4>
-                                      <span className={`px-1.5 py-0.5 rounded-full text-[6px] md:text-[7px] font-black uppercase border ${
+                                      <span className={`px-1.5 py-0.5 rounded-full text-[6px] font-black uppercase border ${
                                         t.vibe === 'legend' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
                                         t.vibe === 'mvp' ? 'bg-nexus-secondary/10 border-nexus-secondary/20 text-nexus-secondary' :
                                         'bg-nexus-accent/10 border-nexus-accent/20 text-nexus-accent'

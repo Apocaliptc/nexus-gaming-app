@@ -4,7 +4,8 @@ import {
   Users, LogOut, Compass, BarChart2, Grid, 
   Trophy, Loader2, Lock, AtSign, UserCircle, 
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
-  MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search
+  MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search,
+  ChevronUp, X, LayoutGrid, Gavel, Shield
 } from 'lucide-react';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
@@ -94,6 +95,7 @@ const MainApp: React.FC = () => {
   const { logout, userStats, isSyncing } = useAppContext();
   const [activeTab, setActiveTab] = useState('pulse');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
 
   useEffect(() => {
     if (userStats) {
@@ -108,6 +110,16 @@ const MainApp: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [userStats]);
+
+  const toggleGroup = (group: string) => {
+    if (activeGroup === group) setActiveGroup(null);
+    else setActiveGroup(group);
+  };
+
+  const selectTab = (tab: string) => {
+    setActiveTab(tab);
+    setActiveGroup(null);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -127,6 +139,34 @@ const MainApp: React.FC = () => {
       case 'settings': return <Settings />;
       default: return <GlobalFeed />;
     }
+  };
+
+  const mobileMenuGroups = {
+    pulse: [
+      { id: 'pulse', label: 'Pulse Global', icon: Activity },
+      { id: 'chat', label: 'Comunicações', icon: MessageSquare },
+      { id: 'friends', label: 'Conexões', icon: Users },
+    ],
+    digital: [
+      { id: 'profile', label: 'Perfil & DNA', icon: UserCircle },
+      { id: 'achievements', label: 'Conquistas', icon: Trophy },
+      { id: 'library', label: 'Biblioteca', icon: Grid },
+      { id: 'stats', label: 'Analytics', icon: BarChart2 },
+    ],
+    legacy: [
+      { id: 'vault', label: 'Coleção Física', icon: Box },
+      { id: 'auctions', label: 'Leilões Hub', icon: Gavel },
+    ],
+    intel: [
+      { id: 'oracle', label: 'Nexus Oracle', icon: BrainCircuit },
+      { id: 'discover', label: 'Explorar', icon: Compass },
+      { id: 'chronos', label: 'Chronos', icon: BookOpen },
+    ],
+    config: [
+      { id: 'notifications', label: 'Alertas', icon: Bell, badge: unreadCount },
+      { id: 'settings', label: 'Ajustes', icon: SettingsIcon },
+      { id: 'logout', label: 'Sair do Nexus', icon: LogOut, action: logout },
+    ]
   };
 
   return (
@@ -162,30 +202,30 @@ const MainApp: React.FC = () => {
         <nav className="flex-1 px-3 space-y-8 overflow-y-auto custom-scrollbar pt-2">
           <div className="space-y-1">
             <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Nexus Pulse</p>
-            <NavItem id="pulse" icon={Activity} label="Pulse Global" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="chat" icon={MessageSquare} label="Comunicações" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="friends" icon={Users} label="Conexões" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="pulse" icon={Activity} label="Pulse Global" active={activeTab} onClick={selectTab} />
+            <NavItem id="chat" icon={MessageSquare} label="Comunicações" active={activeTab} onClick={selectTab} />
+            <NavItem id="friends" icon={Users} label="Conexões" active={activeTab} onClick={selectTab} />
           </div>
 
           <div className="space-y-1">
             <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Patrimônio Digital</p>
-            <NavItem id="profile" icon={UserCircle} label="Perfil & DNA" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="achievements" icon={Trophy} label="Conquistas" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="library" icon={Grid} label="Biblioteca" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="stats" icon={BarChart2} label="Analytics" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="profile" icon={UserCircle} label="Perfil & DNA" active={activeTab} onClick={selectTab} />
+            <NavItem id="achievements" icon={Trophy} label="Conquistas" active={activeTab} onClick={selectTab} />
+            <NavItem id="library" icon={Grid} label="Biblioteca" active={activeTab} onClick={selectTab} />
+            <NavItem id="stats" icon={BarChart2} label="Analytics" active={activeTab} onClick={selectTab} />
           </div>
 
           <div className="space-y-1">
             <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Físico & Hardware</p>
-            <NavItem id="vault" icon={Box} label="Coleção" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="auctions" icon={Play} label="Leilões" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="vault" icon={Box} label="Coleção" active={activeTab} onClick={selectTab} />
+            <NavItem id="auctions" icon={Play} label="Leilões" active={activeTab} onClick={selectTab} />
           </div>
 
           <div className="space-y-1">
             <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Inteligência</p>
-            <NavItem id="oracle" icon={BrainCircuit} label="Nexus Oracle" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="discover" icon={Compass} label="Explorar" active={activeTab} onClick={setActiveTab} />
-            <NavItem id="chronos" icon={BookOpen} label="Chronos" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="oracle" icon={BrainCircuit} label="Nexus Oracle" active={activeTab} onClick={selectTab} />
+            <NavItem id="discover" icon={Compass} label="Explorar" active={activeTab} onClick={selectTab} />
+            <NavItem id="chronos" icon={BookOpen} label="Chronos" active={activeTab} onClick={selectTab} />
           </div>
         </nav>
 
@@ -237,23 +277,45 @@ const MainApp: React.FC = () => {
         )}
         
         {/* Content Area */}
-        <div className="flex-1 relative pb-20 md:pb-0">
+        <div className="flex-1 relative">
            {renderContent()}
         </div>
 
-        {/* Bottom Nav Mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-nexus-800 px-2 py-3 flex justify-around items-center z-[100] shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-           <MobileNavItem id="pulse" icon={Activity} active={activeTab === 'pulse'} onClick={setActiveTab} />
-           <MobileNavItem id="library" icon={Grid} active={activeTab === 'library'} onClick={setActiveTab} />
-           <MobileNavItem id="discover" icon={Search} active={activeTab === 'discover'} onClick={setActiveTab} />
-           <MobileNavItem id="oracle" icon={BrainCircuit} active={activeTab === 'oracle'} onClick={setActiveTab} />
-           <MobileNavItem id="profile" icon={UserCircle} active={activeTab === 'profile'} onClick={setActiveTab} />
-           
-           {/* Notifications dot on Profile icon or similar could be added */}
-           <button onClick={() => setActiveTab('notifications')} className="relative p-2">
-              <Bell size={22} className={activeTab === 'notifications' ? 'text-nexus-accent' : 'text-gray-500'} />
-              {unreadCount > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-[#09090b]"></div>}
-           </button>
+        {/* MOBILE HUB MENU (Overlay expandível) */}
+        {activeGroup && (
+           <>
+            <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[101] animate-fade-in" onClick={() => setActiveGroup(null)}></div>
+            <div className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 w-[92%] bg-nexus-900/95 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-6 z-[102] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-fade-in origin-bottom">
+               <div className="flex items-center justify-between mb-6 px-2">
+                  <h4 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.4em]">{activeGroup.replace('_', ' ')}</h4>
+                  <button onClick={() => setActiveGroup(null)} className="p-2 bg-white/5 rounded-full"><X size={16} /></button>
+               </div>
+               <div className="grid grid-cols-2 gap-3">
+                  {(mobileMenuGroups as any)[activeGroup].map((item: any) => (
+                     <button 
+                       key={item.id}
+                       onClick={() => item.action ? item.action() : selectTab(item.id)}
+                       className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${activeTab === item.id ? 'bg-nexus-accent border-nexus-accent shadow-xl text-white' : 'bg-nexus-800 border-white/5 text-gray-400'}`}
+                     >
+                        <div className="relative">
+                           <item.icon size={20} />
+                           {item.badge > 0 && <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-600 rounded-full text-[8px] flex items-center justify-center border border-nexus-900">{item.badge}</div>}
+                        </div>
+                        <span className="text-[11px] font-bold tracking-tight">{item.label}</span>
+                     </button>
+                  ))}
+               </div>
+            </div>
+           </>
+        )}
+
+        {/* Bottom Nav Mobile - Estilo Futurista Flutuante */}
+        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] bg-[#09090b]/80 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] px-2 py-3 flex justify-around items-center z-[100] shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+           <MobileHubItem icon={Activity} label="Pulse" group="pulse" active={activeGroup === 'pulse'} onClick={() => toggleGroup('pulse')} />
+           <MobileHubItem icon={Trophy} label="Patrimônio" group="digital" active={activeGroup === 'digital'} onClick={() => toggleGroup('digital')} />
+           <MobileHubItem icon={BrainCircuit} label="Oráculo" group="intel" active={activeGroup === 'intel'} onClick={() => toggleGroup('intel')} />
+           <MobileHubItem icon={Box} label="Legacy" group="legacy" active={activeGroup === 'legacy'} onClick={() => toggleGroup('legacy')} />
+           <MobileHubItem icon={UserCircle} label="Sistema" group="config" active={activeGroup === 'config'} onClick={() => toggleGroup('config')} />
         </div>
       </main>
     </div>
@@ -272,12 +334,16 @@ const NavItem = ({ id, icon: Icon, label, active, onClick }: { id: string, icon:
   </button>
 );
 
-const MobileNavItem = ({ id, icon: Icon, active, onClick }: { id: string, icon: any, active: boolean, onClick: (id: string) => void }) => (
+const MobileHubItem = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, group: string, active: boolean, onClick: () => void }) => (
   <button 
-    onClick={() => onClick(id)}
-    className={`p-3 rounded-xl transition-all flex flex-col items-center gap-1 ${active ? 'bg-nexus-accent/10 text-nexus-accent' : 'text-gray-500'}`}
+    onClick={onClick}
+    className={`p-3 rounded-full transition-all flex flex-col items-center justify-center relative ${active ? 'bg-nexus-accent/20 text-nexus-accent' : 'text-gray-500'}`}
   >
-    <Icon size={22} className={active ? 'scale-110 transition-transform' : ''} />
+    <Icon size={24} className={`${active ? 'scale-110 transition-transform drop-shadow-[0_0_12px_rgba(139,92,246,0.8)]' : ''}`} />
+    <span className={`text-[8px] font-black uppercase mt-1 tracking-tighter ${active ? 'text-nexus-accent' : 'text-gray-600'}`}>{label}</span>
+    {active && (
+       <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-nexus-accent rounded-full animate-pulse shadow-[0_0_8px_#8b5cf6]"></div>
+    )}
   </button>
 );
 
@@ -288,7 +354,7 @@ const AppContent: React.FC = () => {
     return (
       <div className="h-screen bg-[#050507] flex flex-col items-center justify-center gap-6">
         <div className="relative">
-           <Loader2 className="animate-spin text-nexus-accent" size={48} md:size={64} />
+           <Loader2 className="animate-spin text-nexus-accent" size={48} />
            <div className="absolute inset-0 bg-nexus-accent blur-3xl opacity-20"></div>
         </div>
         <p className="text-gray-500 font-mono text-[10px] md:text-xs uppercase tracking-[0.5em] animate-pulse">Handshaking Core...</p>
