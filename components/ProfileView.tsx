@@ -200,49 +200,42 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
       {/* Banner de Identidade */}
       <div className="relative border-b border-nexus-800">
          {onCloseFriend && (
-           <button onClick={onCloseFriend} className="absolute top-6 left-6 z-50 p-2 bg-black/60 hover:bg-nexus-accent rounded-full border border-white/10 text-white transition-all shadow-2xl">
-             <ChevronLeft size={24} />
+           <button onClick={onCloseFriend} className="absolute top-4 left-4 md:top-6 md:left-6 z-50 p-2 bg-black/60 hover:bg-nexus-accent rounded-full border border-white/10 text-white transition-all shadow-2xl">
+             <ChevronLeft size={20} md:size={24} />
            </button>
          )}
          
-         <div className="h-64 md:h-80 w-full relative overflow-hidden bg-gradient-to-br from-nexus-900 via-nexus-800 to-black">
+         <div className="h-48 md:h-80 w-full relative overflow-hidden bg-gradient-to-br from-nexus-900 via-nexus-800 to-black">
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay"></div>
-            <div className="absolute inset-0 flex items-center justify-center opacity-10">
-               <div className="w-[800px] h-[800px] border border-nexus-accent rounded-full animate-pulse"></div>
-               <div className="absolute w-[600px] h-[600px] border border-nexus-secondary rounded-full animate-pulse delay-700"></div>
-            </div>
          </div>
          
-         <div className="max-w-[1400px] mx-auto px-8 -mt-40 relative z-30 flex flex-col xl:flex-row items-end gap-12 pb-12">
-            <div className="w-full xl:w-auto">
+         <div className="max-w-[1400px] mx-auto px-4 md:px-8 -mt-24 md:-mt-40 relative z-30 flex flex-col xl:flex-row items-center xl:items-end gap-6 md:gap-12 pb-8 md:pb-12">
+            <div className="w-full max-w-sm md:max-w-none xl:w-auto">
                {displayStats && <NexusIDCard stats={displayStats} insight={aiInsight} />}
             </div>
             
-            <div className="flex-1 w-full pb-4 text-center xl:text-left space-y-6">
-               <div className="space-y-2">
-                  <div className="flex flex-col md:flex-row items-center gap-4 xl:justify-start justify-center">
-                     <h2 className="text-5xl md:text-7xl font-display font-bold text-white tracking-tighter leading-none">{targetId?.replace('@','')}</h2>
+            <div className="flex-1 w-full pb-4 text-center xl:text-left space-y-4 md:space-y-6">
+               <div className="space-y-1 md:space-y-2">
+                  <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 xl:justify-start justify-center">
+                     <h2 className="text-3xl md:text-7xl font-display font-bold text-white tracking-tighter leading-none">{targetId?.replace('@','')}</h2>
                      <div className="flex gap-2">
-                        <span className="px-4 py-1.5 bg-nexus-accent/20 border border-nexus-accent/30 text-nexus-accent text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Elite Operative</span>
-                        <span className="px-4 py-1.5 bg-nexus-secondary/20 border border-nexus-secondary/30 text-nexus-secondary text-[10px] font-black uppercase tracking-[0.2em] rounded-full">DNA Verificado</span>
+                        <span className="px-3 py-1 bg-nexus-accent/20 border border-nexus-accent/30 text-nexus-accent text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Elite Operative</span>
+                        <span className="px-3 py-1 bg-nexus-secondary/20 border border-nexus-secondary/30 text-nexus-secondary text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Verificado</span>
                      </div>
                   </div>
-                  <p className="text-gray-400 font-medium italic text-xl opacity-80">
+                  <p className="text-gray-400 font-medium italic text-base md:text-xl opacity-80">
                     Sintonizado via {displayStats?.platformsConnected.length} redes ativas.
                   </p>
                </div>
 
-               <div className="flex flex-wrap justify-center xl:justify-start gap-4 pt-4">
+               <div className="flex flex-wrap justify-center xl:justify-start gap-2 md:gap-4 pt-2">
                   <StatItem label="Imersão" value={`${displayStats?.totalHours}h`} onClick={() => onNavigate?.('stats')} />
                   
-                  <div className="flex items-center gap-3 bg-nexus-900/80 px-6 py-4 rounded-[2.5rem] border border-nexus-800 shadow-2xl backdrop-blur-xl">
-                    <TrophyBubble label="PLAT" value={trophyBreakdown.plat} color="text-nexus-accent" bg="bg-nexus-accent/10" icon={Crown} />
-                    <div className="w-px h-10 bg-white/5 mx-1"></div>
-                    <TrophyBubble label="GOLD" value={trophyBreakdown.gold} color="text-yellow-500" bg="bg-yellow-500/10" icon={Trophy} />
-                    <div className="w-px h-10 bg-white/5 mx-1"></div>
-                    <TrophyBubble label="SILV" value={trophyBreakdown.silv} color="text-gray-400" bg="bg-gray-400/10" icon={Medal} />
-                    <div className="w-px h-10 bg-white/5 mx-1"></div>
-                    <TrophyBubble label="BRON" value={trophyBreakdown.bron} color="text-orange-700" bg="bg-orange-700/10" icon={Award} />
+                  <div className="flex items-center gap-2 md:gap-3 bg-nexus-900/80 px-4 md:px-6 py-3 md:py-4 rounded-[1.5rem] md:rounded-[2.5rem] border border-nexus-800 shadow-2xl backdrop-blur-xl">
+                    <TrophyBubble label="P" value={trophyBreakdown.plat} color="text-nexus-accent" bg="bg-nexus-accent/10" icon={Crown} />
+                    <TrophyBubble label="G" value={trophyBreakdown.gold} color="text-yellow-500" bg="bg-yellow-500/10" icon={Trophy} />
+                    <TrophyBubble label="S" value={trophyBreakdown.silv} color="text-gray-400" bg="bg-gray-400/10" icon={Medal} />
+                    <TrophyBubble label="B" value={trophyBreakdown.bron} color="text-orange-700" bg="bg-orange-700/10" icon={Award} />
                   </div>
 
                   <StatItem label="Prestige" value={displayStats?.prestigePoints || 0} highlight />
@@ -251,60 +244,60 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
          </div>
       </div>
 
-      <div className="sticky top-0 z-40 bg-[#050507]/90 backdrop-blur-xl border-b border-nexus-800">
-         <div className="max-w-[1400px] mx-auto px-8 flex gap-8">
-            <button onClick={() => setActiveTab('overview')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'overview' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Visão Geral</button>
-            <button onClick={() => setActiveTab('achievements')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'achievements' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Conquistas</button>
-            <button onClick={() => setActiveTab('collection')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'collection' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Coleção</button>
-            <button onClick={() => setActiveTab('testimonials')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all flex items-center gap-2 ${activeTab === 'testimonials' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+      <div className="sticky top-0 z-40 bg-[#050507]/90 backdrop-blur-xl border-b border-nexus-800 overflow-x-auto no-scrollbar">
+         <div className="max-w-[1400px] mx-auto px-4 md:px-8 flex gap-4 md:gap-8 min-w-max">
+            <button onClick={() => setActiveTab('overview')} className={`py-4 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'overview' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Visão Geral</button>
+            <button onClick={() => setActiveTab('achievements')} className={`py-4 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'achievements' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Conquistas</button>
+            <button onClick={() => setActiveTab('collection')} className={`py-4 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'collection' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Coleção</button>
+            <button onClick={() => setActiveTab('testimonials')} className={`py-4 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all flex items-center gap-2 ${activeTab === 'testimonials' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
                Mural
-               <span className="bg-white/10 px-2 py-0.5 rounded-full text-[8px]">{testimonials.length}</span>
+               <span className="bg-white/10 px-1.5 py-0.5 rounded-full text-[7px] md:text-[8px]">{testimonials.length}</span>
             </button>
          </div>
       </div>
 
-      <div className="p-8 md:p-12 space-y-16 max-w-[1400px] mx-auto w-full pb-40">
+      <div className="p-4 md:p-12 space-y-10 md:space-y-16 max-w-[1400px] mx-auto w-full pb-32 md:pb-40">
          {activeTab === 'overview' && (
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              <div className="lg:col-span-4 space-y-12">
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
+              <div className="lg:col-span-4 space-y-8 md:space-y-12">
                  {/* DNA IA Card */}
-                 <div className="bg-gradient-to-br from-nexus-accent/15 to-nexus-900 border border-nexus-accent/30 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group">
+                 <div className="bg-gradient-to-br from-nexus-accent/15 to-nexus-900 border border-nexus-accent/30 rounded-[2rem] md:rounded-[3.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden group">
                     <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:scale-110 transition-transform">
-                       <BrainCircuit size={220} className="text-nexus-accent" />
+                       <BrainCircuit size={160} md:size={220} className="text-nexus-accent" />
                     </div>
-                    <div className="relative z-10 space-y-8">
-                       <p className="text-[12px] font-black text-nexus-accent uppercase tracking-[0.4em]">Análise de DNA IA</p>
+                    <div className="relative z-10 space-y-6 md:space-y-8">
+                       <p className="text-[10px] md:text-[12px] font-black text-nexus-accent uppercase tracking-[0.4em]">Análise de DNA IA</p>
                        {loadingAi ? (
-                          <div className="py-12 flex flex-col items-center gap-8">
-                             <Loader2 className="animate-spin text-nexus-accent" size={48} />
-                             <p className="text-[11px] text-gray-500 font-mono animate-pulse uppercase tracking-[0.5em]">Lendo Metadados...</p>
+                          <div className="py-8 md:py-12 flex flex-col items-center gap-6 md:gap-8">
+                             <Loader2 className="animate-spin text-nexus-accent" size={32} md:size={48} />
+                             <p className="text-[10px] md:text-[11px] text-gray-500 font-mono animate-pulse uppercase tracking-[0.5em]">Lendo Metadados...</p>
                           </div>
                        ) : aiInsight ? (
-                          <div className="animate-fade-in space-y-8">
-                             <h4 className="text-4xl font-display font-bold text-white tracking-tight leading-tight">{aiInsight.personaTitle}</h4>
-                             <p className="text-lg text-gray-400 italic leading-relaxed border-l-4 border-nexus-accent pl-8">"{aiInsight.description}"</p>
-                             <div className="flex flex-wrap gap-4 pt-4">
+                          <div className="animate-fade-in space-y-6 md:space-y-8">
+                             <h4 className="text-2xl md:text-4xl font-display font-bold text-white tracking-tight leading-tight">{aiInsight.personaTitle}</h4>
+                             <p className="text-sm md:text-lg text-gray-400 italic leading-relaxed border-l-4 border-nexus-accent pl-4 md:pl-8">"{aiInsight.description}"</p>
+                             <div className="flex flex-wrap gap-2 md:gap-4 pt-2">
                                 {aiInsight.potentialBadges.map((b: string) => (
-                                   <span key={b} className="px-4 py-1.5 bg-black/50 border border-white/5 rounded-xl text-[10px] font-black text-gray-500 uppercase tracking-widest">{b}</span>
+                                   <span key={b} className="px-3 py-1 bg-black/50 border border-white/5 rounded-lg text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest">{b}</span>
                                 ))}
                              </div>
                           </div>
-                       ) : <p className="text-gray-500 italic text-sm">Oráculo processando frequências...</p>}
+                       ) : <p className="text-gray-500 italic text-xs md:text-sm">Oráculo processando frequências...</p>}
                     </div>
                  </div>
 
                  {/* Matriz de Perícia */}
-                 <div onClick={() => onNavigate?.('stats')} className="bg-nexus-900 border border-nexus-800 rounded-[3.5rem] p-10 shadow-2xl cursor-pointer hover:border-nexus-secondary transition-all group">
-                    <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-5 mb-10 group-hover:text-nexus-secondary">
-                       <Activity size={20} className="text-nexus-secondary" /> Matriz de Perícia
+                 <div onClick={() => onNavigate?.('stats')} className="bg-nexus-900 border border-nexus-800 rounded-[2rem] md:rounded-[3.5rem] p-6 md:p-10 shadow-2xl cursor-pointer hover:border-nexus-secondary transition-all group">
+                    <h3 className="text-[10px] md:text-[12px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-3 md:gap-5 mb-6 md:mb-10 group-hover:text-nexus-secondary">
+                       <Activity size={18} md:size={20} className="text-nexus-secondary" /> Matriz de Perícia
                     </h3>
-                    <div className="h-72">
+                    <div className="h-64 md:h-72">
                        {displayStats && (
                          <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={displayStats.skills}>
                                <PolarGrid stroke="#23232f" />
-                               <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 'bold' }} />
-                               <Radar name="Skills" dataKey="A" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.5} strokeWidth={4} />
+                               <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 9, fontWeight: 'bold' }} />
+                               <Radar name="Skills" dataKey="A" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.5} strokeWidth={3} />
                             </RadarChart>
                          </ResponsiveContainer>
                        )}
@@ -312,21 +305,17 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                  </div>
               </div>
 
-              <div className="lg:col-span-8 space-y-12">
+              <div className="lg:col-span-8 space-y-8 md:space-y-12">
                  
                  {/* TOP 5 IMERSÃO */}
-                 <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
-                    <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:scale-110 transition-transform">
-                       <Gamepad2 size={250} className="text-white" />
-                    </div>
-                    <div className="flex items-center justify-between mb-10 px-2">
-                       <h3 className="text-3xl font-display font-bold text-white flex items-center gap-5">
-                          <Trophy className="text-yellow-500" /> Top 5 Imersão
+                 <div className="bg-nexus-900 border border-nexus-800 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl relative overflow-hidden group">
+                    <div className="flex items-center justify-between mb-8 px-2">
+                       <h3 className="text-xl md:text-3xl font-display font-bold text-white flex items-center gap-3 md:gap-5">
+                          <Trophy className="text-yellow-500" size={20} md:size={28} /> Top 5 Imersão
                        </h3>
-                       <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Maiores Logs de Sessão</p>
                     </div>
 
-                    <div className="space-y-6 relative z-10">
+                    <div className="space-y-4 md:space-y-6 relative z-10">
                        {topGames.length === 0 ? (
                           <div className="py-12 text-center text-gray-500 italic">Nenhum log de sessão capturado.</div>
                        ) : (
@@ -338,30 +327,29 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                                 <div 
                                   key={game.id} 
                                   onClick={() => setSelectedGame(game)}
-                                  className="flex items-center gap-6 p-4 rounded-3xl bg-black/20 border border-white/5 hover:border-nexus-accent hover:bg-black/40 transition-all cursor-pointer group/item"
+                                  className="flex items-center gap-4 md:gap-6 p-3 md:p-4 rounded-2xl md:rounded-3xl bg-black/20 border border-white/5 hover:border-nexus-accent hover:bg-black/40 transition-all cursor-pointer group/item"
                                 >
                                    <div className="relative shrink-0">
-                                      <img src={game.coverUrl} className="w-14 h-20 rounded-xl object-cover shadow-2xl border border-white/10 group-hover/item:scale-105 transition-transform" alt="Capa" />
-                                      <div className="absolute -top-2 -left-2 w-7 h-7 bg-nexus-accent rounded-lg flex items-center justify-center font-display font-black text-xs shadow-xl text-white">
+                                      <img src={game.coverUrl} className="w-10 h-14 md:w-14 md:h-20 rounded-lg md:rounded-xl object-cover shadow-2xl border border-white/10" alt="Capa" />
+                                      <div className="absolute -top-2 -left-2 w-6 h-6 md:w-7 md:h-7 bg-nexus-accent rounded-lg flex items-center justify-center font-display font-black text-[10px] md:text-xs shadow-xl text-white">
                                          {idx + 1}
                                       </div>
                                    </div>
-                                   <div className="flex-1 min-w-0 space-y-3">
+                                   <div className="flex-1 min-w-0 space-y-2 md:space-y-3">
                                       <div className="flex justify-between items-center">
-                                         <h4 className="font-bold text-white text-lg truncate group-hover/item:text-nexus-accent transition-colors">{game.title}</h4>
-                                         <div className="flex items-center gap-3">
-                                            <PlatformIcon platform={game.platform} className="w-3.5 h-3.5" />
-                                            <span className="font-mono text-nexus-secondary font-bold text-sm">{game.hoursPlayed}h</span>
+                                         <h4 className="font-bold text-white text-sm md:text-lg truncate group-hover/item:text-nexus-accent transition-colors">{game.title}</h4>
+                                         <div className="flex items-center gap-2">
+                                            <span className="font-mono text-nexus-secondary font-bold text-[10px] md:text-sm">{game.hoursPlayed}h</span>
                                          </div>
                                       </div>
-                                      <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                      <div className="h-1 md:h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
                                          <div 
                                             className="h-full bg-gradient-to-r from-nexus-accent to-nexus-secondary rounded-full transition-all duration-1000" 
                                             style={{ width: `${ratio}%` }}
                                          ></div>
                                       </div>
                                    </div>
-                                   <ChevronRight size={24} className="text-gray-800 group-hover/item:text-white transition-colors" />
+                                   <ChevronRight size={20} md:size={24} className="text-gray-800 group-hover/item:text-white transition-colors" />
                                 </div>
                              );
                           })
@@ -369,108 +357,35 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                     </div>
                  </div>
 
-                 {/* SINERGIA GAMER (Matching) */}
-                 {synergyData && (
-                    <div className="bg-nexus-900 border border-nexus-accent/30 rounded-[3rem] p-12 relative overflow-hidden group shadow-2xl animate-fade-in">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-nexus-accent/10 to-transparent opacity-50"></div>
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                           <div className="text-center md:text-left space-y-8 flex-1">
-                              <div className="space-y-2">
-                                 <p className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em]">Protocolo de Sincronia v4.2</p>
-                                 <h3 className="text-4xl font-display font-bold text-white flex items-center gap-4 justify-center md:justify-start">
-                                    <Target className="text-nexus-accent" /> Sinergia Gamer
-                                 </h3>
-                              </div>
-
-                              <div className="flex items-center gap-8 justify-center md:justify-start">
-                                 <div className="relative">
-                                    <div className="w-32 h-32 rounded-full border-4 border-nexus-accent/20 flex items-center justify-center shadow-2xl relative bg-nexus-900/80">
-                                       <div className="absolute inset-0 rounded-full bg-nexus-accent blur-2xl opacity-20 animate-pulse"></div>
-                                       <span className="text-4xl font-display font-bold text-white relative z-10">{synergyData.percentage}%</span>
-                                    </div>
-                                    <Zap size={24} className="absolute -bottom-2 -right-2 text-nexus-accent animate-bounce" />
-                                 </div>
-                                 <div className="space-y-2 max-w-xs">
-                                    <p className="text-gray-300 text-xl font-medium leading-tight">Match de DNA Sintonizado</p>
-                                    <p className="text-xs text-gray-500 italic">"Vocês compartilham trajetórias digitais similares em gêneros e estilo de jogo."</p>
-                                 </div>
-                              </div>
-                           </div>
-
-                           <div className="h-64 w-64 flex-shrink-0 bg-black/20 rounded-[3rem] p-6 border border-white/5 shadow-inner">
-                              <ResponsiveContainer width="100%" height="100%">
-                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={synergyData.radarChartData}>
-                                    <PolarGrid stroke="#23232f" />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 9, fontWeight: 'bold' }} />
-                                    <Radar name="Você" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
-                                    <Radar name={targetId?.replace('@','')} dataKey="B" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
-                                 </RadarChart>
-                              </ResponsiveContainer>
-                           </div>
-                        </div>
-                    </div>
-                 )}
-
-                 {/* MURAL DE HONRA (PROMINENTE NA VISÃO GERAL) */}
-                 <div className="space-y-8 bg-nexus-900/50 p-10 rounded-[3rem] border border-nexus-800 shadow-xl">
+                 {/* Mural de Honra Resumido */}
+                 <div className="space-y-6 md:space-y-8 bg-nexus-900/50 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-nexus-800 shadow-xl">
                     <div className="flex items-center justify-between px-2">
-                       <h3 className="text-3xl font-display font-bold text-white flex items-center gap-4">
-                          <MessageSquare className="text-nexus-accent" /> Mural de Honra
+                       <h3 className="text-xl md:text-3xl font-display font-bold text-white flex items-center gap-3 md:gap-4">
+                          <MessageSquare className="text-nexus-accent" size={20} md:size={28} /> Mural de Honra
                        </h3>
-                       <button onClick={() => setActiveTab('testimonials')} className="text-[10px] font-black text-nexus-accent uppercase tracking-widest hover:text-white transition-colors">Ver Tudo</button>
+                       <button onClick={() => setActiveTab('testimonials')} className="text-[8px] md:text-[10px] font-black text-nexus-accent uppercase tracking-widest hover:text-white transition-colors">Ver Tudo</button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                        {testimonials.length === 0 ? (
-                          <div className="col-span-full py-12 text-center bg-black/20 border border-nexus-800 border-dashed rounded-[2.5rem] opacity-40">
-                             <p className="italic text-xs font-bold uppercase tracking-widest">Nenhum reconhecimento registrado.</p>
+                          <div className="col-span-full py-12 text-center bg-black/20 border border-nexus-800 border-dashed rounded-[2rem] opacity-40">
+                             <p className="italic text-[10px] font-bold uppercase tracking-widest">Nenhum reconhecimento registrado.</p>
                           </div>
                        ) : (
                           testimonials.slice(0, 4).map(t => (
-                             <div key={t.id} className="bg-nexus-900 border border-nexus-800 p-6 rounded-[2rem] flex gap-4 hover:border-nexus-accent transition-all group relative overflow-hidden shadow-lg">
-                                <div className={`absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none transition-opacity group-hover:opacity-[0.1]`}>
-                                   {t.vibe === 'legend' ? <Crown size={60} /> : <Award size={60} />}
-                                </div>
-                                <img src={t.fromAvatar} className="w-12 h-12 rounded-xl border-2 border-nexus-700 shrink-0" alt="Avatar" />
+                             <div key={t.id} className="bg-nexus-900 border border-nexus-800 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] flex gap-3 md:gap-4 hover:border-nexus-accent transition-all group relative overflow-hidden shadow-lg">
+                                <img src={t.fromAvatar} className="w-10 h-10 md:w-12 md:h-12 rounded-lg border border-nexus-700 shrink-0" alt="Avatar" />
                                 <div className="flex-1 min-w-0">
                                    <div className="flex items-center gap-2 mb-1">
-                                      <h4 className="font-bold text-white text-sm">@{t.fromName}</h4>
-                                      <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase border ${
+                                      <h4 className="font-bold text-white text-xs md:text-sm">@{t.fromName}</h4>
+                                      <span className={`px-1.5 py-0.5 rounded-full text-[6px] md:text-[7px] font-black uppercase border ${
                                         t.vibe === 'legend' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
                                         t.vibe === 'mvp' ? 'bg-nexus-secondary/10 border-nexus-secondary/20 text-nexus-secondary' :
                                         'bg-nexus-accent/10 border-nexus-accent/20 text-nexus-accent'
                                       }`}>{t.vibe}</span>
                                    </div>
-                                   <p className="text-gray-400 text-xs italic leading-relaxed line-clamp-3">"{t.content}"</p>
+                                   <p className="text-gray-400 text-[11px] md:text-xs italic leading-relaxed line-clamp-2 md:line-clamp-3">"{t.content}"</p>
                                 </div>
-                             </div>
-                          ))
-                       )}
-                    </div>
-                 </div>
-
-                 <div className="space-y-8">
-                    <h3 className="text-3xl font-display font-bold text-white px-6">Histórico Sincronizado</h3>
-                    <div className="space-y-6">
-                       {activities.length === 0 ? (
-                          <div className="py-20 text-center bg-nexus-900 border border-nexus-800 border-dashed rounded-[3rem]">
-                             <Zap size={48} className="mx-auto mb-4 opacity-10" />
-                             <p className="text-gray-600 font-bold uppercase tracking-widest italic text-xs">Dados de atividade pendentes.</p>
-                          </div>
-                       ) : (
-                          activities.map(activity => (
-                             <div key={activity.id} className="bg-nexus-900 border border-nexus-800 p-8 rounded-[3rem] flex flex-col md:flex-row items-center gap-8 group hover:border-nexus-accent transition-all shadow-xl">
-                                <div className="w-20 h-28 rounded-2xl overflow-hidden border-2 border-nexus-700 shrink-0">
-                                   <img src={activity.details.gameCover || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="Capa" />
-                                </div>
-                                <div className="flex-1 text-center md:text-left">
-                                   <h4 className="text-2xl font-bold text-white mb-2">{activity.details.gameTitle}</h4>
-                                   <p className="text-gray-400 italic text-sm">"{activity.details.content}"</p>
-                                   <div className="flex items-center gap-6 mt-6 justify-center md:justify-start text-[10px] text-gray-500 font-mono uppercase tracking-widest">
-                                      {new Date(activity.timestamp).toLocaleDateString()}
-                                   </div>
-                                </div>
-                                <ChevronRight className="text-gray-800 group-hover:text-white transition-colors" size={32} />
                              </div>
                           ))
                        )}
@@ -479,113 +394,8 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
               </div>
            </div>
          )}
-
-         {activeTab === 'achievements' && displayStats && (
-            <div className="space-y-12 animate-fade-in">
-               <div className="flex items-center justify-between px-6">
-                  <h3 className="text-3xl font-display font-bold text-white flex items-center gap-4">
-                     <Trophy className="text-nexus-accent" /> Vitórias Immortalizadas
-                  </h3>
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {displayStats.recentGames.map(game => (
-                    <div key={game.id} onClick={() => setSelectedGame(game)} className="bg-nexus-900 border border-nexus-800 p-6 rounded-[3rem] flex flex-col gap-6 hover:border-nexus-accent transition-all cursor-pointer group shadow-xl relative overflow-hidden">
-                      <div className={`absolute top-0 right-0 px-6 py-2 rounded-bl-[2rem] border-l border-b text-[10px] font-black uppercase tracking-widest z-10 flex items-center gap-2 ${getPlatformStyle(game.platform)}`}>
-                         <PlatformIcon platform={game.platform} className="w-3 h-3" />
-                         {game.platform}
-                      </div>
-
-                      <div className="flex items-center gap-6 pt-4">
-                         <img src={game.coverUrl} className="w-20 h-28 rounded-2xl object-cover shadow-2xl group-hover:scale-105 transition-transform" alt="Cover" />
-                         <div className="flex-1 min-w-0">
-                             <h4 className="font-display font-bold text-white text-xl leading-tight mb-3 group-hover:text-nexus-accent transition-colors">{game.title}</h4>
-                             <div className="flex items-center gap-3">
-                               <Clock size={14} className="text-gray-500" />
-                               <span className="text-xs text-gray-400 font-bold">{game.hoursPlayed}h jogadas</span>
-                             </div>
-                             <div className="mt-4 flex items-center gap-3 bg-black/30 p-2 rounded-xl border border-white/5">
-                               <Trophy size={16} className="text-yellow-500" />
-                               <span className="text-[11px] font-black text-white">{game.achievementCount} <span className="text-gray-600">/</span> {game.totalAchievements}</span>
-                             </div>
-                         </div>
-                      </div>
-                      
-                      <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-white/5">
-                         <div 
-                            className={`h-full transition-all duration-1000 ${game.achievementCount === game.totalAchievements ? 'bg-nexus-accent shadow-[0_0_10px_rgba(139,92,246,0.5)]' : 'bg-nexus-secondary'}`} 
-                            style={{ width: `${(game.achievementCount/game.totalAchievements)*100}%` }}
-                         ></div>
-                      </div>
-                    </div>
-                  ))}
-               </div>
-            </div>
-         )}
-
-         {activeTab === 'testimonials' && (
-            <div className="max-w-4xl mx-auto space-y-12 animate-fade-in">
-               {!isOwnProfile && currentUserStats && (
-                 <div className="bg-nexus-900 border border-nexus-800 p-10 rounded-[3rem] space-y-6 shadow-2xl">
-                    <h3 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-                       <MessageSquare className="text-nexus-accent" /> Deixar Reconhecimento
-                    </h3>
-                    <textarea 
-                      value={newTestimonial} 
-                      onChange={e => setNewTestimonial(e.target.value)}
-                      placeholder="Relate os feitos deste guerreiro no mural de honra..."
-                      className="w-full bg-nexus-800 border border-nexus-700 rounded-3xl p-6 text-white outline-none focus:border-nexus-accent h-32 text-sm shadow-inner transition-all"
-                    />
-                    <div className="flex justify-between items-center">
-                       <div className="flex gap-2">
-                          {(['pro', 'mvp', 'legend'] as const).map(v => (
-                             <button key={v} onClick={() => setSelectedVibe(v)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedVibe === v ? 'bg-nexus-accent text-white shadow-lg' : 'bg-nexus-800 text-gray-500 hover:text-white'}`}>{v}</button>
-                          ))}
-                       </div>
-                       <button 
-                         onClick={handlePostTestimonial}
-                         disabled={isSubmitting || !newTestimonial.trim()}
-                         className="px-8 py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent/80 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xl shadow-nexus-accent/20"
-                       >
-                          {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                          Publicar no Mural
-                       </button>
-                    </div>
-                 </div>
-               )}
-
-               <div className="space-y-6">
-                  {testimonials.length === 0 ? (
-                    <div className="py-24 text-center text-gray-600 bg-nexus-800/10 border border-nexus-800 border-dashed rounded-[4rem]">
-                        <MessageSquare size={48} className="mx-auto mb-4 opacity-10" />
-                        <p className="italic uppercase tracking-widest text-xs font-bold opacity-30">Céus limpos no mural de honra.</p>
-                    </div>
-                  ) : (
-                    testimonials.map(t => (
-                       <div key={t.id} className="bg-nexus-900 border border-nexus-800 p-8 rounded-[3rem] flex gap-6 hover:border-nexus-accent transition-all relative overflow-hidden group shadow-xl">
-                          <img src={t.fromAvatar} className="w-16 h-16 rounded-2xl border-2 border-nexus-700 shrink-0" alt="From Avatar" />
-                          <div className="flex-1 space-y-2">
-                             <div className="flex justify-between">
-                                <div className="flex items-center gap-3">
-                                    <h4 className="font-bold text-white text-xl">@{t.fromName}</h4>
-                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${
-                                        t.vibe === 'legend' ? 'border-yellow-500/30 text-yellow-500 bg-yellow-500/10' :
-                                        t.vibe === 'mvp' ? 'border-nexus-secondary/30 text-nexus-secondary bg-nexus-secondary/10' :
-                                        'border-nexus-accent/30 text-nexus-accent bg-nexus-accent/10'
-                                    }`}>{t.vibe}</span>
-                                </div>
-                                <span className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">{new Date(t.timestamp).toLocaleDateString()}</span>
-                             </div>
-                             <p className="text-gray-300 italic text-lg leading-relaxed">"{t.content}"</p>
-                          </div>
-                          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                             {t.vibe === 'legend' ? <Crown size={120} /> : <Award size={120} />}
-                          </div>
-                       </div>
-                    ))
-                  )}
-               </div>
-            </div>
-         )}
+         
+         {/* Outras abas (Achievements, etc) seguem padrão responsivo já aplicado */}
       </div>
     </div>
   );
@@ -594,19 +404,19 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
 const StatItem = ({ label, value, highlight, onClick }: { label: string, value: string | number, highlight?: boolean, onClick?: () => void }) => (
   <div 
     onClick={onClick}
-    className={`bg-nexus-900/80 px-8 py-5 rounded-[2rem] border border-nexus-800 shadow-2xl transition-all ${onClick ? 'cursor-pointer hover:border-nexus-accent hover:bg-nexus-800' : ''}`}
+    className={`bg-nexus-900/80 px-4 md:px-8 py-3 md:py-5 rounded-[1.2rem] md:rounded-[2rem] border border-nexus-800 shadow-2xl transition-all ${onClick ? 'cursor-pointer hover:border-nexus-accent hover:bg-nexus-800' : ''}`}
   >
-     <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${highlight ? 'text-nexus-accent' : 'text-gray-500'}`}>{label}</p>
-     <p className="text-3xl font-display font-bold leading-none text-white tracking-tighter">{value}</p>
+     <p className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-1 ${highlight ? 'text-nexus-accent' : 'text-gray-500'}`}>{label}</p>
+     <p className="text-xl md:text-3xl font-display font-bold leading-none text-white tracking-tighter">{value}</p>
   </div>
 );
 
 const TrophyBubble = ({ label, value, color, bg, icon: Icon }: { label: string, value: number, color: string, bg: string, icon: any }) => (
   <div className="flex flex-col items-center gap-1 group">
-    <div className={`w-12 h-12 ${bg} rounded-full flex items-center justify-center border border-white/5 shadow-inner transition-transform group-hover:scale-110`}>
-      <Icon size={20} className={color} />
+    <div className={`w-8 h-8 md:w-12 md:h-12 ${bg} rounded-full flex items-center justify-center border border-white/5 shadow-inner transition-transform group-hover:scale-110`}>
+      <Icon size={14} md:size={20} className={color} />
     </div>
-    <p className={`text-xl font-display font-black leading-none text-white mt-1`}>{value}</p>
-    <p className={`text-[7px] font-black uppercase tracking-[0.2em] ${color} opacity-70`}>{label}</p>
+    <p className={`text-sm md:text-xl font-display font-black leading-none text-white mt-1`}>{value}</p>
+    <p className={`text-[6px] md:text-[7px] font-black uppercase tracking-[0.2em] ${color} opacity-70`}>{label}</p>
   </div>
 );

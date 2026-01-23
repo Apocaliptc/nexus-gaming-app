@@ -4,7 +4,7 @@ import {
   Users, LogOut, Compass, BarChart2, Grid, 
   Trophy, Loader2, Lock, AtSign, UserCircle, 
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
-  MessageSquare, Bell, Box, BookOpen, Play
+  MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search
 } from 'lucide-react';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
@@ -47,12 +47,12 @@ const LoginScreen: React.FC = () => {
 
   return (
     <div className="h-screen bg-[#050507] flex items-center justify-center p-4 text-gray-100 overflow-hidden font-sans">
-      <div className="w-full max-w-md bg-nexus-900 border border-nexus-800 p-10 rounded-[3rem] shadow-2xl space-y-8 animate-fade-in relative overflow-hidden">
+      <div className="w-full max-w-md bg-nexus-900 border border-nexus-800 p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] shadow-2xl space-y-8 animate-fade-in relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-nexus-accent/10 blur-[60px] rounded-full"></div>
         <div className="text-center space-y-4">
-           <div className="w-20 h-20 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-[2rem] mx-auto flex items-center justify-center text-white font-bold text-3xl shadow-2xl shadow-nexus-accent/20 mb-4">N</div>
-           <h1 className="text-3xl font-display font-bold text-white tracking-tighter uppercase">NEXUS</h1>
-           <p className="text-gray-500 text-[10px] uppercase tracking-[0.4em] font-black">Eternizing Your Gaming DNA</p>
+           <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-[1.5rem] md:rounded-[2rem] mx-auto flex items-center justify-center text-white font-bold text-3xl shadow-2xl shadow-nexus-accent/20 mb-4">N</div>
+           <h1 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tighter uppercase">NEXUS</h1>
+           <p className="text-gray-500 text-[8px] md:text-[10px] uppercase tracking-[0.4em] font-black">Eternizing Your Gaming DNA</p>
         </div>
         {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-xs text-center animate-pulse">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -131,12 +131,13 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-[#050507] text-white overflow-hidden font-sans">
-      <aside className="w-20 md:w-64 bg-nexus-900 border-r border-nexus-800 flex flex-col transition-all duration-300 relative z-50 shrink-0">
+      {/* Sidebar Desktop */}
+      <aside className="hidden md:flex w-64 bg-nexus-900 border-r border-nexus-800 flex-col transition-all duration-300 relative z-50 shrink-0">
         <div className="p-6 flex items-center gap-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xl cursor-pointer" onClick={() => setActiveTab('pulse')}>
+          <div className="w-12 h-12 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xl cursor-pointer" onClick={() => setActiveTab('pulse')}>
             <span className="font-display font-bold text-white text-2xl">N</span>
           </div>
-          <div className="hidden md:block">
+          <div>
             <h2 className="font-display font-bold text-xl tracking-tighter leading-none">NEXUS</h2>
             <p className="text-[8px] font-black text-nexus-accent uppercase tracking-widest">Sovereign Legacy</p>
           </div>
@@ -151,7 +152,7 @@ const MainApp: React.FC = () => {
                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats?.nexusId}`} className="w-full h-full object-cover" alt="Avatar" />
                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-nexus-900 shadow-lg"></div>
              </div>
-             <div className="text-left hidden md:block">
+             <div className="text-left">
                 <p className="font-black text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/80">Meu Legado</p>
                 <p className="font-bold text-sm text-white truncate">{userStats?.nexusId.replace('@', '')}</p>
              </div>
@@ -160,14 +161,14 @@ const MainApp: React.FC = () => {
 
         <nav className="flex-1 px-3 space-y-8 overflow-y-auto custom-scrollbar pt-2">
           <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Nexus Pulse</p>
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Nexus Pulse</p>
             <NavItem id="pulse" icon={Activity} label="Pulse Global" active={activeTab} onClick={setActiveTab} />
             <NavItem id="chat" icon={MessageSquare} label="Comunicações" active={activeTab} onClick={setActiveTab} />
             <NavItem id="friends" icon={Users} label="Conexões" active={activeTab} onClick={setActiveTab} />
           </div>
 
           <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Patrimônio Digital</p>
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Patrimônio Digital</p>
             <NavItem id="profile" icon={UserCircle} label="Perfil & DNA" active={activeTab} onClick={setActiveTab} />
             <NavItem id="achievements" icon={Trophy} label="Conquistas" active={activeTab} onClick={setActiveTab} />
             <NavItem id="library" icon={Grid} label="Biblioteca" active={activeTab} onClick={setActiveTab} />
@@ -175,13 +176,13 @@ const MainApp: React.FC = () => {
           </div>
 
           <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Físico & Hardware</p>
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Físico & Hardware</p>
             <NavItem id="vault" icon={Box} label="Coleção" active={activeTab} onClick={setActiveTab} />
             <NavItem id="auctions" icon={Play} label="Leilões" active={activeTab} onClick={setActiveTab} />
           </div>
 
           <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Inteligência</p>
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Inteligência</p>
             <NavItem id="oracle" icon={BrainCircuit} label="Nexus Oracle" active={activeTab} onClick={setActiveTab} />
             <NavItem id="discover" icon={Compass} label="Explorar" active={activeTab} onClick={setActiveTab} />
             <NavItem id="chronos" icon={BookOpen} label="Chronos" active={activeTab} onClick={setActiveTab} />
@@ -196,7 +197,7 @@ const MainApp: React.FC = () => {
             }`}
           >
              <Bell size={20} />
-             <span className="font-bold text-xs hidden md:block">Alertas</span>
+             <span className="font-bold text-xs">Alertas</span>
              {unreadCount > 0 && (
                 <div className="absolute right-3 top-3 w-5 h-5 bg-red-600 rounded-lg flex items-center justify-center text-[8px] font-black border-2 border-nexus-900 shadow-xl">
                    {unreadCount}
@@ -211,7 +212,7 @@ const MainApp: React.FC = () => {
             }`}
           >
              <SettingsIcon size={20} />
-             <span className="font-bold text-xs hidden md:block">Ajustes</span>
+             <span className="font-bold text-xs">Ajustes</span>
           </button>
 
           <button 
@@ -219,22 +220,40 @@ const MainApp: React.FC = () => {
             className="w-full flex items-center gap-4 p-3 text-red-500/60 hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
           >
             <LogOut size={20} />
-            <span className="font-bold text-xs hidden md:block">Sair</span>
+            <span className="font-bold text-xs">Sair</span>
           </button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-hidden relative flex flex-col bg-[#050507]">
+        {/* Syncing Indicator */}
         {isSyncing && (
-          <div className="absolute top-6 right-8 z-[100] animate-fade-in">
-             <div className="bg-nexus-900/90 backdrop-blur-xl border border-nexus-accent/40 px-6 py-3 rounded-2xl flex items-center gap-3 shadow-2xl shadow-nexus-accent/10">
-                <Loader2 size={16} className="animate-spin text-nexus-accent" />
-                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Sintonizando...</span>
+          <div className="absolute top-4 right-4 md:top-6 md:right-8 z-[100] animate-fade-in">
+             <div className="bg-nexus-900/90 backdrop-blur-xl border border-nexus-accent/40 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl flex items-center gap-3 shadow-2xl shadow-nexus-accent/10">
+                <Loader2 size={14} className="animate-spin text-nexus-accent" />
+                <span className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-[0.2em]">Sincronizando...</span>
              </div>
           </div>
         )}
-        <div className="flex-1 relative">
+        
+        {/* Content Area */}
+        <div className="flex-1 relative pb-20 md:pb-0">
            {renderContent()}
+        </div>
+
+        {/* Bottom Nav Mobile */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-nexus-800 px-2 py-3 flex justify-around items-center z-[100] shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+           <MobileNavItem id="pulse" icon={Activity} active={activeTab === 'pulse'} onClick={setActiveTab} />
+           <MobileNavItem id="library" icon={Grid} active={activeTab === 'library'} onClick={setActiveTab} />
+           <MobileNavItem id="discover" icon={Search} active={activeTab === 'discover'} onClick={setActiveTab} />
+           <MobileNavItem id="oracle" icon={BrainCircuit} active={activeTab === 'oracle'} onClick={setActiveTab} />
+           <MobileNavItem id="profile" icon={UserCircle} active={activeTab === 'profile'} onClick={setActiveTab} />
+           
+           {/* Notifications dot on Profile icon or similar could be added */}
+           <button onClick={() => setActiveTab('notifications')} className="relative p-2">
+              <Bell size={22} className={activeTab === 'notifications' ? 'text-nexus-accent' : 'text-gray-500'} />
+              {unreadCount > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-[#09090b]"></div>}
+           </button>
         </div>
       </main>
     </div>
@@ -249,7 +268,16 @@ const NavItem = ({ id, icon: Icon, label, active, onClick }: { id: string, icon:
     }`}
   >
     <Icon size={20} className={`transition-all ${active === id ? 'scale-110' : 'group-hover:scale-110'}`} />
-    <span className="font-bold text-xs hidden md:block tracking-tight">{label}</span>
+    <span className="font-bold text-xs tracking-tight">{label}</span>
+  </button>
+);
+
+const MobileNavItem = ({ id, icon: Icon, active, onClick }: { id: string, icon: any, active: boolean, onClick: (id: string) => void }) => (
+  <button 
+    onClick={() => onClick(id)}
+    className={`p-3 rounded-xl transition-all flex flex-col items-center gap-1 ${active ? 'bg-nexus-accent/10 text-nexus-accent' : 'text-gray-500'}`}
+  >
+    <Icon size={22} className={active ? 'scale-110 transition-transform' : ''} />
   </button>
 );
 
@@ -260,10 +288,10 @@ const AppContent: React.FC = () => {
     return (
       <div className="h-screen bg-[#050507] flex flex-col items-center justify-center gap-6">
         <div className="relative">
-           <Loader2 className="animate-spin text-nexus-accent" size={64} />
+           <Loader2 className="animate-spin text-nexus-accent" size={48} md:size={64} />
            <div className="absolute inset-0 bg-nexus-accent blur-3xl opacity-20"></div>
         </div>
-        <p className="text-gray-500 font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Handshaking Core...</p>
+        <p className="text-gray-500 font-mono text-[10px] md:text-xs uppercase tracking-[0.5em] animate-pulse">Handshaking Core...</p>
       </div>
     );
   }
