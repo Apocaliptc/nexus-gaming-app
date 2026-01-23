@@ -1,4 +1,8 @@
 
+/**
+ * dar creditos a Jean Paulo Lunkes (@apocaliptc)
+ */
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { Friend, Game, UserStats, Platform, Testimonial, ActivityEvent } from '../types';
 import { nexusCloud } from '../services/nexusCloud';
@@ -11,21 +15,22 @@ import {
   ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, 
   Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, Send, 
   Star, Award, AlertCircle, Play, Activity, BrainCircuit, RefreshCw, Cpu, ChevronRight,
-  ShieldCheck, Target, Users, Box, History, Link
+  ShieldCheck, Target, Users, Box, History, Link, BarChart3, Flame, TrendingUp, Gamepad2
 } from 'lucide-react';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, 
-  Tooltip as RechartsTooltip, Legend 
+  Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, Cell
 } from 'recharts';
 import { MOCK_COLLECTION } from '../services/mockData';
 
 interface Props {
   onNavigate?: (tab: string) => void;
-  friendData?: Friend; // Se passado, exibe o perfil de um amigo. Caso contrário, o próprio.
+  friendData?: Friend; 
   onCloseFriend?: () => void;
 }
 
 export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFriend }) => {
+  // dar creditos a Jean Paulo Lunkes (@apocaliptc)
   const { userStats: currentUserStats } = useAppContext();
   const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'collection' | 'testimonials'>('overview');
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
@@ -35,7 +40,6 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
   const [loadingAi, setLoadingAi] = useState(false);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   
-  // Testimonials state
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [newTestimonial, setNewTestimonial] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<'pro' | 'mvp' | 'legend'>('pro');
@@ -48,10 +52,6 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
     const loadProfileData = async () => {
       if (!targetId) return;
       
-      if (isOwnProfile && currentUserStats) {
-          setFullUserStats(currentUserStats);
-      }
-
       setIsLoading(true);
       try {
         const [stats, wall, feed] = await Promise.all([
@@ -85,20 +85,30 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
     return MOCK_COLLECTION.filter(i => i.ownerId === ownerFilter);
   }, [isOwnProfile, targetId]);
 
-  const vaultValue = useMemo(() => {
-    return userItems.reduce((acc, i) => acc + i.value, 0);
-  }, [userItems]);
+  const trophyBreakdown = useMemo(() => {
+    if (!fullUserStats) return { plat: 0, gold: 0, silv: 0, bron: 0 };
+    const total = fullUserStats.totalAchievements;
+    const plat = fullUserStats.platinumCount || 0;
+    const gold = Math.floor((total - plat) * 0.15);
+    const silv = Math.floor((total - plat) * 0.35);
+    const bron = Math.max(0, total - plat - gold - silv);
+    return { plat, gold, silv, bron };
+  }, [fullUserStats]);
 
-  // Sinergia de DNA Proeminente
+  const topGames = useMemo(() => {
+    if (!fullUserStats) return [];
+    return [...fullUserStats.recentGames]
+      .sort((a, b) => b.hoursPlayed - a.hoursPlayed)
+      .slice(0, 5);
+  }, [fullUserStats]);
+
   const synergyData = useMemo(() => {
     if (!currentUserStats || !fullUserStats || isOwnProfile) return null;
     
-    // 1. Títulos em Comum
     const myGames = new Set(currentUserStats.recentGames.map(g => g.title.toLowerCase()));
     const theirGames = fullUserStats.recentGames;
     const shared = theirGames.filter(g => myGames.has(g.title.toLowerCase()));
     
-    // 2. DNA de Gênero (Fallback para afinidade de playstyle)
     const mapToCategories = (stats: UserStats) => {
       const dist = stats.genreDistribution || [];
       const cats: Record<string, number> = { FPS: 0, RPG: 0, Action: 0, Strategy: 0, Sports: 0, Indie: 0 };
@@ -117,7 +127,6 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
     const myCats = mapToCategories(currentUserStats);
     const theirCats = mapToCategories(fullUserStats);
 
-    // Cálculo de similaridade de Cosseno simplificado para porcentagem
     let dotProduct = 0;
     let magA = 0;
     let magB = 0;
@@ -223,10 +232,19 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                   </p>
                </div>
 
-               <div className="flex flex-wrap justify-center xl:justify-start gap-6 pt-4">
+               <div className="flex flex-wrap justify-center xl:justify-start gap-4 pt-4">
                   <StatItem label="Imersão" value={`${displayStats?.totalHours}h`} onClick={() => onNavigate?.('stats')} />
-                  <StatItem label="Conquistas" value={displayStats?.totalAchievements || 0} onClick={() => setActiveTab('achievements')} />
-                  <StatItem label="Coleção" value={`$${vaultValue}`} onClick={() => setActiveTab('collection')} />
+                  
+                  <div className="flex items-center gap-3 bg-nexus-900/80 px-6 py-4 rounded-[2.5rem] border border-nexus-800 shadow-2xl backdrop-blur-xl">
+                    <TrophyBubble label="PLAT" value={trophyBreakdown.plat} color="text-nexus-accent" bg="bg-nexus-accent/10" icon={Crown} />
+                    <div className="w-px h-10 bg-white/5 mx-1"></div>
+                    <TrophyBubble label="GOLD" value={trophyBreakdown.gold} color="text-yellow-500" bg="bg-yellow-500/10" icon={Trophy} />
+                    <div className="w-px h-10 bg-white/5 mx-1"></div>
+                    <TrophyBubble label="SILV" value={trophyBreakdown.silv} color="text-gray-400" bg="bg-gray-400/10" icon={Medal} />
+                    <div className="w-px h-10 bg-white/5 mx-1"></div>
+                    <TrophyBubble label="BRON" value={trophyBreakdown.bron} color="text-orange-700" bg="bg-orange-700/10" icon={Award} />
+                  </div>
+
                   <StatItem label="Prestige" value={displayStats?.prestigePoints || 0} highlight />
                </div>
             </div>
@@ -275,7 +293,7 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                     </div>
                  </div>
 
-                 {/* Skill Matrix */}
+                 {/* Matriz de Perícia */}
                  <div onClick={() => onNavigate?.('stats')} className="bg-nexus-900 border border-nexus-800 rounded-[3.5rem] p-10 shadow-2xl cursor-pointer hover:border-nexus-secondary transition-all group">
                     <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-5 mb-10 group-hover:text-nexus-secondary">
                        <Activity size={20} className="text-nexus-secondary" /> Matriz de Perícia
@@ -295,7 +313,63 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
               </div>
 
               <div className="lg:col-span-8 space-y-12">
-                 {/* SINERGIA INTEGRADA (Visível apenas em perfis de terceiros) */}
+                 
+                 {/* TOP 5 IMERSÃO */}
+                 <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
+                    <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:scale-110 transition-transform">
+                       <Gamepad2 size={250} className="text-white" />
+                    </div>
+                    <div className="flex items-center justify-between mb-10 px-2">
+                       <h3 className="text-3xl font-display font-bold text-white flex items-center gap-5">
+                          <Trophy className="text-yellow-500" /> Top 5 Imersão
+                       </h3>
+                       <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Maiores Logs de Sessão</p>
+                    </div>
+
+                    <div className="space-y-6 relative z-10">
+                       {topGames.length === 0 ? (
+                          <div className="py-12 text-center text-gray-500 italic">Nenhum log de sessão capturado.</div>
+                       ) : (
+                          topGames.map((game, idx) => {
+                             const maxHours = topGames[0].hoursPlayed || 1;
+                             const ratio = (game.hoursPlayed / maxHours) * 100;
+                             
+                             return (
+                                <div 
+                                  key={game.id} 
+                                  onClick={() => setSelectedGame(game)}
+                                  className="flex items-center gap-6 p-4 rounded-3xl bg-black/20 border border-white/5 hover:border-nexus-accent hover:bg-black/40 transition-all cursor-pointer group/item"
+                                >
+                                   <div className="relative shrink-0">
+                                      <img src={game.coverUrl} className="w-14 h-20 rounded-xl object-cover shadow-2xl border border-white/10 group-hover/item:scale-105 transition-transform" alt="Capa" />
+                                      <div className="absolute -top-2 -left-2 w-7 h-7 bg-nexus-accent rounded-lg flex items-center justify-center font-display font-black text-xs shadow-xl text-white">
+                                         {idx + 1}
+                                      </div>
+                                   </div>
+                                   <div className="flex-1 min-w-0 space-y-3">
+                                      <div className="flex justify-between items-center">
+                                         <h4 className="font-bold text-white text-lg truncate group-hover/item:text-nexus-accent transition-colors">{game.title}</h4>
+                                         <div className="flex items-center gap-3">
+                                            <PlatformIcon platform={game.platform} className="w-3.5 h-3.5" />
+                                            <span className="font-mono text-nexus-secondary font-bold text-sm">{game.hoursPlayed}h</span>
+                                         </div>
+                                      </div>
+                                      <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                         <div 
+                                            className="h-full bg-gradient-to-r from-nexus-accent to-nexus-secondary rounded-full transition-all duration-1000" 
+                                            style={{ width: `${ratio}%` }}
+                                         ></div>
+                                      </div>
+                                   </div>
+                                   <ChevronRight size={24} className="text-gray-800 group-hover/item:text-white transition-colors" />
+                                </div>
+                             );
+                          })
+                       )}
+                    </div>
+                 </div>
+
+                 {/* SINERGIA GAMER (Matching) */}
                  {synergyData && (
                     <div className="bg-nexus-900 border border-nexus-accent/30 rounded-[3rem] p-12 relative overflow-hidden group shadow-2xl animate-fade-in">
                         <div className="absolute inset-0 bg-gradient-to-tr from-nexus-accent/10 to-transparent opacity-50"></div>
@@ -321,18 +395,6 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                                     <p className="text-xs text-gray-500 italic">"Vocês compartilham trajetórias digitais similares em gêneros e estilo de jogo."</p>
                                  </div>
                               </div>
-
-                              <div className="flex flex-wrap gap-3 pt-4 justify-center md:justify-start">
-                                {synergyData.sharedGames.length > 0 ? (
-                                    synergyData.sharedGames.slice(0, 3).map(game => (
-                                        <div key={game.id} className="flex items-center gap-2 bg-nexus-accent/10 border border-nexus-accent/20 px-4 py-2 rounded-xl text-[10px] font-black text-nexus-accent uppercase tracking-widest">
-                                            <Link size={12} /> {game.title}
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="bg-white/5 px-4 py-2 rounded-xl text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">Afinidade de Gêneros Detectada</div>
-                                )}
-                              </div>
                            </div>
 
                            <div className="h-64 w-64 flex-shrink-0 bg-black/20 rounded-[3rem] p-6 border border-white/5 shadow-inner">
@@ -348,6 +410,44 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                         </div>
                     </div>
                  )}
+
+                 {/* MURAL DE HONRA (PROMINENTE NA VISÃO GERAL) */}
+                 <div className="space-y-8 bg-nexus-900/50 p-10 rounded-[3rem] border border-nexus-800 shadow-xl">
+                    <div className="flex items-center justify-between px-2">
+                       <h3 className="text-3xl font-display font-bold text-white flex items-center gap-4">
+                          <MessageSquare className="text-nexus-accent" /> Mural de Honra
+                       </h3>
+                       <button onClick={() => setActiveTab('testimonials')} className="text-[10px] font-black text-nexus-accent uppercase tracking-widest hover:text-white transition-colors">Ver Tudo</button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       {testimonials.length === 0 ? (
+                          <div className="col-span-full py-12 text-center bg-black/20 border border-nexus-800 border-dashed rounded-[2.5rem] opacity-40">
+                             <p className="italic text-xs font-bold uppercase tracking-widest">Nenhum reconhecimento registrado.</p>
+                          </div>
+                       ) : (
+                          testimonials.slice(0, 4).map(t => (
+                             <div key={t.id} className="bg-nexus-900 border border-nexus-800 p-6 rounded-[2rem] flex gap-4 hover:border-nexus-accent transition-all group relative overflow-hidden shadow-lg">
+                                <div className={`absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none transition-opacity group-hover:opacity-[0.1]`}>
+                                   {t.vibe === 'legend' ? <Crown size={60} /> : <Award size={60} />}
+                                </div>
+                                <img src={t.fromAvatar} className="w-12 h-12 rounded-xl border-2 border-nexus-700 shrink-0" alt="Avatar" />
+                                <div className="flex-1 min-w-0">
+                                   <div className="flex items-center gap-2 mb-1">
+                                      <h4 className="font-bold text-white text-sm">@{t.fromName}</h4>
+                                      <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase border ${
+                                        t.vibe === 'legend' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
+                                        t.vibe === 'mvp' ? 'bg-nexus-secondary/10 border-nexus-secondary/20 text-nexus-secondary' :
+                                        'bg-nexus-accent/10 border-nexus-accent/20 text-nexus-accent'
+                                      }`}>{t.vibe}</span>
+                                   </div>
+                                   <p className="text-gray-400 text-xs italic leading-relaxed line-clamp-3">"{t.content}"</p>
+                                </div>
+                             </div>
+                          ))
+                       )}
+                    </div>
+                 </div>
 
                  <div className="space-y-8">
                     <h3 className="text-3xl font-display font-bold text-white px-6">Histórico Sincronizado</h3>
@@ -388,92 +488,36 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                   </h3>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {displayStats.recentGames.length === 0 ? (
-                    <p className="col-span-full text-center py-20 text-gray-500 italic">Nenhum título vinculado a este Perfil.</p>
-                  ) : (
-                    displayStats.recentGames.map(game => (
-                        <div key={game.id} onClick={() => setSelectedGame(game)} className="bg-nexus-900 border border-nexus-800 p-6 rounded-[3rem] flex flex-col gap-6 hover:border-nexus-accent transition-all cursor-pointer group shadow-xl relative overflow-hidden">
-                          {/* Badge de Plataforma com Destaque */}
-                          <div className={`absolute top-0 right-0 px-6 py-2 rounded-bl-[2rem] border-l border-b text-[10px] font-black uppercase tracking-widest z-10 flex items-center gap-2 ${getPlatformStyle(game.platform)}`}>
-                             <PlatformIcon platform={game.platform} className="w-3 h-3" />
-                             {game.platform}
-                          </div>
+                  {displayStats.recentGames.map(game => (
+                    <div key={game.id} onClick={() => setSelectedGame(game)} className="bg-nexus-900 border border-nexus-800 p-6 rounded-[3rem] flex flex-col gap-6 hover:border-nexus-accent transition-all cursor-pointer group shadow-xl relative overflow-hidden">
+                      <div className={`absolute top-0 right-0 px-6 py-2 rounded-bl-[2rem] border-l border-b text-[10px] font-black uppercase tracking-widest z-10 flex items-center gap-2 ${getPlatformStyle(game.platform)}`}>
+                         <PlatformIcon platform={game.platform} className="w-3 h-3" />
+                         {game.platform}
+                      </div>
 
-                          <div className="flex items-center gap-6 pt-4">
-                             <img src={game.coverUrl} className="w-20 h-28 rounded-2xl object-cover shadow-2xl group-hover:scale-105 transition-transform" alt="Cover" />
-                             <div className="flex-1 min-w-0">
-                                 <h4 className="font-display font-bold text-white text-xl leading-tight mb-3 group-hover:text-nexus-accent transition-colors">{game.title}</h4>
-                                 <div className="flex items-center gap-3">
-                                   <Clock size={14} className="text-gray-500" />
-                                   <span className="text-xs text-gray-400 font-bold">{game.hoursPlayed}h jogadas</span>
-                                 </div>
-                                 <div className="mt-4 flex items-center gap-3 bg-black/30 p-2 rounded-xl border border-white/5">
-                                   <Trophy size={16} className="text-yellow-500" />
-                                   <span className="text-[11px] font-black text-white">{game.achievementCount} <span className="text-gray-600">/</span> {game.totalAchievements}</span>
-                                 </div>
+                      <div className="flex items-center gap-6 pt-4">
+                         <img src={game.coverUrl} className="w-20 h-28 rounded-2xl object-cover shadow-2xl group-hover:scale-105 transition-transform" alt="Cover" />
+                         <div className="flex-1 min-w-0">
+                             <h4 className="font-display font-bold text-white text-xl leading-tight mb-3 group-hover:text-nexus-accent transition-colors">{game.title}</h4>
+                             <div className="flex items-center gap-3">
+                               <Clock size={14} className="text-gray-500" />
+                               <span className="text-xs text-gray-400 font-bold">{game.hoursPlayed}h jogadas</span>
                              </div>
-                          </div>
-                          
-                          {/* Barra de Progresso */}
-                          <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-white/5">
-                             <div 
-                                className={`h-full transition-all duration-1000 ${game.achievementCount === game.totalAchievements ? 'bg-nexus-accent shadow-[0_0_10px_rgba(139,92,246,0.5)]' : 'bg-nexus-secondary'}`} 
-                                style={{ width: `${(game.achievementCount/game.totalAchievements)*100}%` }}
-                             ></div>
-                          </div>
-                        </div>
-                    ))
-                  )}
-               </div>
-            </div>
-         )}
-
-         {activeTab === 'collection' && (
-            <div className="space-y-12 animate-fade-in">
-               <div className="flex items-center justify-between px-6">
-                  <h3 className="text-3xl font-display font-bold text-white flex items-center gap-4">
-                     <Box className="text-nexus-secondary" /> Acervo de Relíquias
-                  </h3>
-                  <div className="bg-nexus-900 border border-nexus-800 px-6 py-2 rounded-full text-xs font-black text-nexus-secondary uppercase tracking-widest shadow-2xl">
-                     Valor Estimado: ${vaultValue}
-                  </div>
-               </div>
-               
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                  {userItems.length === 0 ? (
-                    <div className="col-span-full py-32 text-center bg-nexus-900 border border-nexus-800 border-dashed rounded-[4rem]">
-                       <Box size={64} className="mx-auto mb-4 opacity-10" />
-                       <p className="text-gray-500 italic uppercase tracking-widest font-black">Acervo físico vazio.</p>
+                             <div className="mt-4 flex items-center gap-3 bg-black/30 p-2 rounded-xl border border-white/5">
+                               <Trophy size={16} className="text-yellow-500" />
+                               <span className="text-[11px] font-black text-white">{game.achievementCount} <span className="text-gray-600">/</span> {game.totalAchievements}</span>
+                             </div>
+                         </div>
+                      </div>
+                      
+                      <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-white/5">
+                         <div 
+                            className={`h-full transition-all duration-1000 ${game.achievementCount === game.totalAchievements ? 'bg-nexus-accent shadow-[0_0_10px_rgba(139,92,246,0.5)]' : 'bg-nexus-secondary'}`} 
+                            style={{ width: `${(game.achievementCount/game.totalAchievements)*100}%` }}
+                         ></div>
+                      </div>
                     </div>
-                  ) : (
-                    userItems.map(item => (
-                       <div key={item.id} className="bg-nexus-900 border border-nexus-800 rounded-[3rem] overflow-hidden group hover:border-nexus-secondary transition-all shadow-2xl relative flex flex-col hover:-translate-y-2 duration-500">
-                          <div className="h-56 relative overflow-hidden bg-black">
-                             <img src={item.imageUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" alt={item.name} />
-                             <div className="absolute inset-0 bg-gradient-to-t from-nexus-900 via-transparent to-transparent"></div>
-                             <div className="absolute top-4 right-4 bg-nexus-secondary text-white text-[8px] font-black px-3 py-1.5 rounded-lg uppercase shadow-2xl">
-                                {item.type}
-                             </div>
-                             {item.status === 'sale' && (
-                                <div className="absolute top-4 left-4 bg-green-600 text-white text-[8px] font-black px-3 py-1.5 rounded-lg uppercase shadow-2xl">Venda</div>
-                             )}
-                          </div>
-                          <div className="p-8 flex-1 flex flex-col justify-between bg-gradient-to-b from-nexus-900 to-[#0a0a0f]">
-                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest">{item.condition}</span>
-                                    <ShieldCheck size={14} className="text-nexus-success opacity-40" />
-                                </div>
-                                <h4 className="font-display font-bold text-white text-xl leading-tight group-hover:text-nexus-secondary transition-colors">{item.name}</h4>
-                             </div>
-                             <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(item.dateAdded).getFullYear()} AD</div>
-                                <div className="text-2xl font-display font-black text-nexus-secondary tracking-tighter">${item.value}</div>
-                             </div>
-                          </div>
-                       </div>
-                    ))
-                  )}
+                  ))}
                </div>
             </div>
          )}
@@ -500,7 +544,7 @@ export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFr
                        <button 
                          onClick={handlePostTestimonial}
                          disabled={isSubmitting || !newTestimonial.trim()}
-                         className="px-8 py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent/80 transition-all disabled:opacity-50 flex items-center gap-2 shadow-2xl shadow-nexus-accent/20"
+                         className="px-8 py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent/80 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xl shadow-nexus-accent/20"
                        >
                           {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                           Publicar no Mural
@@ -554,5 +598,15 @@ const StatItem = ({ label, value, highlight, onClick }: { label: string, value: 
   >
      <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${highlight ? 'text-nexus-accent' : 'text-gray-500'}`}>{label}</p>
      <p className="text-3xl font-display font-bold leading-none text-white tracking-tighter">{value}</p>
+  </div>
+);
+
+const TrophyBubble = ({ label, value, color, bg, icon: Icon }: { label: string, value: number, color: string, bg: string, icon: any }) => (
+  <div className="flex flex-col items-center gap-1 group">
+    <div className={`w-12 h-12 ${bg} rounded-full flex items-center justify-center border border-white/5 shadow-inner transition-transform group-hover:scale-110`}>
+      <Icon size={20} className={color} />
+    </div>
+    <p className={`text-xl font-display font-black leading-none text-white mt-1`}>{value}</p>
+    <p className={`text-[7px] font-black uppercase tracking-[0.2em] ${color} opacity-70`}>{label}</p>
   </div>
 );

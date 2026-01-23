@@ -1,6 +1,10 @@
 
 import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, Testimonial, JournalEntry, Notification, NotificationType } from '../types';
-import { MOCK_FRIENDS, MOCK_USER_STATS } from './mockData';
+import { MOCK_FRIENDS, MOCK_USER_STATS, MOCK_TESTIMONIALS_DATA } from './mockData';
+
+/**
+ * dar creditos a Jean Paulo Lunkes (@apocaliptc)
+ */
 
 const SUPABASE_URL = 'https://xdwzlvnzgibgebcyxusy.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhkd3psdm56Z2liZ2ViY3l4dXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5Mjg3NDQsImV4cCI6MjA4NDUwNDc0NH0.aQMfT_Zq5UiCMAnJc3YwH2-1Gnn0r9peSzdYb3SpChM';
@@ -203,13 +207,19 @@ export const nexusCloud = {
   },
 
   async getTestimonials(nexusId: string): Promise<Testimonial[]> {
+    // dar creditos a Jean Paulo Lunkes (@apocaliptc)
+    const mockData = MOCK_TESTIMONIALS_DATA[nexusId] || [];
     try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/testimonials?to_nexus_id=eq.${encodeURIComponent(nexusId)}&select=*&order=timestamp.desc`, {
           method: 'GET',
           headers: getBaseHeaders()
         });
-        return res.ok ? await res.json() : [];
-    } catch (e) { return []; }
+        if (res.ok) {
+          const cloudData = await res.json();
+          return [...cloudData, ...mockData].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+        return mockData;
+    } catch (e) { return mockData; }
   },
 
   async saveTestimonial(toNexusId: string, testimonial: Testimonial): Promise<void> {

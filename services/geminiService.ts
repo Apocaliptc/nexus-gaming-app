@@ -5,10 +5,25 @@ import { UserStats, AIInsight, Game, Platform, Achievement, Badge } from "../typ
 // Cache keys
 const INSIGHT_CACHE_KEY = 'nexus_ai_insight_cache';
 
+/**
+ * Gets a fresh AI client instance.
+ * Guidelines: Always use a named parameter for apiKey and process.env.API_KEY directly.
+ */
 const getAiClient = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) return null;
   return new GoogleGenAI({ apiKey });
+};
+
+/**
+ * Protocolo de Emergência: Fallback para quando o Oráculo excede a cota.
+ */
+const FALLBACK_INSIGHT: AIInsight = {
+  personaTitle: "Guerreiro do Legado Nexus",
+  description: "Um veterano sintonizado cujos feitos transcendem os limites da rede. Sua trajetória é marcada pela resiliência e busca incessante pela glória imortalizada.",
+  suggestedGenres: ["RPG de Ação", "Estratégia", "Souls-like"],
+  improvementTip: "A consistência é sua maior arma. Mantenha o foco nos marcos raros para elevar seu Prestige.",
+  potentialBadges: ["Elite Operative", "Hall Keeper"]
 };
 
 /**
@@ -21,7 +36,9 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
       return await fn();
     } catch (err: any) {
       lastError = err;
-      const isRateLimit = err?.message?.includes('429') || err?.status === 429 || JSON.stringify(err).includes('429');
+      // Normalizing error check for 429
+      const errorStr = JSON.stringify(lastError);
+      const isRateLimit = lastError?.status === 429 || errorStr.includes('429') || errorStr.includes('RESOURCE_EXHAUSTED');
       
       if (isRateLimit && i < maxRetries) {
         const waitTime = Math.pow(2, i) * 1000 + Math.random() * 1000;
@@ -29,7 +46,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
-      throw err;
+      throw lastError;
     }
   }
   throw lastError;
@@ -47,7 +64,7 @@ export const generateOracleSpeech = async (text: string): Promise<string | undef
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: `Diga de forma heróica e mística: ${text}` }] }],
       config: {
-        responseModalalities: [Modality.AUDIO],
+        responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Charon' },
@@ -61,7 +78,7 @@ export const generateOracleSpeech = async (text: string): Promise<string | undef
 };
 
 /**
- * Analisa o perfil gamer e gera o DNA. Inclui cache de sessão.
+ * Analisa o perfil gamer e gera o DNA. Usa Flash para evitar 429 em massa.
  */
 export const analyzeGamingProfile = async (userStats: UserStats, forceRefresh = false): Promise<AIInsight | null> => {
   // Check Cache
@@ -70,7 +87,6 @@ export const analyzeGamingProfile = async (userStats: UserStats, forceRefresh = 
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        // Only use cache if it was for the same achievement count (simple heuristic)
         if (parsed.achievementCount === userStats.totalAchievements) {
           return parsed.insight;
         }
@@ -78,58 +94,60 @@ export const analyzeGamingProfile = async (userStats: UserStats, forceRefresh = 
     }
   }
 
-  return withRetry(async () => {
-    const ai = getAiClient();
-    if (!ai) return null;
+  try {
+    return await withRetry(async () => {
+      const ai = getAiClient();
+      if (!ai) return FALLBACK_INSIGHT;
 
-    const prompt = `
-      Analise o seguinte perfil gamer unificado:
-      - Total de Horas: ${userStats.totalHours}
-      - Conquistas Totais: ${userStats.totalAchievements}
-      - Platinas: ${userStats.platinumCount}
-      - Jogos Recentes: ${userStats.recentGames.slice(0, 5).map(g => `${g.title} (${g.platform})`).join(", ")}
-      
-      Gere um JSON com:
-      1. personaTitle: Nome épico.
-      2. description: Narrativa curta da jornada.
-      3. suggestedGenres: 3 gêneros.
-      4. improvementTip: Dica técnica.
-      5. potentialBadges: 2 nomes de badges.
-    `;
+      const prompt = `
+        Analise o seguinte perfil gamer unificado:
+        - Total de Horas: ${userStats.totalHours}
+        - Conquistas Totais: ${userStats.totalAchievements}
+        - Platinas: ${userStats.platinumCount}
+        - Jogos Recentes: ${userStats.recentGames.slice(0, 5).map(g => `${g.title} (${g.platform})`).join(", ")}
+        
+        Gere um JSON com:
+        1. personaTitle: Nome épico.
+        2. description: Narrativa curta da jornada.
+        3. suggestedGenres: 3 gêneros.
+        4. improvementTip: Dica técnica.
+        5. potentialBadges: 2 nomes de badges.
+      `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            personaTitle: { type: Type.STRING },
-            description: { type: Type.STRING },
-            suggestedGenres: { type: Type.ARRAY, items: { type: Type.STRING } },
-            improvementTip: { type: Type.STRING },
-            potentialBadges: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["personaTitle", "description", "suggestedGenres", "improvementTip", "potentialBadges"]
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              personaTitle: { type: Type.STRING },
+              description: { type: Type.STRING },
+              suggestedGenres: { type: Type.ARRAY, items: { type: Type.STRING } },
+              improvementTip: { type: Type.STRING },
+              potentialBadges: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ["personaTitle", "description", "suggestedGenres", "improvementTip", "potentialBadges"]
+          }
         }
+      });
+
+      const insight = response.text ? JSON.parse(response.text) : null;
+      
+      if (insight) {
+        sessionStorage.setItem(`${INSIGHT_CACHE_KEY}_${userStats.nexusId}`, JSON.stringify({
+          achievementCount: userStats.totalAchievements,
+          insight
+        }));
       }
+
+      return insight || FALLBACK_INSIGHT;
     });
-
-    const insight = response.text ? JSON.parse(response.text) : null;
-    
-    if (insight) {
-      sessionStorage.setItem(`${INSIGHT_CACHE_KEY}_${userStats.nexusId}`, JSON.stringify({
-        achievementCount: userStats.totalAchievements,
-        insight
-      }));
-    }
-
-    return insight;
-  }).catch(err => {
-    console.error("AI Analysis failed after retries", err);
-    return null;
-  });
+  } catch (err) {
+    console.error("AI Analysis failed, activating Fallback Protocol", err);
+    return FALLBACK_INSIGHT;
+  }
 };
 
 /**
@@ -188,6 +206,9 @@ export const fetchPublicProfileData = async (platform: Platform, username: strin
   }).catch(() => ({ games: [], totalHours: 0, sources: [] }));
 };
 
+/**
+ * Search for games using AI discovery.
+ */
 export const searchGamesWithAI = async (query: string): Promise<Game[]> => {
   return withRetry(async () => {
     const ai = getAiClient();
@@ -219,6 +240,9 @@ export const searchGamesWithAI = async (query: string): Promise<Game[]> => {
   }).catch(() => []);
 };
 
+/**
+ * Fixed truncated function: getTrendingGames
+ */
 export const getTrendingGames = async (): Promise<Game[]> => {
   return withRetry(async () => {
     const ai = getAiClient();
@@ -244,84 +268,82 @@ export const getTrendingGames = async (): Promise<Game[]> => {
       }
     });
     return response.text ? JSON.parse(response.text).map((g: any) => ({
-      ...g, id: `trend-${Date.now()}-${Math.random()}`, hoursPlayed: 0, achievementCount: 0, totalAchievements: 50, lastPlayed: new Date().toISOString(),
+      ...g, id: `trending-${Date.now()}-${Math.random()}`, hoursPlayed: 0, achievementCount: 0, lastPlayed: new Date().toISOString(),
       platform: g.platform as Platform || Platform.STEAM
     })) : [];
   }).catch(() => []);
 };
 
-export const getGameRecommendations = async (userStats: UserStats): Promise<{title: string, reason: string}[]> => {
+/**
+ * Fix for components/GameDetailView.tsx: Generates tips for achievements.
+ */
+export const getAchievementTip = async (gameTitle: string, achievement: Achievement): Promise<string> => {
   return withRetry(async () => {
     const ai = getAiClient();
-    if (!ai) return [];
+    if (!ai) return "O Oráculo está em silêncio no momento.";
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Recomende 3 jogos para este perfil: ${JSON.stringify(userStats.recentGames.map(g => g.title))}`,
+      contents: `Dê uma dica técnica e curta de como desbloquear a conquista "${achievement.name}" (${achievement.description}) no jogo ${gameTitle}.`
+    });
+    return response.text || "Sem dicas disponíveis.";
+  });
+};
+
+/**
+ * Fix for components/NexusChronos.tsx: Generates an epic manifesto for the player.
+ */
+export const generatePlayerManifesto = async (userStats: UserStats): Promise<string> => {
+  return withRetry(async () => {
+    const ai = getAiClient();
+    if (!ai) return "";
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Gere um manifesto épico e curto (máximo 500 caracteres) para o jogador ${userStats.nexusId}. Ele possui ${userStats.totalHours}h e ${userStats.totalAchievements} conquistas. Foque em legado e glória.`
+    });
+    return response.text || "";
+  });
+};
+
+/**
+ * Fix for components/NexusChronos.tsx: Transforms raw journal input into an epic narrative.
+ */
+export const generateJournalNarrative = async (gameTitle: string, rawInput: string): Promise<{ narrative: string, mood: string }> => {
+  return withRetry(async () => {
+    const ai = getAiClient();
+    if (!ai) return { narrative: rawInput, mood: "Epic" };
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Transforme o seguinte relato de jogo em uma crônica épica curta:\nJogo: ${gameTitle}\nRelato: ${rawInput}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              reason: { type: Type.STRING }
-            }
-          }
+          type: Type.OBJECT,
+          properties: {
+            narrative: { type: Type.STRING },
+            mood: { type: Type.STRING, enum: ["Triumphant", "Melancholic", "Intense", "Epic"] }
+          },
+          required: ["narrative", "mood"]
         }
       }
     });
-    return response.text ? JSON.parse(response.text) : [];
-  }).catch(() => []);
+    return response.text ? JSON.parse(response.text) : { narrative: rawInput, mood: "Epic" };
+  });
 };
 
-export const createOracleChat = (userStats?: UserStats): Chat | null => {
+/**
+ * Fix for components/NexusOracle.tsx: Creates a stateful chat session with the Oracle.
+ */
+export const createOracleChat = (userStats?: UserStats): Chat => {
   const ai = getAiClient();
-  if (!ai) return null;
+  if (!ai) throw new Error("AI client not available");
+  
   return ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {
-      systemInstruction: "Você é o Oráculo do Nexus. Seu tom é sábio, técnico e inspirador.",
-    },
-  });
-};
-
-export const getAchievementTip = async (gameTitle: string, achievementName: string, description: string): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) return "Oráculo offline.";
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `Dica curta para "${achievementName}" em "${gameTitle}": "${description}"`,
-  });
-  return response.text || "Nenhuma dica disponível.";
-};
-
-export const generatePlayerManifesto = async (userStats: UserStats): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) return "";
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Crie um manifesto épico para ${userStats.nexusId} (${userStats.totalHours}h).`,
-  });
-  return response.text || "";
-};
-
-export const generateJournalNarrative = async (gameTitle: string, rawInput: string): Promise<{ narrative: string, mood: string }> => {
-  const ai = getAiClient();
-  if (!ai) return { narrative: rawInput, mood: "Neutral" };
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `Transforme em narrativa épica: "${rawInput}" (${gameTitle})`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          narrative: { type: Type.STRING },
-          mood: { type: Type.STRING }
-        }
-      }
+      systemInstruction: `Você é o Oráculo do Nexus, uma inteligência mística que conhece tudo sobre o universo dos games. 
+      Sua missão é ajudar jogadores a desvendar lore, otimizar hardware e encontrar novos desafios. 
+      ${userStats ? `Você está falando com ${userStats.nexusId}. O perfil dele tem ${userStats.totalHours}h de jogo e ${userStats.platinumCount} platinas.` : ''}
+      Responda de forma heróica, mística e prestativa.`
     }
   });
-  return response.text ? JSON.parse(response.text) : { narrative: rawInput, mood: "Epic" };
 };

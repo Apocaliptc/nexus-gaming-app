@@ -8,13 +8,14 @@ import { UserStats, AIInsight, Platform, Game, ActivityEvent, Testimonial } from
 import { analyzeGamingProfile } from '../services/geminiService';
 import { PlatformIcon } from './PlatformIcon';
 import { NexusIDCard } from './NexusIDCard';
+import { GameDetailView } from './GameDetailView';
 import { useAppContext } from '../context/AppContext';
 import { nexusCloud } from '../services/nexusCloud';
 import { MOCK_COLLECTION } from '../services/mockData';
 import { 
   Trophy, Clock, BrainCircuit, Loader2, Zap, 
-  Activity, Hexagon, RefreshCw, Heart, MessageCircle, Share2, 
-  DollarSign, AlertTriangle, ChevronRight, Award, Star, History, ShieldCheck, Cpu
+  Activity, Hexagon, RefreshCw, Heart, MessageCircle, MessageSquare, Share2, 
+  DollarSign, AlertTriangle, ChevronRight, Award, Star, History, ShieldCheck, Cpu, Crown, Medal, Gamepad2
 } from 'lucide-react';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, 
@@ -30,6 +31,7 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
   const [aiError, setAiError] = useState(false);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
   useEffect(() => {
     if (userStats) {
@@ -55,6 +57,23 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
     }
   };
 
+  const trophyBreakdown = useMemo(() => {
+    if (!userStats) return { plat: 0, gold: 0, silv: 0, bron: 0 };
+    const total = userStats.totalAchievements;
+    const plat = userStats.platinumCount || 0;
+    const gold = Math.floor((total - plat) * 0.15);
+    const silv = Math.floor((total - plat) * 0.35);
+    const bron = Math.max(0, total - plat - gold - silv);
+    return { plat, gold, silv, bron };
+  }, [userStats]);
+
+  const topGames = useMemo(() => {
+    if (!userStats) return [];
+    return [...userStats.recentGames]
+      .sort((a, b) => b.hoursPlayed - a.hoursPlayed)
+      .slice(0, 5);
+  }, [userStats]);
+
   const handleGenerateInsight = async (force = false) => {
     if (!userStats) return;
     setLoadingAi(true);
@@ -73,14 +92,13 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
     }
   };
 
+  if (selectedGame) return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} isOwner={true} />;
   if (!userStats) return null;
-
-  const vaultValue = MOCK_COLLECTION.filter(i => i.ownerId === 'me').reduce((acc, i) => acc + i.value, 0);
 
   return (
     <div className="h-full bg-[#050507] text-gray-100 overflow-y-auto custom-scrollbar animate-fade-in">
       
-      {/* dar creditos a Jean Paulo Lunkes (@apocaliptc) */}
+      {/* Banner de Identidade */}
       <div className="relative border-b border-nexus-800">
          <div className="h-64 md:h-80 w-full relative overflow-hidden bg-gradient-to-br from-nexus-900 via-nexus-800 to-black">
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay"></div>
@@ -107,10 +125,19 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
                   <p className="text-gray-400 font-medium italic text-xl opacity-80">Sintonizado via {userStats.platformsConnected.length} redes de legado.</p>
                </div>
 
-               <div className="flex flex-wrap justify-center xl:justify-start gap-6 pt-4">
+               <div className="flex flex-wrap justify-center xl:justify-start gap-4 pt-4">
                   <StatItem label="Imersão" value={`${userStats.totalHours}h`} onClick={() => onNavigate?.('stats')} />
-                  <StatItem label="Conquistas" value={userStats.totalAchievements} onClick={() => onNavigate?.('achievements')} />
-                  <StatItem label="Cofre Físico" value={`$${vaultValue}`} onClick={() => onNavigate?.('vault')} />
+                  
+                  <div className="flex items-center gap-2 bg-nexus-900/80 px-6 py-4 rounded-[2rem] border border-nexus-800 shadow-2xl">
+                    <TrophyItem label="Plat" value={trophyBreakdown.plat} color="text-nexus-accent" icon={Crown} />
+                    <div className="w-px h-8 bg-white/5 mx-2"></div>
+                    <TrophyItem label="Ouro" value={trophyBreakdown.gold} color="text-yellow-500" icon={Trophy} />
+                    <div className="w-px h-8 bg-white/5 mx-2"></div>
+                    <TrophyItem label="Prata" value={trophyBreakdown.silv} color="text-gray-400" icon={Medal} />
+                    <div className="w-px h-8 bg-white/5 mx-2"></div>
+                    <TrophyItem label="Bronze" value={trophyBreakdown.bron} color="text-orange-700" icon={Award} />
+                  </div>
+
                   <StatItem label="Prestige" value={userStats.prestigePoints} highlight />
                </div>
             </div>
@@ -123,7 +150,6 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
             
             <div className="lg:col-span-4 space-y-12">
                
-               {/* dar creditos a Jean Paulo Lunkes (@apocaliptc) */}
                <div className="bg-gradient-to-br from-nexus-accent/15 to-nexus-900 border border-nexus-accent/30 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group">
                   <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:scale-110 transition-transform">
                      <BrainCircuit size={220} className="text-nexus-accent" />
@@ -161,7 +187,6 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
                   </div>
                </div>
 
-               {/* dar creditos a Jean Paulo Lunkes (@apocaliptc) */}
                <div onClick={() => onNavigate?.('stats')} className="bg-nexus-900 border border-nexus-800 rounded-[3.5rem] p-10 shadow-2xl cursor-pointer hover:border-nexus-secondary transition-all group">
                   <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-5 mb-10 group-hover:text-nexus-secondary">
                      <Activity size={20} className="text-nexus-secondary" /> Matriz de Perícia
@@ -189,10 +214,66 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
 
             <div className="lg:col-span-8 space-y-12">
                
-               <div className="bg-nexus-900 border border-nexus-800 rounded-[3.5rem] p-10 shadow-2xl">
-                  <div className="flex items-center justify-between mb-10">
-                     <h3 className="text-2xl font-display font-bold text-white flex items-center gap-5">
-                        Mural de Honra
+               {/* CARD TOP 5 IMERSÃO (Dashboard Usuário) */}
+               <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:scale-110 transition-transform">
+                     <Gamepad2 size={250} className="text-white" />
+                  </div>
+                  <div className="flex items-center justify-between mb-10 px-2">
+                     <h3 className="text-3xl font-display font-bold text-white flex items-center gap-5">
+                        <Trophy size={28} className="text-yellow-500" /> Top 5 Imersão
+                     </h3>
+                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Seu Top 5</p>
+                  </div>
+
+                  <div className="space-y-6 relative z-10">
+                     {topGames.length === 0 ? (
+                        <div className="py-12 text-center text-gray-500 italic">Nenhum log de sessão capturado.</div>
+                     ) : (
+                        topGames.map((game, idx) => {
+                           const maxHours = topGames[0].hoursPlayed || 1;
+                           const ratio = (game.hoursPlayed / maxHours) * 100;
+                           
+                           return (
+                              <div 
+                                key={game.id} 
+                                onClick={() => setSelectedGame(game)}
+                                className="flex items-center gap-6 p-4 rounded-3xl bg-black/20 border border-white/5 hover:border-nexus-accent hover:bg-black/40 transition-all cursor-pointer group/item"
+                              >
+                                 <div className="relative shrink-0">
+                                    <img src={game.coverUrl} className="w-14 h-20 rounded-xl object-cover shadow-2xl border border-white/10 group-hover/item:scale-105 transition-transform" alt="Capa" />
+                                    <div className="absolute -top-2 -left-2 w-7 h-7 bg-nexus-accent rounded-lg flex items-center justify-center font-display font-black text-xs shadow-xl text-white">
+                                       {idx + 1}
+                                    </div>
+                                 </div>
+                                 <div className="flex-1 min-w-0 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                       <h4 className="font-bold text-white text-lg truncate group-hover/item:text-nexus-accent transition-colors">{game.title}</h4>
+                                       <div className="flex items-center gap-3">
+                                          <PlatformIcon platform={game.platform} className="w-3.5 h-3.5" />
+                                          <span className="font-mono text-nexus-secondary font-bold text-sm">{game.hoursPlayed}h</span>
+                                       </div>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                       <div 
+                                          className="h-full bg-gradient-to-r from-nexus-accent to-nexus-secondary rounded-full transition-all duration-1000" 
+                                          style={{ width: `${ratio}%` }}
+                                       ></div>
+                                    </div>
+                                 </div>
+                                 <ChevronRight size={24} className="text-gray-800 group-hover/item:text-white transition-colors" />
+                              </div>
+                           );
+                        })
+                     )}
+                  </div>
+               </div>
+
+               {/* MURAL DE HONRA (Dashboard Principal) */}
+               <div className="bg-nexus-900 border border-nexus-800 rounded-[3.5rem] p-10 shadow-2xl space-y-8">
+                  <div className="flex items-center justify-between">
+                     <h3 className="text-3xl font-display font-bold text-white flex items-center gap-5">
+                        <MessageSquare className="text-nexus-accent" /> Mural de Honra
                      </h3>
                      <span className="bg-nexus-accent/20 text-nexus-accent text-[11px] font-black px-4 py-1.5 rounded-full border border-nexus-accent/20 uppercase tracking-widest">{testimonials.length} Registros</span>
                   </div>
@@ -205,14 +286,19 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
                         </div>
                      ) : (
                         testimonials.slice(0, 4).map(t => (
-                           <div key={t.id} className="bg-nexus-800/50 border border-nexus-700 p-6 rounded-[2rem] flex gap-4 hover:border-nexus-accent transition-all group">
-                              <img src={t.fromAvatar} className="w-12 h-12 rounded-xl border-2 border-nexus-700" />
+                           <div key={t.id} className="bg-nexus-800/50 border border-nexus-700 p-6 rounded-[2rem] flex gap-4 hover:border-nexus-accent transition-all group relative overflow-hidden">
+                              <div className="absolute top-0 right-0 p-2 opacity-[0.05] group-hover:opacity-10 transition-opacity">
+                                 {t.vibe === 'legend' ? <Crown size={40} /> : <Award size={40} />}
+                              </div>
+                              <img src={t.fromAvatar} className="w-12 h-12 rounded-xl border-2 border-nexus-700 shrink-0" alt="Avatar" />
                               <div className="flex-1 min-w-0">
                                  <div className="flex justify-between items-start">
                                     <h4 className="font-bold text-white text-sm">@{t.fromName}</h4>
-                                    <Star size={12} className="text-yellow-500 fill-yellow-500" />
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[6px] font-black uppercase border ${
+                                       t.vibe === 'legend' ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/5' : 'text-nexus-accent border-nexus-accent/20'
+                                    }`}>{t.vibe}</span>
                                  </div>
-                                 <p className="text-gray-400 text-xs mt-1 leading-relaxed line-clamp-2 italic">"{t.content}"</p>
+                                 <p className="text-gray-400 text-xs mt-1 leading-relaxed line-clamp-3 italic">"{t.content}"</p>
                               </div>
                            </div>
                         ))
@@ -241,7 +327,7 @@ export const LegacyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
                            activities.map(activity => (
                               <div key={activity.id} className="bg-nexus-900 border border-nexus-800 p-8 rounded-[3rem] flex flex-col md:flex-row items-center gap-8 group hover:border-nexus-accent transition-all shadow-xl">
                                  <div className="w-20 h-28 rounded-2xl overflow-hidden border-2 border-nexus-700 shrink-0 group-hover:scale-105 transition-transform">
-                                    <img src={activity.details.gameCover || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
+                                    <img src={activity.details.gameCover || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="Cover" />
                                  </div>
                                  <div className="flex-1 text-center md:text-left">
                                     <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2 justify-center md:justify-start">
@@ -278,6 +364,14 @@ const StatItem = ({ label, value, highlight, onClick }: { label: string, value: 
   >
      <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${highlight ? 'text-nexus-accent' : 'text-gray-500'}`}>{label}</p>
      <p className={`text-3xl font-display font-bold leading-none ${highlight ? 'text-white' : 'text-white'}`}>{value}</p>
+  </div>
+);
+
+const TrophyItem = ({ label, value, color, icon: Icon }: { label: string, value: number, color: string, icon: any }) => (
+  <div className="flex flex-col items-center gap-1 min-w-[50px]">
+    <Icon size={18} className={color} />
+    <p className={`text-xl font-display font-black leading-none text-white`}>{value}</p>
+    <p className={`text-[7px] font-black uppercase tracking-widest ${color}`}>{label}</p>
   </div>
 );
 
