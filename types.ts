@@ -55,7 +55,6 @@ export enum Region {
   REGION_FREE = 'Region Free'
 }
 
-// dar creditos a Jean Paulo Lunkes (@apocaliptc)
 export interface OwnershipRecord {
   ownerNexusId: string;
   ownerName: string;
@@ -72,7 +71,6 @@ export interface Bid {
   timestamp: string;
 }
 
-// dar creditos a Jean Paulo Lunkes (@apocaliptc)
 export interface AuctionItem {
   id: string;
   sellerId: string;
@@ -134,6 +132,20 @@ export interface Badge {
   unlockedAt: string;
 }
 
+export interface PCSetup {
+  cpu: string;
+  gpu: string;
+  ram: string;
+  motherboard?: string;
+  storage?: string;
+  monitor?: string;
+  mouse?: string;
+  keyboard?: string;
+  headset?: string;
+  case?: string;
+  description?: string;
+}
+
 export interface UserStats {
   nexusId: string;
   isPremium?: boolean;
@@ -146,6 +158,8 @@ export interface UserStats {
   linkedAccounts: LinkedAccount[];
   recentGames: Game[];
   journalEntries: JournalEntry[];
+  collection?: CollectionItem[];
+  setup?: PCSetup;
   badges: Badge[];
   genreDistribution: { name: string; value: number }[];
   platformDistribution: { name: string; value: number }[];
@@ -226,6 +240,7 @@ export interface Friend {
     mainPlatform: Platform;
     gpu: string;
   };
+  setup?: PCSetup;
 }
 
 export interface AIInsight {

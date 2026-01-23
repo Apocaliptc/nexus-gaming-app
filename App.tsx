@@ -6,7 +6,7 @@ import {
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
   MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search,
   ChevronUp, X, LayoutGrid, Gavel, Shield, ChevronRight, ChevronLeft,
-  CircleDot, Plus, Share2, Target, MousePointer2, Layout
+  CircleDot, Plus, Share2, Target, MousePointer2, Layout, Sparkles, Monitor
 } from 'lucide-react';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
@@ -22,6 +22,7 @@ import { NexusChat } from './components/NexusChat';
 import { NotificationCenter } from './components/NotificationCenter';
 import { Auctions } from './components/Auctions';
 import { Collection } from './components/Collection';
+import { SetupMaster } from './components/SetupMaster';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { nexusCloud } from './services/nexusCloud';
 
@@ -63,21 +64,21 @@ const LoginScreen: React.FC = () => {
                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">Nexus ID</label>
                 <div className="relative">
                    <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                   <input required value={nexusId} onChange={e => setNexusId(e.target.value)} type="text" placeholder="seu-nick" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
+                   <input required value={nexusId} onChange={(e) => setNexusId(e.target.value)} type="text" placeholder="seu-nick" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
                 </div>
              </div>
            )}
            <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">E-mail</label>
               <div className="relative">
-                 <input required value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="nome@exemplo.com" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl px-6 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
+                 <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="nome@exemplo.com" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl px-6 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
               </div>
            </div>
            <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">Senha</label>
               <div className="relative">
                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                 <input required value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
+                 <input required value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
               </div>
            </div>
            <button disabled={isLoading} type="submit" className="w-full py-5 bg-nexus-accent hover:bg-nexus-accent/80 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-2xl shadow-nexus-accent/30 flex items-center justify-center gap-3">
@@ -106,21 +107,36 @@ const MainApp: React.FC = () => {
   
   const radialButtonRef = useRef<HTMLButtonElement>(null);
 
-  const menuItems = useMemo(() => [
-    { id: 'pulse', label: 'Pulse', icon: Activity, desc: 'Feed Global' },
-    { id: 'chat', label: 'Chat', icon: MessageSquare, desc: 'Comunidade' },
-    { id: 'friends', label: 'Social', icon: Users, desc: 'Guerreiros' },
-    { id: 'profile', label: 'DNA', icon: UserCircle, desc: 'Meu Legado' },
-    { id: 'achievements', label: 'Troféus', icon: Trophy, desc: 'Feitos' },
-    { id: 'library', label: 'Biblioteca', icon: Grid, desc: 'Meus Jogos' },
-    { id: 'oracle', label: 'IA', icon: BrainCircuit, desc: 'Oráculo' },
-    { id: 'discover', label: 'Explorar', icon: Compass, desc: 'Busca AI' },
-    { id: 'vault', label: 'Cofre', icon: Box, desc: 'Físico' },
-    { id: 'auctions', label: 'Leilões', icon: Gavel, desc: 'Mercado' },
-    { id: 'notifications', label: 'Alertas', icon: Bell, desc: 'Nexus Pulse' },
-    { id: 'settings', label: 'Ajustes', icon: SettingsIcon, desc: 'Core Setup' },
-    { id: 'logout', label: 'Sair', icon: LogOut, desc: 'Desconectar', action: logout },
-  ], [logout]);
+  // MENU COMPLETO
+  const fullMenuItems = useMemo(() => [
+    { id: 'pulse', label: 'Pulse', icon: Activity, category: 'core' },
+    { id: 'profile', label: 'DNA', icon: UserCircle, category: 'core' },
+    { id: 'friends', label: 'Social', icon: Users, category: 'core' },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, category: 'core' },
+    
+    { id: 'library', label: 'Biblioteca', icon: Grid, category: 'digital' },
+    { id: 'achievements', label: 'Troféus', icon: Trophy, category: 'digital' },
+    { id: 'stats', label: 'Analytics', icon: BarChart2, category: 'digital' },
+    { id: 'discover', label: 'Explorar', icon: Compass, category: 'digital' },
+    { id: 'oracle', label: 'IA Oracle', icon: BrainCircuit, category: 'digital' },
+
+    { id: 'setup', label: 'Meu Setup', icon: Monitor, category: 'hardware' },
+    { id: 'vault', label: 'Coleção', icon: Box, category: 'hardware' },
+    { id: 'auctions', label: 'Leilões', icon: Gavel, category: 'hardware' },
+    
+    { id: 'notifications', label: 'Alertas', icon: Bell, category: 'system' },
+    { id: 'settings', label: 'Ajustes', icon: SettingsIcon, category: 'system' },
+  ], []);
+
+  // ATALHOS RÁPIDOS (Radial 360)
+  const shortcutItems = useMemo(() => [
+    { id: 'pulse', label: 'Feed', icon: Activity },
+    { id: 'profile', label: 'DNA', icon: UserCircle },
+    { id: 'library', label: 'Jogos', icon: Grid },
+    { id: 'setup', label: 'Setup', icon: Monitor },
+    { id: 'oracle', label: 'IA', icon: BrainCircuit },
+    { id: 'notifications', label: 'Alertas', icon: Bell },
+  ], []);
 
   useEffect(() => {
     if (userStats) {
@@ -160,7 +176,7 @@ const MainApp: React.FC = () => {
     let angle = Math.atan2(dy, dx) * (180 / Math.PI);
     if (angle < 0) angle += 360;
 
-    const step = 360 / menuItems.length;
+    const step = 360 / shortcutItems.length;
     const idx = Math.floor(angle / step);
     setActiveIdx(idx);
   };
@@ -174,17 +190,15 @@ const MainApp: React.FC = () => {
   const handleRadialEnd = () => {
     if (!isRadialOpen) return;
     if (activeIdx !== null) {
-      const item = menuItems[activeIdx];
-      if (item.action) item.action();
-      else setActiveTab(item.id);
+      const item = shortcutItems[activeIdx];
+      setActiveTab(item.id);
     }
     setIsRadialOpen(false);
     setActiveIdx(null);
   };
 
-  const navigateTo = (id: string, action?: () => void) => {
-    if (action) action();
-    else setActiveTab(id);
+  const navigateTo = (id: string) => {
+    setActiveTab(id);
     setIsVerticalMenuOpen(false);
   };
 
@@ -194,8 +208,9 @@ const MainApp: React.FC = () => {
       case 'profile': return <ProfileView onNavigate={setActiveTab} />;
       case 'notifications': return <NotificationCenter onReadUpdate={setUnreadCount} />;
       case 'chat': return <NexusChat />;
-      case 'library': return <GameLibrary />;
+      case 'library': return <GameLibrary onNavigate={setActiveTab} />;
       case 'vault': return <Collection />;
+      case 'setup': return <SetupMaster />;
       case 'achievements': return <Achievements />;
       case 'stats': return <Statistics />;
       case 'oracle': return <NexusOracle />;
@@ -216,24 +231,46 @@ const MainApp: React.FC = () => {
       onTouchMove={handleRadialMove}
       onTouchEnd={handleRadialEnd}
     >
-      {/* Sidebar Desktop */}
       <aside className="hidden md:flex w-64 bg-nexus-900 border-r border-nexus-800 flex-col shrink-0 h-full z-50">
         <div className="p-6 flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center shadow-2xl cursor-pointer" onClick={() => setActiveTab('pulse')}>
             <span className="font-display font-bold text-white text-2xl">N</span>
           </div>
-          <div><h2 className="font-display font-bold text-xl tracking-tighter">NEXUS</h2><p className="text-[8px] font-black text-nexus-accent uppercase tracking-widest">Sovereign Legacy</p></div>
+          <div><h2 className="font-display font-bold text-xl tracking-tighter text-white">NEXUS</h2><p className="text-[8px] font-black text-nexus-accent uppercase tracking-widest">Sovereign Legacy</p></div>
         </div>
-        <nav className="flex-1 px-3 space-y-6 overflow-y-auto custom-scrollbar pt-4">
+        
+        <nav className="flex-1 px-3 space-y-8 overflow-y-auto custom-scrollbar pt-4">
            <div className="space-y-1">
-             {menuItems.slice(0, 11).map(item => (
+             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Core Hub</h3>
+             {fullMenuItems.filter(i => i.category === 'core').map(item => (
+                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
+             ))}
+           </div>
+
+           <div className="space-y-1">
+             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Legado Digital</h3>
+             {fullMenuItems.filter(i => i.category === 'digital').map(item => (
+                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
+             ))}
+           </div>
+
+           <div className="space-y-1">
+             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Acervo & Hardware</h3>
+             {fullMenuItems.filter(i => i.category === 'hardware').map(item => (
+                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
+             ))}
+           </div>
+
+           <div className="space-y-1">
+             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Sistema</h3>
+             {fullMenuItems.filter(i => i.category === 'system').map(item => (
                 <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
              ))}
            </div>
         </nav>
-        <div className="p-4 border-t border-nexus-800 space-y-2">
-          <NavItem id="settings" icon={SettingsIcon} label="Ajustes" active={activeTab} onClick={setActiveTab} />
-          <button onClick={logout} className="w-full flex items-center gap-4 p-3 text-red-500/60 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"><LogOut size={20} /><span className="font-bold text-xs">Sair</span></button>
+
+        <div className="p-4 border-t border-nexus-800">
+          <button onClick={logout} className="w-full flex items-center gap-4 p-3 text-red-500/60 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"><LogOut size={20} /><span className="font-bold text-xs">Desconectar</span></button>
         </div>
       </aside>
 
@@ -252,10 +289,9 @@ const MainApp: React.FC = () => {
            <div className="md:hidden h-32 w-full"></div>
         </div>
 
-        {/* MOBILE RADIAL OVERLAY */}
         {isRadialOpen && (
            <div className="md:hidden fixed inset-0 z-[200] flex items-center justify-center animate-fade-in pointer-events-none">
-              <div className="absolute inset-0 bg-black/85 backdrop-blur-3xl"></div>
+              <div className="absolute inset-0 bg-black/90 backdrop-blur-3xl"></div>
               <div className="relative w-80 h-80 flex items-center justify-center">
                  <div 
                     className="absolute w-1 h-32 bg-gradient-to-t from-nexus-accent/0 to-nexus-accent origin-bottom transition-transform duration-100 ease-out"
@@ -264,10 +300,11 @@ const MainApp: React.FC = () => {
                         left: 'calc(50% - 2px)',
                         bottom: '50%'
                     }}
-                 ><div className="w-4 h-4 bg-white rounded-full absolute -top-2 left-1/2 -translate-x-1/2 shadow-[0_0_15px_#fff]"></div></div>
+                 ><div className="w-5 h-5 bg-white rounded-full absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-[0_0_20px_#fff]"></div></div>
+                 
                  <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100">
-                    {menuItems.map((_, i) => {
-                       const step = 360 / menuItems.length;
+                    {shortcutItems.map((_, i) => {
+                       const step = 360 / shortcutItems.length;
                        const start = i * step;
                        const end = (i + 1) * step;
                        const isFocused = activeIdx === i;
@@ -275,54 +312,67 @@ const MainApp: React.FC = () => {
                        const y1 = 50 + 48 * Math.sin(Math.PI * start / 180);
                        const x2 = 50 + 48 * Math.cos(Math.PI * end / 180);
                        const y2 = 50 + 48 * Math.sin(Math.PI * end / 180);
-                       const x3 = 50 + 35 * Math.cos(Math.PI * end / 180);
-                       const y3 = 50 + 35 * Math.sin(Math.PI * end / 180);
-                       const x4 = 50 + 35 * Math.cos(Math.PI * start / 180);
-                       const y4 = 50 + 35 * Math.sin(Math.PI * start / 180);
-                       return <path key={i} d={`M ${x1} ${y1} A 48 48 0 0 1 ${x2} ${y2} L ${x3} ${y3} A 35 35 0 0 0 ${x4} ${y4} Z`} fill={isFocused ? "rgba(139, 92, 246, 0.4)" : "rgba(255, 255, 255, 0.03)"} stroke={isFocused ? "#8b5cf6" : "rgba(255, 255, 255, 0.05)"} strokeWidth="0.3" className="transition-all duration-200" />;
+                       const x3 = 50 + 32 * Math.cos(Math.PI * end / 180);
+                       const y3 = 50 + 32 * Math.sin(Math.PI * end / 180);
+                       const x4 = 50 + 32 * Math.cos(Math.PI * start / 180);
+                       const y4 = 50 + 32 * Math.sin(Math.PI * start / 180);
+                       return <path key={i} d={`M ${x1} ${y1} A 48 48 0 0 1 ${x2} ${y2} L ${x3} ${y3} A 32 32 0 0 0 ${x4} ${y4} Z`} fill={isFocused ? "rgba(139, 92, 246, 0.5)" : "rgba(255, 255, 255, 0.03)"} stroke={isFocused ? "#8b5cf6" : "rgba(255, 255, 255, 0.1)"} strokeWidth="0.5" className="transition-all duration-200" />;
                     })}
                  </svg>
-                 {menuItems.map((item, i) => {
-                    const step = 360 / menuItems.length;
+
+                 {shortcutItems.map((item, i) => {
+                    const step = 360 / shortcutItems.length;
                     const angle = i * step + (step / 2);
                     const isFocused = activeIdx === i;
-                    const radius = isFocused ? 125 : 110;
+                    const radius = isFocused ? 130 : 115;
                     const x = Math.cos(angle * Math.PI / 180) * radius;
                     const y = Math.sin(angle * Math.PI / 180) * radius;
                     return (
                        <div key={i} className={`absolute transition-all duration-300 flex flex-col items-center gap-1.5 ${isFocused ? 'scale-125 z-50' : 'opacity-40'}`} style={{ transform: `translate(${x}px, ${y}px)` }}>
-                          <div className={`p-3 rounded-2xl border-2 transition-all ${isFocused ? 'bg-nexus-accent border-white text-white shadow-[0_0_30px_rgba(139,92,246,0.8)]' : 'bg-nexus-900 border-white/10 text-gray-400'}`}><item.icon size={22} /></div>
-                          <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded backdrop-blur-md ${isFocused ? 'bg-white text-black' : 'bg-black/40 text-gray-500'}`}>{item.label}</span>
+                          <div className={`p-4 rounded-[1.5rem] border-2 transition-all ${isFocused ? 'bg-nexus-accent border-white text-white shadow-[0_0_30px_rgba(139,92,246,0.8)]' : 'bg-nexus-900 border-white/10 text-gray-400'}`}><item.icon size={28} /></div>
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded backdrop-blur-md ${isFocused ? 'bg-white text-black' : 'bg-black/40 text-gray-500'}`}>{item.label}</span>
                        </div>
                     );
                  })}
-                 <div className="w-24 h-24 rounded-full bg-nexus-900 border-4 border-nexus-accent flex flex-col items-center justify-center shadow-2xl z-10"><span className="font-display font-black text-2xl text-white">N</span></div>
+
+                 <div className="w-24 h-24 rounded-full bg-nexus-900 border-4 border-nexus-accent flex flex-col items-center justify-center shadow-[0_0_40px_rgba(139,92,246,0.4)] z-10 transition-transform active:scale-95 overflow-hidden">
+                    {activeIdx !== null ? (
+                      <div className="animate-fade-in flex flex-col items-center text-nexus-accent">
+                         {React.createElement(shortcutItems[activeIdx].icon, { size: 32 })}
+                         <span className="text-[7px] font-black uppercase tracking-widest mt-1 text-white">Pronto</span>
+                      </div>
+                    ) : (
+                      <span className="font-display font-black text-3xl text-white">N</span>
+                    )}
+                    <div className="absolute inset-0 rounded-full border-t border-white/10 animate-spin-slow"></div>
+                 </div>
+              </div>
+              <div className="absolute bottom-24 text-center">
+                 <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Solte no atalho desejado</p>
               </div>
            </div>
         )}
 
-        {/* MOBILE VERTICAL MENU (DRAWER) OVERLAY */}
         {isVerticalMenuOpen && (
            <div className="md:hidden fixed inset-0 z-[250] flex flex-col animate-fade-in">
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsVerticalMenuOpen(false)}></div>
-              <div className="mt-auto bg-nexus-900 border-t border-nexus-700 rounded-t-[3rem] p-6 pb-12 shadow-[0_-20px_60px_rgba(0,0,0,0.8)] relative z-[260] translate-y-0 transition-transform duration-500 ease-out">
-                 <div className="w-12 h-1.5 bg-gray-800 rounded-full mx-auto mb-8"></div>
-                 <div className="flex items-center justify-between mb-8 px-4">
-                    <h2 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-                       <LayoutGrid className="text-nexus-accent" /> Navegação
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => setIsVerticalMenuOpen(false)}></div>
+              <div className="mt-auto bg-[#0f0f15] border-t border-nexus-700 rounded-t-[3.5rem] p-8 pb-14 shadow-[0_-20px_80px_rgba(0,0,0,0.9)] relative z-[260] animate-slide-up">
+                 <div className="w-16 h-1.5 bg-gray-800 rounded-full mx-auto mb-10"></div>
+                 <div className="flex items-center justify-between mb-10">
+                    <h2 className="text-4xl font-display font-bold text-white flex items-center gap-4">
+                       <LayoutGrid className="text-nexus-accent" size={32} /> Central Nexus
                     </h2>
-                    <button onClick={() => setIsVerticalMenuOpen(false)} className="p-3 bg-nexus-800 rounded-2xl text-gray-400"><X size={20}/></button>
+                    <button onClick={() => setIsVerticalMenuOpen(false)} className="p-4 bg-nexus-800 rounded-2xl text-gray-400 active:scale-90"><X size={24}/></button>
                  </div>
-                 
-                 <div className="grid grid-cols-3 gap-3">
-                    {menuItems.map(item => (
+                 <div className="grid grid-cols-3 gap-4">
+                    {fullMenuItems.map(item => (
                        <button 
                          key={item.id} 
-                         onClick={() => navigateTo(item.id, item.action)}
-                         className={`flex flex-col items-center justify-center p-5 rounded-[2rem] border transition-all ${activeTab === item.id ? 'bg-nexus-accent border-nexus-accent shadow-lg shadow-nexus-accent/20' : 'bg-nexus-800/50 border-nexus-800 hover:bg-nexus-800'}`}
+                         onClick={() => navigateTo(item.id)}
+                         className={`flex flex-col items-center justify-center p-6 rounded-[2.5rem] border transition-all active:scale-95 ${activeTab === item.id ? 'bg-nexus-accent border-nexus-accent shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'bg-nexus-800/40 border-nexus-800 hover:bg-nexus-800'}`}
                        >
-                          <item.icon size={24} className={activeTab === item.id ? 'text-white' : 'text-nexus-accent'} />
-                          <span className="text-[10px] font-black uppercase tracking-tighter mt-2 text-white">{item.label}</span>
+                          <item.icon size={28} className={activeTab === item.id ? 'text-white' : 'text-nexus-accent'} />
+                          <span className="text-[10px] font-black uppercase tracking-tighter mt-3 text-white text-center leading-tight">{item.label}</span>
                        </button>
                     ))}
                  </div>
@@ -330,32 +380,47 @@ const MainApp: React.FC = () => {
            </div>
         )}
 
-        {/* HYBRID MOBILE CONTROLS */}
-        <div className="md:hidden fixed bottom-10 inset-x-0 flex items-center justify-center gap-6 z-[210]">
-           {/* Botão Gatilho Radial (Esquerda) */}
-           <button 
-             ref={radialButtonRef}
-             onMouseDown={handleRadialStart}
-             onTouchStart={handleRadialStart}
-             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-[0_0_40px_rgba(139,92,246,0.3)] border-2 ${
-               isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-accent border-nexus-accent/40 active:scale-90 active:bg-nexus-accent active:text-white'
-             }`}
-           >
-              <Target size={24} strokeWidth={2.5} />
-              <div className="absolute inset-0 rounded-full animate-ping bg-nexus-accent/5 pointer-events-none"></div>
-           </button>
+        <div className="md:hidden fixed bottom-10 inset-x-0 flex items-center justify-center gap-8 z-[210]">
+           <div className="flex flex-col items-center gap-2">
+              <button 
+                ref={radialButtonRef}
+                onMouseDown={handleRadialStart}
+                onTouchStart={handleRadialStart}
+                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl border-2 ${
+                  isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-accent border-nexus-accent/40 active:bg-nexus-accent active:text-white'
+                }`}
+              >
+                 <Zap size={28} strokeWidth={2.5} className="fill-current" />
+              </button>
+              <span className={`text-[8px] font-black uppercase tracking-widest text-nexus-accent/60 ${isRadialOpen ? 'opacity-0' : 'opacity-100'}`}>Shortcuts</span>
+           </div>
 
-           {/* Botão Gatilho Vertical (Direita) */}
-           <button 
-             onClick={() => setIsVerticalMenuOpen(true)}
-             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-[0_0_40px_rgba(6,182,212,0.3)] border-2 ${
-               isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-secondary border-nexus-secondary/40 active:scale-90 active:bg-nexus-secondary active:text-white'
-             }`}
-           >
-              <Layout size={24} strokeWidth={2.5} />
-           </button>
+           <div className="flex flex-col items-center gap-2">
+              <button 
+                onClick={() => setIsVerticalMenuOpen(true)}
+                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl border-2 ${
+                  isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-secondary border-nexus-secondary/40 active:bg-nexus-secondary active:text-white'
+                }`}
+              >
+                 <Menu size={28} strokeWidth={2.5} />
+              </button>
+              <span className={`text-[8px] font-black uppercase tracking-widest text-nexus-secondary/60 ${isRadialOpen ? 'opacity-0' : 'opacity-100'}`}>Full Panel</span>
+           </div>
         </div>
       </main>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slide-up {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .animate-spin-slow {
+          animation: spin 8s linear infinite;
+        }
+      `}} />
     </div>
   );
 };
@@ -363,11 +428,11 @@ const MainApp: React.FC = () => {
 const NavItem: React.FC<{ id: string, icon: any, label: string, active: string, onClick: (id: string) => void }> = ({ id, icon: Icon, label, active, onClick }) => (
   <button 
     onClick={() => onClick(id)} 
-    className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all group ${
+    className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all group ${
       active === id ? 'bg-nexus-accent text-white shadow-xl shadow-nexus-accent/20' : 'text-gray-400 hover:bg-nexus-800/60 hover:text-gray-300'
     }`}
   >
-    <Icon size={18} className={`transition-all ${active === id ? 'scale-110' : 'group-hover:scale-110'}`} />
+    <Icon size={20} className={`transition-all ${active === id ? 'scale-110' : 'group-hover:scale-110'}`} />
     <span className="font-bold text-xs tracking-tight">{label}</span>
   </button>
 );

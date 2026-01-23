@@ -1,14 +1,26 @@
 
 import React, { useState } from 'react';
-import { MOCK_COLLECTION, MOCK_FRIENDS } from '../services/mockData';
+import { MOCK_FRIENDS } from '../services/mockData';
 import { CollectionItem, Platform } from '../types';
-import { Box, Plus, Search, Filter, DollarSign, Repeat, Tag, X, Image as ImageIcon, Check, History, ShieldCheck } from 'lucide-react';
+import { 
+  Box, Plus, Search, Filter, DollarSign, Repeat, Tag, X, 
+  Image as ImageIcon, Check, History, ShieldCheck, 
+  Database, BrainCircuit, Sparkles, Loader2, FileText, Zap, AlertTriangle
+} from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
+import { parseCollectionSpreadsheet } from '../services/geminiService';
 
 export const Collection: React.FC = () => {
+  const { userStats, addItemsToCollection } = useAppContext();
   const [activeTab, setActiveTab] = useState<'my_collection' | 'marketplace'>('my_collection');
-  const [items, setItems] = useState<CollectionItem[]>(MOCK_COLLECTION);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Import state
+  const [rawText, setRawText] = useState('');
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsedItems, setParsedItems] = useState<CollectionItem[]>([]);
 
   const [newItem, setNewItem] = useState({
     name: '',
@@ -18,8 +30,8 @@ export const Collection: React.FC = () => {
     value: 0
   });
 
-  const myItems = items.filter(item => item.ownerId === 'me');
-  const marketItems = items.filter(item => item.ownerId !== 'me' && (item.status === 'sale' || item.status === 'trade'));
+  const myItems = userStats?.collection || [];
+  const marketItems = []; // No mock data for now beyond local items
 
   const filteredItems = (activeTab === 'my_collection' ? myItems : marketItems).filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -38,14 +50,29 @@ export const Collection: React.FC = () => {
       value: newItem.value,
       dateAdded: new Date().toISOString()
     };
-    setItems([item, ...items]);
+    addItemsToCollection([item]);
     setShowAddModal(false);
     setNewItem({ name: '', type: 'Game', condition: 'CIB', status: 'collection', value: 0 });
   };
 
-  const getOwnerName = (id: string) => {
-    const friend = MOCK_FRIENDS.find(f => f.id === id);
-    return friend ? friend.username : 'Especialista';
+  const handleSmartImport = async () => {
+    if (!rawText.trim()) return;
+    setIsParsing(true);
+    try {
+      const items = await parseCollectionSpreadsheet(rawText);
+      setParsedItems(items);
+    } catch (e) {
+      console.error("Smart Import Failed", e);
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const confirmImport = () => {
+    addItemsToCollection(parsedItems);
+    setShowImportModal(false);
+    setParsedItems([]);
+    setRawText('');
   };
 
   return (
@@ -73,6 +100,16 @@ export const Collection: React.FC = () => {
                  Mercado Global
                </button>
              </div>
+             
+             <button 
+               onClick={() => setShowImportModal(true)}
+               className="p-2.5 bg-nexus-900 border border-nexus-700 text-nexus-accent rounded-xl hover:bg-nexus-800 transition-all shadow-lg flex items-center gap-2"
+               title="Importar Planilha"
+             >
+               <BrainCircuit size={20} />
+               <span className="hidden md:inline text-[10px] font-black uppercase tracking-widest">Smart Import</span>
+             </button>
+
              <button 
                onClick={() => setShowAddModal(true)}
                className="p-2.5 bg-nexus-accent rounded-xl hover:bg-nexus-accent/80 transition-all shadow-lg"
@@ -103,15 +140,6 @@ export const Collection: React.FC = () => {
         <div className="max-w-[1600px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 pb-24">
            {filteredItems.map(item => (
               <div key={item.id} className="bg-nexus-900 rounded-[3rem] border border-nexus-800 overflow-hidden group hover:border-nexus-secondary transition-all flex flex-col shadow-2xl relative hover:-translate-y-2 duration-500">
-                 <div className="absolute top-4 right-4 z-10 flex flex-col gap-1 items-end">
-                    {item.status === 'sale' && (
-                      <span className="bg-green-600 text-white text-[8px] font-black px-2 py-1 rounded-lg uppercase shadow-2xl border border-green-400/50">Venda</span>
-                    )}
-                    {item.status === 'trade' && (
-                      <span className="bg-blue-600 text-white text-[8px] font-black px-2 py-1 rounded-lg uppercase shadow-2xl border border-blue-400/50">Troca</span>
-                    )}
-                 </div>
-
                  <div className="h-48 relative overflow-hidden bg-black shrink-0">
                     <img src={item.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-80 group-hover:opacity-100" alt={item.name} />
                     <div className="absolute inset-0 bg-gradient-to-t from-nexus-900 via-transparent to-transparent"></div>
@@ -132,15 +160,6 @@ export const Collection: React.FC = () => {
                           <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Avaliação</p>
                           <p className="text-xl font-display font-black text-nexus-secondary leading-none tracking-tighter">${item.value}</p>
                        </div>
-                       {activeTab === 'marketplace' ? (
-                         <button className="px-4 py-2 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-nexus-secondary hover:text-white transition-all shadow-lg">
-                            Proposta
-                         </button>
-                       ) : (
-                         <button className="p-2 text-gray-600 hover:text-white transition-colors">
-                            <History size={16} />
-                         </button>
-                       )}
                     </div>
                  </div>
               </div>
@@ -155,7 +174,87 @@ export const Collection: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Modal */}
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[300] flex items-center justify-center p-4">
+           <div className="bg-nexus-900 w-full max-w-2xl rounded-[3rem] border border-nexus-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="p-8 border-b border-nexus-800 flex justify-between items-center bg-gradient-to-r from-nexus-accent/10 to-transparent">
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-nexus-accent/20 rounded-2xl flex items-center justify-center text-nexus-accent border border-nexus-accent/30">
+                       <BrainCircuit size={28} />
+                    </div>
+                    <div>
+                       <h3 className="text-2xl font-display font-bold text-white">Nexus Smart Parser</h3>
+                       <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Processamento de Dados por IA</p>
+                    </div>
+                 </div>
+                 <button onClick={() => setShowImportModal(false)} className="text-gray-500 hover:text-white p-2">
+                    <X size={24} />
+                 </button>
+              </div>
+
+              <div className="p-8 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+                 {parsedItems.length === 0 ? (
+                    <div className="space-y-4">
+                       <div className="bg-nexus-800/50 p-6 rounded-3xl border border-nexus-700">
+                          <p className="text-sm text-gray-400 leading-relaxed mb-4">
+                             Cole o conteúdo da sua planilha abaixo. A IA do Nexus irá identificar automaticamente títulos, consoles, condições e valores.
+                          </p>
+                          <textarea 
+                             value={rawText}
+                             onChange={(e) => setRawText(e.target.value)}
+                             placeholder="Ex: Console | PlayStation | Classic... ou apenas uma lista de jogos..."
+                             className="w-full bg-nexus-900 border border-nexus-700 rounded-2xl p-6 text-white font-mono text-xs focus:border-nexus-accent outline-none h-64 resize-none shadow-inner"
+                          />
+                       </div>
+                       <button 
+                          onClick={handleSmartImport}
+                          disabled={isParsing || !rawText.trim()}
+                          className="w-full py-5 bg-nexus-accent text-white font-black text-xs uppercase tracking-[0.3em] rounded-2xl shadow-2xl transition-all hover:bg-nexus-accent/80 flex items-center justify-center gap-3 disabled:opacity-50"
+                       >
+                          {isParsing ? <Loader2 className="animate-spin" /> : <Zap size={18} />}
+                          {isParsing ? 'Analizando Dados...' : 'Escanear com IA'}
+                       </button>
+                    </div>
+                 ) : (
+                    <div className="space-y-6">
+                       <div className="flex items-center justify-between">
+                          <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                             <Check className="text-nexus-success" /> {parsedItems.length} Itens Identificados
+                          </h4>
+                          <button onClick={() => setParsedItems([])} className="text-xs text-gray-500 hover:text-white uppercase font-bold underline">Limpar e Refazer</button>
+                       </div>
+                       <div className="grid grid-cols-1 gap-3">
+                          {parsedItems.map((item, idx) => (
+                             <div key={idx} className="flex items-center gap-4 bg-nexus-800/40 p-4 rounded-2xl border border-nexus-700">
+                                <div className="w-10 h-10 rounded-lg bg-nexus-900 flex items-center justify-center text-nexus-secondary border border-nexus-700">
+                                   <Box size={20} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                   <p className="text-sm font-bold text-white truncate">{item.name}</p>
+                                   <div className="flex gap-3 text-[9px] font-black uppercase tracking-widest text-gray-500">
+                                      <span>{item.type}</span>
+                                      <span>{item.condition}</span>
+                                      <span className="text-nexus-accent">${item.value}</span>
+                                   </div>
+                                </div>
+                             </div>
+                          ))}
+                       </div>
+                       <button 
+                          onClick={confirmImport}
+                          className="w-full py-5 bg-nexus-success text-white font-black text-xs uppercase tracking-[0.3em] rounded-2xl shadow-2xl transition-all hover:bg-green-500 flex items-center justify-center gap-3"
+                       >
+                          <Database size={18} /> Confirmar Importação no Perfil
+                       </button>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Add Modal (Manual) */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-nexus-900 w-full max-w-lg rounded-[3rem] border border-nexus-700 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">

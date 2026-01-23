@@ -1,7 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { ActivityEvent, ActivityType, Platform } from '../types';
-import { Heart, MessageCircle, Share2, Trophy, Crown, Gamepad2, UserPlus, Clock, RefreshCcw, Loader2, Globe, TrendingUp, Sparkles, Flame, Plus, Play, Video, Radio, Users, Swords, PlayCircle } from 'lucide-react';
+import { 
+  Heart, MessageCircle, Share2, Trophy, Crown, Gamepad2, UserPlus, Clock, 
+  RefreshCcw, Loader2, Globe, TrendingUp, Sparkles, Flame, Plus, Play, 
+  Video, Radio, Users, Swords, PlayCircle, Box, Gavel, Monitor, Zap 
+} from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { nexusCloud } from '../services/nexusCloud';
 
@@ -19,7 +23,6 @@ export const GlobalFeed: React.FC = () => {
             const data = await nexusCloud.getGlobalActivities();
             setActivities(data);
         } else {
-            // Mock lives as they are transient
             setActivities([]); 
         }
     } catch (e) {
@@ -32,6 +35,19 @@ export const GlobalFeed: React.FC = () => {
   useEffect(() => {
     fetchContent();
   }, [activeTab]);
+
+  const getActivityIcon = (type: ActivityType) => {
+    switch (type) {
+      case ActivityType.PLATINUM: return <Crown className="text-yellow-500" />;
+      case ActivityType.CHALLENGE: return <Swords className="text-red-500" />;
+      case ActivityType.AUCTION_BID: return <Gavel className="text-nexus-accent" />;
+      case ActivityType.AUCTION_WON: return <Trophy className="text-nexus-secondary" />;
+      case ActivityType.COLLECTION_ADD: return <Box className="text-nexus-success" />;
+      case ActivityType.STREAM: return <Radio className="text-red-600 animate-pulse" />;
+      case ActivityType.POST: return <Monitor className="text-nexus-accent" />;
+      default: return <Zap className="text-gray-400" />;
+    }
+  };
 
   return (
     <div className="w-full bg-[#050507] flex flex-col items-center min-h-full">
@@ -96,7 +112,7 @@ export const GlobalFeed: React.FC = () => {
               <button 
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full border transition-all ${filter === f ? 'bg-white/10 border-white/20 text-white' : 'border-transparent text-gray-600 hover:text-gray-400'}`}
+                className={`text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full border transition-all ${filter === f ? 'bg-white/10 border-white/20 text-white' : 'border-transparent text-gray-500 hover:text-gray-400'}`}
               >
                 {f}
               </button>
@@ -118,29 +134,40 @@ export const GlobalFeed: React.FC = () => {
                          <div className="text-left">
                             <h4 className="font-display font-bold text-white text-lg flex items-center gap-2">
                                {event.username}
-                               {event.type === ActivityType.PLATINUM && <Crown size={18} className="text-yellow-500" />}
+                               {getActivityIcon(event.type)}
                             </h4>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(event.timestamp).toLocaleDateString()}</p>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                                {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — Sintonizado via {event.details.platform || 'Nexus'}
+                            </p>
                          </div>
                       </div>
                       <div className="px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border bg-nexus-accent/10 border-nexus-accent/20 text-nexus-accent">
-                         {event.type}
+                         {event.type.replace('_', ' ')}
                       </div>
                    </div>
 
                    <div className="px-8 pb-4 text-left">
                       {event.details.gameCover && (
-                         <div className="bg-nexus-900 p-8 rounded-[2rem] border border-nexus-700 flex items-center gap-6">
+                         <div className="bg-nexus-900 p-8 rounded-[2rem] border border-nexus-700 flex items-center gap-6 mb-6">
                             <img src={event.details.gameCover} className="w-24 h-32 rounded-xl object-cover shadow-2xl" />
                             <div className="text-left">
                                <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-widest mb-1">Destaque Cloud</p>
                                <h3 className="text-2xl font-display font-bold text-white mb-1">{event.details.gameTitle}</h3>
+                               {event.details.achievementName && <p className="text-sm text-nexus-secondary">Conquista: {event.details.achievementName}</p>}
                             </div>
                          </div>
                       )}
                       
+                      {event.details.itemName && (
+                         <div className="bg-nexus-accent/5 p-6 rounded-[1.5rem] border border-nexus-accent/20 mb-4">
+                            <p className="text-[9px] text-nexus-accent font-black uppercase tracking-widest mb-1">Relíquia do Acervo</p>
+                            <h4 className="text-xl font-bold text-white">{event.details.itemName}</h4>
+                            {event.details.price && <p className="text-2xl font-display font-black text-white mt-1">${event.details.price}</p>}
+                         </div>
+                      )}
+                      
                       {event.details.content && (
-                        <p className="mt-6 text-gray-300 text-lg leading-relaxed text-left italic">"{event.details.content}"</p>
+                        <p className="text-gray-300 text-lg leading-relaxed text-left italic">"{event.details.content}"</p>
                       )}
                    </div>
 
@@ -149,7 +176,7 @@ export const GlobalFeed: React.FC = () => {
                          <Heart size={20} /> <span className="font-mono font-bold text-sm">{event.likes}</span>
                       </button>
                       <button className="flex items-center gap-2 text-gray-500 hover:text-nexus-accent transition-colors">
-                         <MessageCircle size={20} /> <span className="font-mono font-bold text-sm">0</span>
+                         <MessageCircle size={20} /> <span className="font-mono font-bold text-sm">{Math.floor(event.likes / 4)}</span>
                       </button>
                       <div className="ml-auto text-gray-600">
                          <Share2 size={18} />

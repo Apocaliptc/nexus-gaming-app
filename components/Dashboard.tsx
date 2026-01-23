@@ -84,7 +84,7 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
 
   if (!userStats) return null;
 
-  const vaultValue = MOCK_COLLECTION.filter(i => i.ownerId === 'me').reduce((acc, i) => acc + i.value, 0);
+  const collectionValue = (userStats.collection || []).reduce((acc, i) => acc + i.value, 0);
 
   return (
     <div className="h-full flex flex-col bg-[#050507] text-gray-100 overflow-y-auto custom-scrollbar">
@@ -119,8 +119,8 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
                 <p className="text-xl md:text-3xl font-display font-bold text-white leading-none">{userStats.totalAchievements}</p>
              </div>
              <div onClick={() => onNavigate?.('vault')} className="text-center px-2 md:px-8 cursor-pointer group">
-                <p className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Cofre</p>
-                <p className="text-xl md:text-3xl font-display font-bold text-nexus-accent leading-none">${vaultValue}</p>
+                <p className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Coleção</p>
+                <p className="text-xl md:text-3xl font-display font-bold text-nexus-accent leading-none">${collectionValue}</p>
              </div>
           </div>
         </div>

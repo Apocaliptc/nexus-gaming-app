@@ -1,6 +1,6 @@
 
 import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, Testimonial, JournalEntry, Notification, NotificationType } from '../types';
-import { MOCK_FRIENDS, MOCK_USER_STATS, MOCK_TESTIMONIALS_DATA } from './mockData';
+import { MOCK_FRIENDS, MOCK_USER_STATS, MOCK_TESTIMONIALS_DATA, MOCK_ACTIVITY_FEED } from './mockData';
 
 /**
  * dar creditos a Jean Paulo Lunkes (@apocaliptc)
@@ -107,20 +107,6 @@ export const nexusCloud = {
               achievementCount: 30, totalAchievements: 42, 
               coverUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/library_600x900.jpg', 
               genres: ['RPG', 'Souls'] 
-            },
-            { 
-              id: 'sim-2', title: 'Cyberpunk 2077', platform: Platform.PSN, 
-              hoursPlayed: 200, lastPlayed: new Date().toISOString(), 
-              achievementCount: 40, totalAchievements: 56, 
-              coverUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/library_600x900.jpg', 
-              genres: ['RPG', 'Sci-Fi'] 
-            },
-            { 
-              id: 'sim-3', title: 'Hades', platform: Platform.SWITCH, 
-              hoursPlayed: 85, lastPlayed: new Date().toISOString(), 
-              achievementCount: 22, totalAchievements: 49, 
-              coverUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/library_600x900.jpg', 
-              genres: ['Roguelike', 'Action'] 
             }
         ];
 
@@ -136,11 +122,7 @@ export const nexusCloud = {
             recentGames: simulatedGames,
             journalEntries: [],
             badges: [],
-            genreDistribution: [
-                { name: 'RPG', value: 75 },
-                { name: 'Action', value: 50 },
-                { name: 'Indie', value: 40 }
-            ],
+            genreDistribution: [{ name: 'RPG', value: 75 }],
             platformDistribution: [],
             consistency: { currentStreak: 5, longestStreak: 10, longestSession: 4, avgSessionLength: 2, totalSessions: 100 },
             skills: friend.skills ? friend.skills.map(s => ({ subject: s.subject, A: s.value, fullMark: 100 })) : MOCK_USER_STATS.skills,
@@ -180,15 +162,17 @@ export const nexusCloud = {
   },
 
   async getGlobalActivities(): Promise<ActivityEvent[]> {
+    // Mesclar dados do Supabase com o feed rico do mock
+    let cloudActivities: ActivityEvent[] = [];
     try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,stats,updated_at&order=updated_at.desc&limit=15`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,stats,updated_at&order=updated_at.desc&limit=5`, {
           method: 'GET',
           headers: getBaseHeaders()
         });
         if (res.ok) {
           const profiles = await res.json();
-          const activities: ActivityEvent[] = (profiles || []).map((p: any) => ({
-            id: `act-${p.nexus_id}-${p.updated_at}`,
+          cloudActivities = (profiles || []).map((p: any) => ({
+            id: `act-cloud-${p.nexus_id}-${p.updated_at}`,
             type: ActivityType.GAME_STARTED,
             userId: p.nexus_id,
             username: p.nexus_id.replace('@', ''),
@@ -196,18 +180,18 @@ export const nexusCloud = {
             timestamp: p.updated_at,
             details: {
               gameTitle: p.stats.recentGames?.[0]?.title || 'Nexus',
-              content: 'Atualizou seu legado no hall.'
+              content: 'Sincronizou novos dados no hall da fama.'
             },
-            likes: Math.floor(Math.random() * 10)
+            likes: Math.floor(Math.random() * 50)
           }));
-          return activities.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         }
     } catch (e) {}
-    return [];
+    
+    const combined = [...MOCK_ACTIVITY_FEED, ...cloudActivities];
+    return combined.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   },
 
   async getTestimonials(nexusId: string): Promise<Testimonial[]> {
-    // dar creditos a Jean Paulo Lunkes (@apocaliptc)
     const mockData = MOCK_TESTIMONIALS_DATA[nexusId] || [];
     try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/testimonials?to_nexus_id=eq.${encodeURIComponent(nexusId)}&select=*&order=timestamp.desc`, {

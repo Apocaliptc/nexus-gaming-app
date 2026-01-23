@@ -1,5 +1,5 @@
 
-import { UserStats, Platform, LinkedAccount, Game, Friend, ActivityEvent, JournalEntry, ActivityType, AuctionItem, Bid } from '../types';
+import { UserStats, Platform, LinkedAccount, Game, Friend, ActivityEvent, JournalEntry, ActivityType, AuctionItem, Bid, CollectionItem } from '../types';
 import { nexusCloud } from '../services/nexusCloud';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
@@ -20,6 +20,7 @@ interface AppContextType {
   signup: (email: string, password: string, nexusId: string) => Promise<void>;
   logout: () => void;
   placeBid: (auctionId: string, amount: number, isAuto?: boolean) => void;
+  addItemsToCollection: (items: CollectionItem[]) => void;
   userBids: Record<string, { current: number, max: number }>;
   isInitializing: boolean;
   isLoading: boolean;
@@ -138,9 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!prev) return null;
       const otherPlatformGames = prev.recentGames.filter(g => g.platform !== platform);
       const mergedGames = [...otherPlatformGames, ...games];
-      const realPlatinums = mergedGames.filter(g => g.achievementCount === g.totalAchievements && g.totalAchievements > 0).length;
       const realTotalHours = mergedGames.reduce((acc, g) => acc + (g.hoursPlayed || 0), 0);
-      const realTotalAchievements = mergedGames.reduce((acc, g) => acc + (g.achievementCount || 0), 0);
 
       const updatedStats: UserStats = {
         ...prev,
@@ -149,8 +148,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recentGames: mergedGames,
         totalHours: Math.max(realTotalHours, totalHours),
         gamesOwned: mergedGames.length,
-        totalAchievements: realTotalAchievements,
-        platinumCount: realPlatinums,
         prestigePoints: prev.prestigePoints + 500
       };
 
@@ -191,6 +188,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => setIsSyncing(false), 800);
   };
 
+  const addItemsToCollection = (items: CollectionItem[]) => {
+    if (!userStats) return;
+    setIsSyncing(true);
+    setUserStatsState(prev => {
+      if (!prev) return null;
+      const existing = prev.collection || [];
+      const updated = { ...prev, collection: [...items, ...existing] };
+      nexusCloud.saveUser(updated);
+      return updated;
+    });
+    setTimeout(() => setIsSyncing(false), 1200);
+  };
+
   const saveJournalMemory = async (entry: JournalEntry) => {
     if (!userStats) return;
     setIsSyncing(true);
@@ -225,7 +235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentUser, userStats, setUserStats, friends, addFriend, removeFriend,
       toggleAchievement, login, signup, logout, saveJournalMemory,
       linkAccount, unlinkAccount, addManualGame, importNexusData,
-      placeBid, userBids,
+      placeBid, userBids, addItemsToCollection,
       isInitializing, isLoading, isSyncing, isCloudActive
     }}>
       {children}
