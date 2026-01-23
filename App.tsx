@@ -1,13 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, Users, LogOut, Compass, BarChart2, Grid, 
-  Trophy, Loader2, Lock, AtSign, AlertCircle, X, UserCircle, 
+  Users, LogOut, Compass, BarChart2, Grid, 
+  Trophy, Loader2, Lock, AtSign, UserCircle, 
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
-  Server, Copy, Check, History, Globe, User, ShieldCheck, MessageSquare,
-  Bell
+  MessageSquare, Bell, Box, BookOpen, Play
 } from 'lucide-react';
-import { Dashboard } from './components/Dashboard';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
 import { GameSearch } from './components/GameSearch';
@@ -17,143 +15,75 @@ import { Achievements } from './components/Achievements';
 import { NexusChronos } from './components/NexusChronos';
 import { GlobalFeed } from './components/GlobalFeed';
 import { NexusOracle } from './components/NexusOracle';
-import { CloudExplorer } from './components/CloudExplorer';
-import { ProfileScreen } from './components/ProfileScreen';
+import { ProfileView } from './components/ProfileView';
 import { NexusChat } from './components/NexusChat';
 import { NotificationCenter } from './components/NotificationCenter';
+import { Auctions } from './components/Auctions';
+import { Collection } from './components/Collection';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { nexusCloud } from './services/nexusCloud';
 
-const SQL_HELP_SCRIPT = `-- SCRIPT DE RESET TOTAL E SOBERANO
-DROP TABLE IF EXISTS profiles CASCADE;
-DROP TABLE IF EXISTS testimonials CASCADE;
-DROP TABLE IF EXISTS chat_messages CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-
-CREATE TABLE profiles (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  email text UNIQUE NOT NULL,
-  nexus_id text UNIQUE NOT NULL,
-  stats jsonb NOT NULL,
-  updated_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE testimonials (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  to_nexus_id text NOT NULL,
-  from_nexus_id text NOT NULL,
-  from_name text NOT NULL,
-  from_avatar text NOT NULL,
-  content text NOT NULL,
-  vibe text NOT NULL,
-  timestamp timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE chat_messages (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  channel_id text NOT NULL,
-  sender_id text NOT NULL,
-  sender_name text NOT NULL,
-  sender_avatar text NOT NULL,
-  content text NOT NULL,
-  timestamp timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE notifications (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  "userId" text NOT NULL,
-  type text NOT NULL,
-  "fromId" text NOT NULL,
-  "fromName" text NOT NULL,
-  "fromAvatar" text NOT NULL,
-  content text NOT NULL,
-  timestamp timestamp with time zone DEFAULT now(),
-  read boolean DEFAULT false
-);
-
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Acesso Publico Profiles" ON profiles FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso Publico Testimonials" ON testimonials FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso Publico Chat" ON chat_messages FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso Publico Notifications" ON notifications FOR ALL TO anon USING (true) WITH CHECK (true);`;
-
 const LoginScreen: React.FC = () => {
-  const { login, signup } = useAppContext();
-  const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [identifier, setIdentifier] = useState('');
+  const { login, signup, isLoading } = useAppContext();
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nexusId, setNexusId] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
     try {
-      if (mode === 'login') {
-        await login(identifier, password);
+      if (isLogin) {
+        await login(email, password);
       } else {
-        await signup(identifier, password, nexusId);
+        await signup(email, password, nexusId);
       }
     } catch (err: any) {
-      setError(err.message || "Erro de conexão com o Nexus Core.");
-    } finally {
-      setIsLoading(false);
+      setError(err.message || 'Falha na autenticação');
     }
   };
 
   return (
-    <div className="h-screen bg-[#050507] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#1a1a2e,transparent)] opacity-50"></div>
-      
-      <div className="bg-nexus-900 p-10 rounded-[3rem] border border-nexus-800 shadow-2xl max-w-md w-full relative z-10 space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <div className="w-20 h-20 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-nexus-accent/20 mb-4">
-            <span className="font-display font-bold text-white text-4xl tracking-tighter">N</span>
-          </div>
-          <h1 className="text-4xl font-display font-bold text-white tracking-tighter uppercase">Nexus</h1>
-          <p className="text-gray-500 text-sm italic">Sintonize seu legado gamer.</p>
+    <div className="h-screen bg-[#050507] flex items-center justify-center p-4 text-gray-100 overflow-hidden font-sans">
+      <div className="w-full max-w-md bg-nexus-900 border border-nexus-800 p-10 rounded-[3rem] shadow-2xl space-y-8 animate-fade-in relative overflow-hidden">
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-nexus-accent/10 blur-[60px] rounded-full"></div>
+        <div className="text-center space-y-4">
+           <div className="w-20 h-20 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-[2rem] mx-auto flex items-center justify-center text-white font-bold text-3xl shadow-2xl shadow-nexus-accent/20 mb-4">N</div>
+           <h1 className="text-3xl font-display font-bold text-white tracking-tighter uppercase">NEXUS</h1>
+           <p className="text-gray-500 text-[10px] uppercase tracking-[0.4em] font-black">Eternizing Your Gaming DNA</p>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-3">
-            <div className="relative">
-              <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              <input required type="email" placeholder="E-mail" value={identifier} onChange={e => setIdentifier(e.target.value)} className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-white focus:border-nexus-accent outline-none transition-all placeholder:text-gray-600" />
-            </div>
-            
-            {mode === 'signup' && (
-              <div className="relative animate-fade-in">
-                <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                <input required type="text" placeholder="@NexusID" value={nexusId} onChange={e => setNexusId(e.target.value)} className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-white focus:border-nexus-accent outline-none transition-all placeholder:text-gray-600" />
+        {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-xs text-center animate-pulse">{error}</div>}
+        <form onSubmit={handleSubmit} className="space-y-5">
+           {!isLogin && (
+             <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">Nexus ID</label>
+                <div className="relative">
+                   <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                   <input required value={nexusId} onChange={e => setNexusId(e.target.value)} type="text" placeholder="seu-nick" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
+                </div>
+             </div>
+           )}
+           <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">E-mail</label>
+              <div className="relative">
+                 <input required value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="nome@exemplo.com" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl px-6 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
               </div>
-            )}
-
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              <input required type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-white focus:border-nexus-accent outline-none transition-all placeholder:text-gray-600" />
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-500 text-xs flex gap-2 animate-fade-in">
-              <AlertCircle size={16} className="shrink-0" /> <span>{error}</span>
-            </div>
-          )}
-
-          <button type="submit" disabled={isLoading} className="w-full py-4 bg-nexus-accent hover:bg-nexus-accent/80 text-white font-bold rounded-2xl transition-all shadow-xl shadow-nexus-accent/30 flex items-center justify-center gap-2">
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}
-            {mode === 'login' ? 'Acessar Nexus' : 'Criar Conta'}
-          </button>
+           </div>
+           <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">Senha</label>
+              <div className="relative">
+                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                 <input required value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
+              </div>
+           </div>
+           <button disabled={isLoading} type="submit" className="w-full py-5 bg-nexus-accent hover:bg-nexus-accent/80 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-2xl shadow-nexus-accent/30 flex items-center justify-center gap-3">
+              {isLoading ? <Loader2 className="animate-spin" /> : isLogin ? 'Sincronizar Acesso' : 'Eternizar Perfil'}
+           </button>
         </form>
-
-        <button onClick={() => setMode(mode === 'login' ? 'signup' : 'login')} className="w-full text-center text-gray-500 hover:text-white text-sm transition-colors">
-          {mode === 'login' ? 'Novo por aqui? Criar Legado' : 'Já possui um Nexus ID? Entrar'}
+        <button onClick={() => setIsLogin(!isLogin)} className="w-full text-center text-[10px] text-gray-600 font-black uppercase tracking-widest hover:text-white">
+           {isLogin ? "Reivindicar um novo ID" : "Já possuo um Perfil"}
         </button>
       </div>
     </div>
@@ -168,8 +98,10 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     if (userStats) {
       const pollNotifs = async () => {
-        const notifs = await nexusCloud.getNotifications(userStats.nexusId);
-        setUnreadCount(notifs.filter(n => !n.read).length);
+        try {
+          const notifs = await nexusCloud.getNotifications(userStats.nexusId);
+          setUnreadCount(notifs.filter(n => !n.read).length);
+        } catch (e) {}
       };
       pollNotifs();
       const interval = setInterval(pollNotifs, 30000);
@@ -179,141 +111,115 @@ const MainApp: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <Dashboard onNavigate={setActiveTab} />;
-      case 'profile': return userStats ? <ProfileScreen profileData={{
-        id: userStats.nexusId, nexusId: userStats.nexusId, username: userStats.nexusId.replace('@', ''), avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats.nexusId}`, status: 'online', totalTrophies: userStats.totalAchievements, platinumCount: userStats.platinumCount, totalHours: userStats.totalHours, gamesOwned: userStats.gamesOwned, topGenres: [], compatibilityScore: 100
-      }} isOwnProfile={true} /> : null;
+      case 'pulse': return <GlobalFeed />;
+      case 'profile': return <ProfileView onNavigate={setActiveTab} />;
       case 'notifications': return <NotificationCenter onReadUpdate={setUnreadCount} />;
       case 'chat': return <NexusChat />;
       case 'library': return <GameLibrary />;
+      case 'vault': return <Collection />;
       case 'achievements': return <Achievements />;
       case 'stats': return <Statistics />;
-      case 'pulse': return <GlobalFeed />;
       case 'oracle': return <NexusOracle />;
       case 'chronos': return <NexusChronos />;
       case 'discover': return <GameSearch />;
       case 'friends': return <Friends />;
-      case 'cloud': return <CloudExplorer />;
+      case 'auctions': return <Auctions />;
       case 'settings': return <Settings />;
       default: return <GlobalFeed />;
     }
   };
 
-  const navItems = [
-    { id: 'pulse', icon: Activity, label: 'Feed Pulse' },
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
-    { id: 'profile', icon: User, label: 'Meu Perfil' },
-    { id: 'notifications', icon: Bell, label: 'Alertas', badge: unreadCount },
-    { id: 'chat', icon: MessageSquare, label: 'Comms' },
-    { id: 'library', icon: Grid, label: 'Biblioteca' },
-  ];
-
-  const exploreItems = [
-    { id: 'achievements', icon: Trophy, label: 'Conquistas' },
-    { id: 'discover', icon: Compass, label: 'Crawler' },
-    { id: 'friends', icon: Users, label: 'Conexões' },
-    { id: 'chronos', icon: History, label: 'Chronos' },
-    { id: 'oracle', icon: BrainCircuit, label: 'Oráculo' },
-  ];
-
-  const systemItems = [
-    { id: 'cloud', icon: Database, label: 'Hall Cloud' },
-    { id: 'settings', icon: SettingsIcon, label: 'Ajustes' },
-  ];
-
   return (
-    <div className="flex h-screen bg-[#050507] text-white overflow-hidden">
-      <aside className="w-24 md:w-64 bg-nexus-900 border-r border-nexus-800 flex flex-col transition-all duration-300 relative z-50">
-        <div className="p-8 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-nexus-accent/20">
-            <span className="font-display font-bold text-white text-xl">N</span>
+    <div className="flex h-screen bg-[#050507] text-white overflow-hidden font-sans">
+      <aside className="w-20 md:w-64 bg-nexus-900 border-r border-nexus-800 flex flex-col transition-all duration-300 relative z-50 shrink-0">
+        <div className="p-6 flex items-center gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xl cursor-pointer" onClick={() => setActiveTab('pulse')}>
+            <span className="font-display font-bold text-white text-2xl">N</span>
           </div>
-          <span className="font-display font-bold text-2xl tracking-tighter hidden md:block">NEXUS</span>
+          <div className="hidden md:block">
+            <h2 className="font-display font-bold text-xl tracking-tighter leading-none">NEXUS</h2>
+            <p className="text-[8px] font-black text-nexus-accent uppercase tracking-widest">Sovereign Legacy</p>
+          </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar">
+        <div className="px-4 mb-6">
+           <button 
+             onClick={() => setActiveTab('profile')}
+             className={`w-full flex items-center gap-4 p-3 rounded-[1.5rem] transition-all group border-2 ${activeTab === 'profile' ? 'bg-nexus-accent border-nexus-accent text-white shadow-2xl scale-105' : 'bg-nexus-800/40 border-nexus-700 text-gray-500 hover:border-nexus-accent hover:bg-nexus-800/80'}`}
+           >
+             <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white/10 shrink-0 relative">
+                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats?.nexusId}`} className="w-full h-full object-cover" alt="Avatar" />
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-nexus-900 shadow-lg"></div>
+             </div>
+             <div className="text-left hidden md:block">
+                <p className="font-black text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/80">Meu Legado</p>
+                <p className="font-bold text-sm text-white truncate">{userStats?.nexusId.replace('@', '')}</p>
+             </div>
+           </button>
+        </div>
+
+        <nav className="flex-1 px-3 space-y-8 overflow-y-auto custom-scrollbar pt-2">
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4 px-4 hidden md:block">Comando</p>
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all group relative ${
-                  activeTab === item.id 
-                    ? 'bg-nexus-accent text-white shadow-xl shadow-nexus-accent/20' 
-                    : 'text-gray-500 hover:bg-nexus-800 hover:text-gray-300'
-                }`}
-              >
-                <item.icon size={22} className={activeTab === item.id ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'} />
-                <span className="font-bold text-sm hidden md:block">{item.label}</span>
-                {item.badge && item.badge > 0 && (
-                  <div className="absolute right-3 top-3 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-nexus-900 shadow-lg">
-                    {item.badge}
-                  </div>
-                )}
-                {activeTab === item.id && <div className="absolute right-2 w-1.5 h-1.5 bg-white rounded-full hidden md:block"></div>}
-              </button>
-            ))}
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Nexus Pulse</p>
+            <NavItem id="pulse" icon={Activity} label="Pulse Global" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="chat" icon={MessageSquare} label="Comunicações" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="friends" icon={Users} label="Conexões" active={activeTab} onClick={setActiveTab} />
           </div>
 
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4 px-4 hidden md:block">Explorar</p>
-            {exploreItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all group relative ${
-                  activeTab === item.id 
-                    ? 'bg-nexus-accent text-white shadow-xl shadow-nexus-accent/20' 
-                    : 'text-gray-500 hover:bg-nexus-800 hover:text-gray-300'
-                }`}
-              >
-                <item.icon size={22} />
-                <span className="font-bold text-sm hidden md:block">{item.label}</span>
-              </button>
-            ))}
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Patrimônio Digital</p>
+            <NavItem id="profile" icon={UserCircle} label="Perfil & DNA" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="achievements" icon={Trophy} label="Conquistas" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="library" icon={Grid} label="Biblioteca" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="stats" icon={BarChart2} label="Analytics" active={activeTab} onClick={setActiveTab} />
           </div>
 
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4 px-4 hidden md:block">Sistema</p>
-            {systemItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all group relative ${
-                  activeTab === item.id 
-                    ? 'bg-nexus-accent text-white shadow-xl shadow-nexus-accent/20' 
-                    : 'text-gray-500 hover:bg-nexus-800 hover:text-gray-300'
-                }`}
-              >
-                <item.icon size={22} />
-                <span className="font-bold text-sm hidden md:block">{item.label}</span>
-              </button>
-            ))}
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Físico & Hardware</p>
+            <NavItem id="vault" icon={Box} label="Coleção" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="auctions" icon={Play} label="Leilões" active={activeTab} onClick={setActiveTab} />
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3 hidden md:block">Inteligência</p>
+            <NavItem id="oracle" icon={BrainCircuit} label="Nexus Oracle" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="discover" icon={Compass} label="Explorar" active={activeTab} onClick={setActiveTab} />
+            <NavItem id="chronos" icon={BookOpen} label="Chronos" active={activeTab} onClick={setActiveTab} />
           </div>
         </nav>
 
-        <div className="p-6 bg-nexus-900 border-t border-nexus-800 space-y-4">
-          {userStats && (
-            <div className="hidden md:flex items-center gap-3 p-3 bg-nexus-800 rounded-2xl border border-nexus-700">
-               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-nexus-accent/40 to-nexus-secondary/40 flex items-center justify-center text-white font-bold border border-white/5">
-                  {userStats.nexusId.charAt(1).toUpperCase()}
-               </div>
-               <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white truncate">{userStats.nexusId}</p>
-                  <div className="flex items-center gap-1.5">
-                     <div className="w-1.5 h-1.5 bg-nexus-success rounded-full animate-pulse"></div>
-                     <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Nuvem Online</p>
-                  </div>
-               </div>
-            </div>
-          )}
+        <div className="p-4 bg-nexus-900 border-t border-nexus-800 space-y-3 shrink-0">
+          <button 
+            onClick={() => setActiveTab('notifications')}
+            className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all relative ${
+              activeTab === 'notifications' ? 'bg-white/10 text-white shadow-inner' : 'text-gray-500 hover:bg-nexus-800/50 hover:text-white'
+            }`}
+          >
+             <Bell size={20} />
+             <span className="font-bold text-xs hidden md:block">Alertas</span>
+             {unreadCount > 0 && (
+                <div className="absolute right-3 top-3 w-5 h-5 bg-red-600 rounded-lg flex items-center justify-center text-[8px] font-black border-2 border-nexus-900 shadow-xl">
+                   {unreadCount}
+                </div>
+             )}
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all ${
+              activeTab === 'settings' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-nexus-800/50'
+            }`}
+          >
+             <SettingsIcon size={20} />
+             <span className="font-bold text-xs hidden md:block">Ajustes</span>
+          </button>
+
           <button 
             onClick={logout}
-            className="w-full flex items-center gap-4 p-3.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
+            className="w-full flex items-center gap-4 p-3 text-red-500/60 hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
           >
-            <LogOut size={22} />
-            <span className="font-bold text-sm hidden md:block">Encerrar Sessão</span>
+            <LogOut size={20} />
+            <span className="font-bold text-xs hidden md:block">Sair</span>
           </button>
         </div>
       </aside>
@@ -321,18 +227,48 @@ const MainApp: React.FC = () => {
       <main className="flex-1 overflow-hidden relative flex flex-col bg-[#050507]">
         {isSyncing && (
           <div className="absolute top-6 right-8 z-[100] animate-fade-in">
-             <div className="bg-nexus-900/80 backdrop-blur-xl border border-nexus-accent/30 px-5 py-2.5 rounded-2xl flex items-center gap-3 shadow-2xl">
+             <div className="bg-nexus-900/90 backdrop-blur-xl border border-nexus-accent/40 px-6 py-3 rounded-2xl flex items-center gap-3 shadow-2xl shadow-nexus-accent/10">
                 <Loader2 size={16} className="animate-spin text-nexus-accent" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Sincronizando Legado...</span>
+                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Sintonizando...</span>
              </div>
           </div>
         )}
-        <div className="flex-1 overflow-hidden">
-          {renderContent()}
+        <div className="flex-1 relative">
+           {renderContent()}
         </div>
       </main>
     </div>
   );
+};
+
+const NavItem = ({ id, icon: Icon, label, active, onClick }: { id: string, icon: any, label: string, active: string, onClick: (id: string) => void }) => (
+  <button 
+    onClick={() => onClick(id)} 
+    className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all group ${
+      active === id ? 'bg-nexus-accent text-white shadow-xl shadow-nexus-accent/20' : 'text-gray-400 hover:bg-nexus-800 hover:text-gray-300'
+    }`}
+  >
+    <Icon size={20} className={`transition-all ${active === id ? 'scale-110' : 'group-hover:scale-110'}`} />
+    <span className="font-bold text-xs hidden md:block tracking-tight">{label}</span>
+  </button>
+);
+
+const AppContent: React.FC = () => {
+  const { userStats, isInitializing } = useAppContext();
+  
+  if (isInitializing) {
+    return (
+      <div className="h-screen bg-[#050507] flex flex-col items-center justify-center gap-6">
+        <div className="relative">
+           <Loader2 className="animate-spin text-nexus-accent" size={64} />
+           <div className="absolute inset-0 bg-nexus-accent blur-3xl opacity-20"></div>
+        </div>
+        <p className="text-gray-500 font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Handshaking Core...</p>
+      </div>
+    );
+  }
+
+  return userStats ? <MainApp /> : <LoginScreen />;
 };
 
 const App: React.FC = () => {
@@ -341,28 +277,6 @@ const App: React.FC = () => {
       <AppContent />
     </AppProvider>
   );
-};
-
-const AppContent: React.FC = () => {
-  const { currentUser, isInitializing } = useAppContext();
-
-  if (isInitializing) {
-    return (
-      <div className="h-screen bg-[#050507] flex flex-col items-center justify-center gap-8">
-        <div className="w-24 h-24 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-nexus-accent/20 animate-bounce">
-          <span className="font-display font-bold text-white text-5xl tracking-tighter">N</span>
-        </div>
-        <div className="space-y-3 text-center">
-           <p className="text-nexus-accent font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Sintonizando frequências do Nexus...</p>
-           <div className="w-48 h-1 bg-nexus-900 rounded-full overflow-hidden mx-auto">
-              <div className="h-full bg-nexus-accent animate-[loading_2s_ease-in-out_infinite]"></div>
-           </div>
-        </div>
-      </div>
-    );
-  }
-
-  return currentUser ? <MainApp /> : <LoginScreen />;
 };
 
 export default App;

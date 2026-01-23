@@ -1,0 +1,558 @@
+
+import React, { useEffect, useState, useMemo } from 'react';
+import { Friend, Game, UserStats, Platform, Testimonial, ActivityEvent } from '../types';
+import { nexusCloud } from '../services/nexusCloud';
+import { GameDetailView } from './GameDetailView';
+import { NexusIDCard } from './NexusIDCard';
+import { PlatformIcon } from './PlatformIcon';
+import { useAppContext } from '../context/AppContext';
+import { analyzeGamingProfile } from '../services/geminiService';
+import { 
+  ChevronLeft, Trophy, Crown, MessageSquare, Swords, LayoutDashboard, 
+  Grid, Clock, Medal, Sparkles, Loader2, Zap, Heart, Info, Send, 
+  Star, Award, AlertCircle, Play, Activity, BrainCircuit, RefreshCw, Cpu, ChevronRight,
+  ShieldCheck, Target, Users, Box, History, Link
+} from 'lucide-react';
+import { 
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, 
+  Tooltip as RechartsTooltip, Legend 
+} from 'recharts';
+import { MOCK_COLLECTION } from '../services/mockData';
+
+interface Props {
+  onNavigate?: (tab: string) => void;
+  friendData?: Friend; // Se passado, exibe o perfil de um amigo. Caso contrário, o próprio.
+  onCloseFriend?: () => void;
+}
+
+export const ProfileView: React.FC<Props> = ({ onNavigate, friendData, onCloseFriend }) => {
+  const { userStats: currentUserStats } = useAppContext();
+  const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'collection' | 'testimonials'>('overview');
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [fullUserStats, setFullUserStats] = useState<UserStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [aiInsight, setAiInsight] = useState<any | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [activities, setActivities] = useState<ActivityEvent[]>([]);
+  
+  // Testimonials state
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [newTestimonial, setNewTestimonial] = useState('');
+  const [selectedVibe, setSelectedVibe] = useState<'pro' | 'mvp' | 'legend'>('pro');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const targetId = friendData?.nexusId || currentUserStats?.nexusId;
+  const isOwnProfile = targetId === currentUserStats?.nexusId;
+
+  useEffect(() => {
+    const loadProfileData = async () => {
+      if (!targetId) return;
+      
+      if (isOwnProfile && currentUserStats) {
+          setFullUserStats(currentUserStats);
+      }
+
+      setIsLoading(true);
+      try {
+        const [stats, wall, feed] = await Promise.all([
+          nexusCloud.getUser(targetId),
+          nexusCloud.getTestimonials(targetId),
+          nexusCloud.getGlobalActivities()
+        ]);
+        
+        if (stats) {
+            setFullUserStats(stats);
+            setLoadingAi(true);
+            const insight = await analyzeGamingProfile(stats);
+            setAiInsight(insight);
+            setLoadingAi(false);
+        }
+        
+        setTestimonials(wall);
+        setActivities(feed.filter(a => a.userId === targetId));
+      } catch (err) {
+        console.warn("Nexus Pulse: Erro ao sincronizar perfil.");
+        if (isOwnProfile && currentUserStats) setFullUserStats(currentUserStats);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProfileData();
+  }, [targetId, currentUserStats?.nexusId]);
+
+  const userItems = useMemo(() => {
+    const ownerFilter = isOwnProfile ? 'me' : targetId;
+    return MOCK_COLLECTION.filter(i => i.ownerId === ownerFilter);
+  }, [isOwnProfile, targetId]);
+
+  const vaultValue = useMemo(() => {
+    return userItems.reduce((acc, i) => acc + i.value, 0);
+  }, [userItems]);
+
+  // Sinergia de DNA Proeminente
+  const synergyData = useMemo(() => {
+    if (!currentUserStats || !fullUserStats || isOwnProfile) return null;
+    
+    // 1. Títulos em Comum
+    const myGames = new Set(currentUserStats.recentGames.map(g => g.title.toLowerCase()));
+    const theirGames = fullUserStats.recentGames;
+    const shared = theirGames.filter(g => myGames.has(g.title.toLowerCase()));
+    
+    // 2. DNA de Gênero (Fallback para afinidade de playstyle)
+    const mapToCategories = (stats: UserStats) => {
+      const dist = stats.genreDistribution || [];
+      const cats: Record<string, number> = { FPS: 0, RPG: 0, Action: 0, Strategy: 0, Sports: 0, Indie: 0 };
+      dist.forEach(d => {
+        const name = d.name.toLowerCase();
+        if (name.includes('fps')) cats['FPS'] += d.value;
+        else if (name.includes('rpg')) cats['RPG'] += d.value;
+        else if (name.includes('action')) cats['Action'] += d.value;
+        else if (name.includes('strategy')) cats['Strategy'] += d.value;
+        else if (name.includes('sports')) cats['Sports'] += d.value;
+        else cats['Indie'] += d.value;
+      });
+      return cats;
+    };
+
+    const myCats = mapToCategories(currentUserStats);
+    const theirCats = mapToCategories(fullUserStats);
+
+    // Cálculo de similaridade de Cosseno simplificado para porcentagem
+    let dotProduct = 0;
+    let magA = 0;
+    let magB = 0;
+    Object.keys(myCats).forEach(k => {
+        dotProduct += myCats[k] * theirCats[k];
+        magA += myCats[k] ** 2;
+        magB += theirCats[k] ** 2;
+    });
+    
+    const cosineSim = (magA && magB) ? dotProduct / (Math.sqrt(magA) * Math.sqrt(magB)) : 0;
+    const percentage = Math.round(cosineSim * 100);
+
+    const radarChartData = Object.keys(myCats).map(cat => ({
+      subject: cat,
+      A: myCats[cat],
+      B: theirCats[cat]
+    }));
+
+    return { percentage, sharedGames: shared, radarChartData };
+  }, [currentUserStats, fullUserStats, isOwnProfile]);
+
+  const handlePostTestimonial = async () => {
+    if (!newTestimonial.trim() || !currentUserStats || isOwnProfile) return;
+    setIsSubmitting(true);
+    
+    const testimonial: Testimonial = {
+      id: `t-${Date.now()}`,
+      fromNexusId: currentUserStats.nexusId,
+      fromName: currentUserStats.nexusId.replace('@', ''),
+      fromAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserStats.nexusId}`,
+      content: newTestimonial,
+      timestamp: new Date().toISOString(),
+      vibe: selectedVibe
+    };
+
+    try {
+      await nexusCloud.saveTestimonial(targetId!, testimonial);
+      setTestimonials(prev => [testimonial, ...prev]);
+      setNewTestimonial('');
+    } catch (err) {
+      console.error("Falha ao salvar depoimento");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getPlatformStyle = (p: Platform) => {
+    switch (p) {
+        case Platform.PSN: return 'bg-blue-600/20 text-blue-400 border-blue-500/30';
+        case Platform.XBOX: return 'bg-green-600/20 text-green-400 border-green-500/30';
+        case Platform.STEAM: return 'bg-nexus-accent/20 text-nexus-accent border-nexus-accent/30';
+        case Platform.SWITCH: return 'bg-red-600/20 text-red-400 border-red-500/30';
+        default: return 'bg-gray-800 text-gray-400 border-gray-700';
+    }
+  };
+
+  if (isLoading && !fullUserStats) return (
+    <div className="h-full flex flex-col items-center justify-center bg-[#050507] gap-4">
+      <Loader2 className="animate-spin text-nexus-accent" size={48} />
+      <p className="text-gray-500 font-mono text-[10px] uppercase tracking-[0.3em] animate-pulse">Invocando Dados Nexus...</p>
+    </div>
+  );
+  
+  if (selectedGame) return <GameDetailView game={selectedGame} onClose={() => setSelectedGame(null)} isOwner={isOwnProfile} />;
+
+  const displayStats = fullUserStats;
+
+  return (
+    <div className="h-full bg-[#050507] text-gray-100 overflow-y-auto custom-scrollbar animate-fade-in relative">
+      
+      {/* Banner de Identidade */}
+      <div className="relative border-b border-nexus-800">
+         {onCloseFriend && (
+           <button onClick={onCloseFriend} className="absolute top-6 left-6 z-50 p-2 bg-black/60 hover:bg-nexus-accent rounded-full border border-white/10 text-white transition-all shadow-2xl">
+             <ChevronLeft size={24} />
+           </button>
+         )}
+         
+         <div className="h-64 md:h-80 w-full relative overflow-hidden bg-gradient-to-br from-nexus-900 via-nexus-800 to-black">
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay"></div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-10">
+               <div className="w-[800px] h-[800px] border border-nexus-accent rounded-full animate-pulse"></div>
+               <div className="absolute w-[600px] h-[600px] border border-nexus-secondary rounded-full animate-pulse delay-700"></div>
+            </div>
+         </div>
+         
+         <div className="max-w-[1400px] mx-auto px-8 -mt-40 relative z-30 flex flex-col xl:flex-row items-end gap-12 pb-12">
+            <div className="w-full xl:w-auto">
+               {displayStats && <NexusIDCard stats={displayStats} insight={aiInsight} />}
+            </div>
+            
+            <div className="flex-1 w-full pb-4 text-center xl:text-left space-y-6">
+               <div className="space-y-2">
+                  <div className="flex flex-col md:flex-row items-center gap-4 xl:justify-start justify-center">
+                     <h2 className="text-5xl md:text-7xl font-display font-bold text-white tracking-tighter leading-none">{targetId?.replace('@','')}</h2>
+                     <div className="flex gap-2">
+                        <span className="px-4 py-1.5 bg-nexus-accent/20 border border-nexus-accent/30 text-nexus-accent text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Elite Operative</span>
+                        <span className="px-4 py-1.5 bg-nexus-secondary/20 border border-nexus-secondary/30 text-nexus-secondary text-[10px] font-black uppercase tracking-[0.2em] rounded-full">DNA Verificado</span>
+                     </div>
+                  </div>
+                  <p className="text-gray-400 font-medium italic text-xl opacity-80">
+                    Sintonizado via {displayStats?.platformsConnected.length} redes ativas.
+                  </p>
+               </div>
+
+               <div className="flex flex-wrap justify-center xl:justify-start gap-6 pt-4">
+                  <StatItem label="Imersão" value={`${displayStats?.totalHours}h`} onClick={() => onNavigate?.('stats')} />
+                  <StatItem label="Conquistas" value={displayStats?.totalAchievements || 0} onClick={() => setActiveTab('achievements')} />
+                  <StatItem label="Coleção" value={`$${vaultValue}`} onClick={() => setActiveTab('collection')} />
+                  <StatItem label="Prestige" value={displayStats?.prestigePoints || 0} highlight />
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div className="sticky top-0 z-40 bg-[#050507]/90 backdrop-blur-xl border-b border-nexus-800">
+         <div className="max-w-[1400px] mx-auto px-8 flex gap-8">
+            <button onClick={() => setActiveTab('overview')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'overview' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Visão Geral</button>
+            <button onClick={() => setActiveTab('achievements')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'achievements' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Conquistas</button>
+            <button onClick={() => setActiveTab('collection')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'collection' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>Coleção</button>
+            <button onClick={() => setActiveTab('testimonials')} className={`py-4 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all flex items-center gap-2 ${activeTab === 'testimonials' ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+               Mural
+               <span className="bg-white/10 px-2 py-0.5 rounded-full text-[8px]">{testimonials.length}</span>
+            </button>
+         </div>
+      </div>
+
+      <div className="p-8 md:p-12 space-y-16 max-w-[1400px] mx-auto w-full pb-40">
+         {activeTab === 'overview' && (
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="lg:col-span-4 space-y-12">
+                 {/* DNA IA Card */}
+                 <div className="bg-gradient-to-br from-nexus-accent/15 to-nexus-900 border border-nexus-accent/30 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group">
+                    <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:scale-110 transition-transform">
+                       <BrainCircuit size={220} className="text-nexus-accent" />
+                    </div>
+                    <div className="relative z-10 space-y-8">
+                       <p className="text-[12px] font-black text-nexus-accent uppercase tracking-[0.4em]">Análise de DNA IA</p>
+                       {loadingAi ? (
+                          <div className="py-12 flex flex-col items-center gap-8">
+                             <Loader2 className="animate-spin text-nexus-accent" size={48} />
+                             <p className="text-[11px] text-gray-500 font-mono animate-pulse uppercase tracking-[0.5em]">Lendo Metadados...</p>
+                          </div>
+                       ) : aiInsight ? (
+                          <div className="animate-fade-in space-y-8">
+                             <h4 className="text-4xl font-display font-bold text-white tracking-tight leading-tight">{aiInsight.personaTitle}</h4>
+                             <p className="text-lg text-gray-400 italic leading-relaxed border-l-4 border-nexus-accent pl-8">"{aiInsight.description}"</p>
+                             <div className="flex flex-wrap gap-4 pt-4">
+                                {aiInsight.potentialBadges.map((b: string) => (
+                                   <span key={b} className="px-4 py-1.5 bg-black/50 border border-white/5 rounded-xl text-[10px] font-black text-gray-500 uppercase tracking-widest">{b}</span>
+                                ))}
+                             </div>
+                          </div>
+                       ) : <p className="text-gray-500 italic text-sm">Oráculo processando frequências...</p>}
+                    </div>
+                 </div>
+
+                 {/* Skill Matrix */}
+                 <div onClick={() => onNavigate?.('stats')} className="bg-nexus-900 border border-nexus-800 rounded-[3.5rem] p-10 shadow-2xl cursor-pointer hover:border-nexus-secondary transition-all group">
+                    <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-5 mb-10 group-hover:text-nexus-secondary">
+                       <Activity size={20} className="text-nexus-secondary" /> Matriz de Perícia
+                    </h3>
+                    <div className="h-72">
+                       {displayStats && (
+                         <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={displayStats.skills}>
+                               <PolarGrid stroke="#23232f" />
+                               <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 'bold' }} />
+                               <Radar name="Skills" dataKey="A" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.5} strokeWidth={4} />
+                            </RadarChart>
+                         </ResponsiveContainer>
+                       )}
+                    </div>
+                 </div>
+              </div>
+
+              <div className="lg:col-span-8 space-y-12">
+                 {/* SINERGIA INTEGRADA (Visível apenas em perfis de terceiros) */}
+                 {synergyData && (
+                    <div className="bg-nexus-900 border border-nexus-accent/30 rounded-[3rem] p-12 relative overflow-hidden group shadow-2xl animate-fade-in">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-nexus-accent/10 to-transparent opacity-50"></div>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+                           <div className="text-center md:text-left space-y-8 flex-1">
+                              <div className="space-y-2">
+                                 <p className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em]">Protocolo de Sincronia v4.2</p>
+                                 <h3 className="text-4xl font-display font-bold text-white flex items-center gap-4 justify-center md:justify-start">
+                                    <Target className="text-nexus-accent" /> Sinergia Gamer
+                                 </h3>
+                              </div>
+
+                              <div className="flex items-center gap-8 justify-center md:justify-start">
+                                 <div className="relative">
+                                    <div className="w-32 h-32 rounded-full border-4 border-nexus-accent/20 flex items-center justify-center shadow-2xl relative bg-nexus-900/80">
+                                       <div className="absolute inset-0 rounded-full bg-nexus-accent blur-2xl opacity-20 animate-pulse"></div>
+                                       <span className="text-4xl font-display font-bold text-white relative z-10">{synergyData.percentage}%</span>
+                                    </div>
+                                    <Zap size={24} className="absolute -bottom-2 -right-2 text-nexus-accent animate-bounce" />
+                                 </div>
+                                 <div className="space-y-2 max-w-xs">
+                                    <p className="text-gray-300 text-xl font-medium leading-tight">Match de DNA Sintonizado</p>
+                                    <p className="text-xs text-gray-500 italic">"Vocês compartilham trajetórias digitais similares em gêneros e estilo de jogo."</p>
+                                 </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-3 pt-4 justify-center md:justify-start">
+                                {synergyData.sharedGames.length > 0 ? (
+                                    synergyData.sharedGames.slice(0, 3).map(game => (
+                                        <div key={game.id} className="flex items-center gap-2 bg-nexus-accent/10 border border-nexus-accent/20 px-4 py-2 rounded-xl text-[10px] font-black text-nexus-accent uppercase tracking-widest">
+                                            <Link size={12} /> {game.title}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="bg-white/5 px-4 py-2 rounded-xl text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">Afinidade de Gêneros Detectada</div>
+                                )}
+                              </div>
+                           </div>
+
+                           <div className="h-64 w-64 flex-shrink-0 bg-black/20 rounded-[3rem] p-6 border border-white/5 shadow-inner">
+                              <ResponsiveContainer width="100%" height="100%">
+                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={synergyData.radarChartData}>
+                                    <PolarGrid stroke="#23232f" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 9, fontWeight: 'bold' }} />
+                                    <Radar name="Você" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
+                                    <Radar name={targetId?.replace('@','')} dataKey="B" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
+                                 </RadarChart>
+                              </ResponsiveContainer>
+                           </div>
+                        </div>
+                    </div>
+                 )}
+
+                 <div className="space-y-8">
+                    <h3 className="text-3xl font-display font-bold text-white px-6">Histórico Sincronizado</h3>
+                    <div className="space-y-6">
+                       {activities.length === 0 ? (
+                          <div className="py-20 text-center bg-nexus-900 border border-nexus-800 border-dashed rounded-[3rem]">
+                             <Zap size={48} className="mx-auto mb-4 opacity-10" />
+                             <p className="text-gray-600 font-bold uppercase tracking-widest italic text-xs">Dados de atividade pendentes.</p>
+                          </div>
+                       ) : (
+                          activities.map(activity => (
+                             <div key={activity.id} className="bg-nexus-900 border border-nexus-800 p-8 rounded-[3rem] flex flex-col md:flex-row items-center gap-8 group hover:border-nexus-accent transition-all shadow-xl">
+                                <div className="w-20 h-28 rounded-2xl overflow-hidden border-2 border-nexus-700 shrink-0">
+                                   <img src={activity.details.gameCover || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="Capa" />
+                                </div>
+                                <div className="flex-1 text-center md:text-left">
+                                   <h4 className="text-2xl font-bold text-white mb-2">{activity.details.gameTitle}</h4>
+                                   <p className="text-gray-400 italic text-sm">"{activity.details.content}"</p>
+                                   <div className="flex items-center gap-6 mt-6 justify-center md:justify-start text-[10px] text-gray-500 font-mono uppercase tracking-widest">
+                                      {new Date(activity.timestamp).toLocaleDateString()}
+                                   </div>
+                                </div>
+                                <ChevronRight className="text-gray-800 group-hover:text-white transition-colors" size={32} />
+                             </div>
+                          ))
+                       )}
+                    </div>
+                 </div>
+              </div>
+           </div>
+         )}
+
+         {activeTab === 'achievements' && displayStats && (
+            <div className="space-y-12 animate-fade-in">
+               <div className="flex items-center justify-between px-6">
+                  <h3 className="text-3xl font-display font-bold text-white flex items-center gap-4">
+                     <Trophy className="text-nexus-accent" /> Vitórias Immortalizadas
+                  </h3>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                  {displayStats.recentGames.length === 0 ? (
+                    <p className="col-span-full text-center py-20 text-gray-500 italic">Nenhum título vinculado a este Perfil.</p>
+                  ) : (
+                    displayStats.recentGames.map(game => (
+                        <div key={game.id} onClick={() => setSelectedGame(game)} className="bg-nexus-900 border border-nexus-800 p-6 rounded-[3rem] flex flex-col gap-6 hover:border-nexus-accent transition-all cursor-pointer group shadow-xl relative overflow-hidden">
+                          {/* Badge de Plataforma com Destaque */}
+                          <div className={`absolute top-0 right-0 px-6 py-2 rounded-bl-[2rem] border-l border-b text-[10px] font-black uppercase tracking-widest z-10 flex items-center gap-2 ${getPlatformStyle(game.platform)}`}>
+                             <PlatformIcon platform={game.platform} className="w-3 h-3" />
+                             {game.platform}
+                          </div>
+
+                          <div className="flex items-center gap-6 pt-4">
+                             <img src={game.coverUrl} className="w-20 h-28 rounded-2xl object-cover shadow-2xl group-hover:scale-105 transition-transform" alt="Cover" />
+                             <div className="flex-1 min-w-0">
+                                 <h4 className="font-display font-bold text-white text-xl leading-tight mb-3 group-hover:text-nexus-accent transition-colors">{game.title}</h4>
+                                 <div className="flex items-center gap-3">
+                                   <Clock size={14} className="text-gray-500" />
+                                   <span className="text-xs text-gray-400 font-bold">{game.hoursPlayed}h jogadas</span>
+                                 </div>
+                                 <div className="mt-4 flex items-center gap-3 bg-black/30 p-2 rounded-xl border border-white/5">
+                                   <Trophy size={16} className="text-yellow-500" />
+                                   <span className="text-[11px] font-black text-white">{game.achievementCount} <span className="text-gray-600">/</span> {game.totalAchievements}</span>
+                                 </div>
+                             </div>
+                          </div>
+                          
+                          {/* Barra de Progresso */}
+                          <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-white/5">
+                             <div 
+                                className={`h-full transition-all duration-1000 ${game.achievementCount === game.totalAchievements ? 'bg-nexus-accent shadow-[0_0_10px_rgba(139,92,246,0.5)]' : 'bg-nexus-secondary'}`} 
+                                style={{ width: `${(game.achievementCount/game.totalAchievements)*100}%` }}
+                             ></div>
+                          </div>
+                        </div>
+                    ))
+                  )}
+               </div>
+            </div>
+         )}
+
+         {activeTab === 'collection' && (
+            <div className="space-y-12 animate-fade-in">
+               <div className="flex items-center justify-between px-6">
+                  <h3 className="text-3xl font-display font-bold text-white flex items-center gap-4">
+                     <Box className="text-nexus-secondary" /> Acervo de Relíquias
+                  </h3>
+                  <div className="bg-nexus-900 border border-nexus-800 px-6 py-2 rounded-full text-xs font-black text-nexus-secondary uppercase tracking-widest shadow-2xl">
+                     Valor Estimado: ${vaultValue}
+                  </div>
+               </div>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                  {userItems.length === 0 ? (
+                    <div className="col-span-full py-32 text-center bg-nexus-900 border border-nexus-800 border-dashed rounded-[4rem]">
+                       <Box size={64} className="mx-auto mb-4 opacity-10" />
+                       <p className="text-gray-500 italic uppercase tracking-widest font-black">Acervo físico vazio.</p>
+                    </div>
+                  ) : (
+                    userItems.map(item => (
+                       <div key={item.id} className="bg-nexus-900 border border-nexus-800 rounded-[3rem] overflow-hidden group hover:border-nexus-secondary transition-all shadow-2xl relative flex flex-col hover:-translate-y-2 duration-500">
+                          <div className="h-56 relative overflow-hidden bg-black">
+                             <img src={item.imageUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" alt={item.name} />
+                             <div className="absolute inset-0 bg-gradient-to-t from-nexus-900 via-transparent to-transparent"></div>
+                             <div className="absolute top-4 right-4 bg-nexus-secondary text-white text-[8px] font-black px-3 py-1.5 rounded-lg uppercase shadow-2xl">
+                                {item.type}
+                             </div>
+                             {item.status === 'sale' && (
+                                <div className="absolute top-4 left-4 bg-green-600 text-white text-[8px] font-black px-3 py-1.5 rounded-lg uppercase shadow-2xl">Venda</div>
+                             )}
+                          </div>
+                          <div className="p-8 flex-1 flex flex-col justify-between bg-gradient-to-b from-nexus-900 to-[#0a0a0f]">
+                             <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest">{item.condition}</span>
+                                    <ShieldCheck size={14} className="text-nexus-success opacity-40" />
+                                </div>
+                                <h4 className="font-display font-bold text-white text-xl leading-tight group-hover:text-nexus-secondary transition-colors">{item.name}</h4>
+                             </div>
+                             <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(item.dateAdded).getFullYear()} AD</div>
+                                <div className="text-2xl font-display font-black text-nexus-secondary tracking-tighter">${item.value}</div>
+                             </div>
+                          </div>
+                       </div>
+                    ))
+                  )}
+               </div>
+            </div>
+         )}
+
+         {activeTab === 'testimonials' && (
+            <div className="max-w-4xl mx-auto space-y-12 animate-fade-in">
+               {!isOwnProfile && currentUserStats && (
+                 <div className="bg-nexus-900 border border-nexus-800 p-10 rounded-[3rem] space-y-6 shadow-2xl">
+                    <h3 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+                       <MessageSquare className="text-nexus-accent" /> Deixar Reconhecimento
+                    </h3>
+                    <textarea 
+                      value={newTestimonial} 
+                      onChange={e => setNewTestimonial(e.target.value)}
+                      placeholder="Relate os feitos deste guerreiro no mural de honra..."
+                      className="w-full bg-nexus-800 border border-nexus-700 rounded-3xl p-6 text-white outline-none focus:border-nexus-accent h-32 text-sm shadow-inner transition-all"
+                    />
+                    <div className="flex justify-between items-center">
+                       <div className="flex gap-2">
+                          {(['pro', 'mvp', 'legend'] as const).map(v => (
+                             <button key={v} onClick={() => setSelectedVibe(v)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedVibe === v ? 'bg-nexus-accent text-white shadow-lg' : 'bg-nexus-800 text-gray-500 hover:text-white'}`}>{v}</button>
+                          ))}
+                       </div>
+                       <button 
+                         onClick={handlePostTestimonial}
+                         disabled={isSubmitting || !newTestimonial.trim()}
+                         className="px-8 py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent/80 transition-all disabled:opacity-50 flex items-center gap-2 shadow-2xl shadow-nexus-accent/20"
+                       >
+                          {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                          Publicar no Mural
+                       </button>
+                    </div>
+                 </div>
+               )}
+
+               <div className="space-y-6">
+                  {testimonials.length === 0 ? (
+                    <div className="py-24 text-center text-gray-600 bg-nexus-800/10 border border-nexus-800 border-dashed rounded-[4rem]">
+                        <MessageSquare size={48} className="mx-auto mb-4 opacity-10" />
+                        <p className="italic uppercase tracking-widest text-xs font-bold opacity-30">Céus limpos no mural de honra.</p>
+                    </div>
+                  ) : (
+                    testimonials.map(t => (
+                       <div key={t.id} className="bg-nexus-900 border border-nexus-800 p-8 rounded-[3rem] flex gap-6 hover:border-nexus-accent transition-all relative overflow-hidden group shadow-xl">
+                          <img src={t.fromAvatar} className="w-16 h-16 rounded-2xl border-2 border-nexus-700 shrink-0" alt="From Avatar" />
+                          <div className="flex-1 space-y-2">
+                             <div className="flex justify-between">
+                                <div className="flex items-center gap-3">
+                                    <h4 className="font-bold text-white text-xl">@{t.fromName}</h4>
+                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${
+                                        t.vibe === 'legend' ? 'border-yellow-500/30 text-yellow-500 bg-yellow-500/10' :
+                                        t.vibe === 'mvp' ? 'border-nexus-secondary/30 text-nexus-secondary bg-nexus-secondary/10' :
+                                        'border-nexus-accent/30 text-nexus-accent bg-nexus-accent/10'
+                                    }`}>{t.vibe}</span>
+                                </div>
+                                <span className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">{new Date(t.timestamp).toLocaleDateString()}</span>
+                             </div>
+                             <p className="text-gray-300 italic text-lg leading-relaxed">"{t.content}"</p>
+                          </div>
+                          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                             {t.vibe === 'legend' ? <Crown size={120} /> : <Award size={120} />}
+                          </div>
+                       </div>
+                    ))
+                  )}
+               </div>
+            </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
+const StatItem = ({ label, value, highlight, onClick }: { label: string, value: string | number, highlight?: boolean, onClick?: () => void }) => (
+  <div 
+    onClick={onClick}
+    className={`bg-nexus-900/80 px-8 py-5 rounded-[2rem] border border-nexus-800 shadow-2xl transition-all ${onClick ? 'cursor-pointer hover:border-nexus-accent hover:bg-nexus-800' : ''}`}
+  >
+     <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${highlight ? 'text-nexus-accent' : 'text-gray-500'}`}>{label}</p>
+     <p className="text-3xl font-display font-bold leading-none text-white tracking-tighter">{value}</p>
+  </div>
+);

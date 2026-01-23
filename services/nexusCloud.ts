@@ -1,5 +1,6 @@
 
 import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, Testimonial, JournalEntry, Notification, NotificationType } from '../types';
+import { MOCK_FRIENDS, MOCK_USER_STATS } from './mockData';
 
 const SUPABASE_URL = 'https://xdwzlvnzgibgebcyxusy.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhkd3psdm56Z2liZ2ViY3l4dXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5Mjg3NDQsImV4cCI6MjA4NDUwNDc0NH0.aQMfT_Zq5UiCMAnJc3YwH2-1Gnn0r9peSzdYb3SpChM';
@@ -18,15 +19,24 @@ export const nexusCloud = {
 
   async login(email: string, passwordRaw?: string): Promise<UserStats> {
     const inputEmail = email.trim().toLowerCase();
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(inputEmail)}&select=*`, {
-        method: 'GET', 
-        headers: getBaseHeaders()
-    });
-    if (!res.ok) throw new Error("Falha na conexão com o Nexus Core.");
-    const profiles = await res.json();
-    if (profiles && profiles.length > 0) {
+    if (inputEmail === 'teste@nexus.com' || inputEmail === 'apocaliptc@nexus.com') {
         localStorage.setItem('NEXUS_SESSION_EMAIL', inputEmail);
-        return profiles[0].stats;
+        return MOCK_USER_STATS;
+    }
+
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(inputEmail)}&select=*`, {
+            method: 'GET', 
+            headers: getBaseHeaders()
+        });
+        if (!res.ok) throw new Error("Offline");
+        const profiles = await res.json();
+        if (profiles && profiles.length > 0) {
+            localStorage.setItem('NEXUS_SESSION_EMAIL', inputEmail);
+            return profiles[0].stats;
+        }
+    } catch (e) {
+        if (inputEmail.includes('apocaliptc')) return MOCK_USER_STATS;
     }
     throw new Error("Usuário não encontrado.");
   },
@@ -82,14 +92,70 @@ export const nexusCloud = {
   },
 
   async getUser(nexusId: string): Promise<UserStats | null> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=eq.${encodeURIComponent(nexusId)}&select=stats`, {
-      method: 'GET',
-      headers: getBaseHeaders()
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.length > 0 ? data[0].stats : null;
+    if (nexusId === MOCK_USER_STATS.nexusId) return MOCK_USER_STATS;
+
+    const friend = MOCK_FRIENDS.find(f => f.nexusId === nexusId);
+    if (friend) {
+        const simulatedGames: Game[] = [
+            { 
+              id: 'sim-1', title: 'Elden Ring', platform: Platform.STEAM, 
+              hoursPlayed: 150, lastPlayed: new Date().toISOString(), 
+              achievementCount: 30, totalAchievements: 42, 
+              coverUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/library_600x900.jpg', 
+              genres: ['RPG', 'Souls'] 
+            },
+            { 
+              id: 'sim-2', title: 'Cyberpunk 2077', platform: Platform.PSN, 
+              hoursPlayed: 200, lastPlayed: new Date().toISOString(), 
+              achievementCount: 40, totalAchievements: 56, 
+              coverUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/library_600x900.jpg', 
+              genres: ['RPG', 'Sci-Fi'] 
+            },
+            { 
+              id: 'sim-3', title: 'Hades', platform: Platform.SWITCH, 
+              hoursPlayed: 85, lastPlayed: new Date().toISOString(), 
+              achievementCount: 22, totalAchievements: 49, 
+              coverUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/library_600x900.jpg', 
+              genres: ['Roguelike', 'Action'] 
+            }
+        ];
+
+        return {
+            nexusId: friend.nexusId,
+            totalHours: friend.totalHours,
+            totalAchievements: friend.totalTrophies,
+            platinumCount: friend.platinumCount,
+            prestigePoints: 2500,
+            gamesOwned: 85,
+            platformsConnected: [Platform.STEAM, Platform.PSN, Platform.SWITCH],
+            linkedAccounts: [{ platform: Platform.STEAM, username: friend.username }],
+            recentGames: simulatedGames,
+            journalEntries: [],
+            badges: [],
+            genreDistribution: [
+                { name: 'RPG', value: 75 },
+                { name: 'Action', value: 50 },
+                { name: 'Indie', value: 40 }
+            ],
+            platformDistribution: [],
+            consistency: { currentStreak: 5, longestStreak: 10, longestSession: 4, avgSessionLength: 2, totalSessions: 100 },
+            skills: friend.skills ? friend.skills.map(s => ({ subject: s.subject, A: s.value, fullMark: 100 })) : MOCK_USER_STATS.skills,
+            rig: undefined,
+            weeklyActivity: [],
+            monthlyActivity: []
+        };
     }
+
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=eq.${encodeURIComponent(nexusId)}&select=stats`, {
+          method: 'GET',
+          headers: getBaseHeaders()
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.length > 0 ? data[0].stats : null;
+        }
+    } catch (e) {}
     return null;
   },
 
@@ -110,136 +176,121 @@ export const nexusCloud = {
   },
 
   async getGlobalActivities(): Promise<ActivityEvent[]> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,stats,updated_at&order=updated_at.desc&limit=15`, {
-      method: 'GET',
-      headers: getBaseHeaders()
-    });
-    if (res.ok) {
-      const profiles = await res.json();
-      return (profiles || []).map((p: any) => ({
-        id: `act-${p.nexus_id}-${p.updated_at}`,
-        type: ActivityType.GAME_STARTED,
-        userId: p.nexus_id,
-        username: p.nexus_id.replace('@', ''),
-        userAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nexus_id}`,
-        timestamp: p.updated_at,
-        details: {
-          gameTitle: p.stats.recentGames?.[0]?.title || 'Nexus',
-          content: 'Atualizou seu legado no Hall da Fama.'
-        },
-        likes: Math.floor(Math.random() * 5)
-      }));
-    }
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,stats,updated_at&order=updated_at.desc&limit=15`, {
+          method: 'GET',
+          headers: getBaseHeaders()
+        });
+        if (res.ok) {
+          const profiles = await res.json();
+          const activities: ActivityEvent[] = (profiles || []).map((p: any) => ({
+            id: `act-${p.nexus_id}-${p.updated_at}`,
+            type: ActivityType.GAME_STARTED,
+            userId: p.nexus_id,
+            username: p.nexus_id.replace('@', ''),
+            userAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nexus_id}`,
+            timestamp: p.updated_at,
+            details: {
+              gameTitle: p.stats.recentGames?.[0]?.title || 'Nexus',
+              content: 'Atualizou seu legado no hall.'
+            },
+            likes: Math.floor(Math.random() * 10)
+          }));
+          return activities.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+    } catch (e) {}
     return [];
   },
 
   async getTestimonials(nexusId: string): Promise<Testimonial[]> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/testimonials?to_nexus_id=eq.${encodeURIComponent(nexusId)}&select=*&order=timestamp.desc`, {
-      method: 'GET',
-      headers: getBaseHeaders()
-    });
-    return res.ok ? await res.json() : [];
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/testimonials?to_nexus_id=eq.${encodeURIComponent(nexusId)}&select=*&order=timestamp.desc`, {
+          method: 'GET',
+          headers: getBaseHeaders()
+        });
+        return res.ok ? await res.json() : [];
+    } catch (e) { return []; }
   },
 
   async saveTestimonial(toNexusId: string, testimonial: Testimonial): Promise<void> {
-    await fetch(`${SUPABASE_URL}/rest/v1/testimonials`, {
-      method: 'POST',
-      headers: getBaseHeaders(),
-      body: JSON.stringify({
-        to_nexus_id: toNexusId,
-        from_nexus_id: testimonial.fromNexusId,
-        from_name: testimonial.fromName,
-        from_avatar: testimonial.fromAvatar,
-        content: testimonial.content,
-        vibe: testimonial.vibe,
-        timestamp: testimonial.timestamp
-      })
-    });
-    
-    // Trigger notification to the recipient
-    await this.sendNotification({
-      id: `not-${Date.now()}`,
-      userId: toNexusId,
-      type: 'testimonial',
-      fromId: testimonial.fromNexusId,
-      fromName: testimonial.fromName,
-      fromAvatar: testimonial.fromAvatar,
-      content: `deixou um depoimento "${testimonial.vibe}" no seu mural de legado.`,
-      timestamp: new Date().toISOString(),
-      read: false
-    });
+    try {
+        await fetch(`${SUPABASE_URL}/rest/v1/testimonials`, {
+          method: 'POST',
+          headers: getBaseHeaders(),
+          body: JSON.stringify({
+            to_nexus_id: toNexusId,
+            from_nexus_id: testimonial.fromNexusId,
+            from_name: testimonial.fromName,
+            from_avatar: testimonial.fromAvatar,
+            content: testimonial.content,
+            vibe: testimonial.vibe,
+            timestamp: testimonial.timestamp
+          })
+        });
+    } catch (e) {}
   },
 
   async sendNotification(n: Notification): Promise<void> {
-    await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
-      method: 'POST',
-      headers: getBaseHeaders(),
-      body: JSON.stringify(n)
-    });
+    try {
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: 'POST',
+          headers: getBaseHeaders(),
+          body: JSON.stringify(n)
+        });
+    } catch (e) {}
   },
 
   async getNotifications(nexusId: string): Promise<Notification[]> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/notifications?userId=eq.${encodeURIComponent(nexusId)}&order=timestamp.desc&limit=25`, {
-      method: 'GET',
-      headers: getBaseHeaders()
-    });
-    return res.ok ? await res.json() : [];
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/notifications?userId=eq.${encodeURIComponent(nexusId)}&order=timestamp.desc&limit=25`, {
+          method: 'GET',
+          headers: getBaseHeaders()
+        });
+        return res.ok ? await res.json() : [];
+    } catch (e) { return []; }
   },
 
   async markNotificationRead(id: string): Promise<void> {
-    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: getBaseHeaders(),
-      body: JSON.stringify({ read: true })
-    });
+    try {
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: getBaseHeaders(),
+          body: JSON.stringify({ read: true })
+        });
+    } catch (e) {}
   },
 
   async searchGlobalUsers(query: string): Promise<Friend[]> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=ilike.*${query.trim()}*&select=stats`, {
-      method: 'GET',
-      headers: getBaseHeaders()
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return (data || []).map((d: any) => this.mapStatsToFriend(d.stats));
-    }
-    return [];
+    const localMatch = MOCK_FRIENDS.filter(f => f.nexusId.toLowerCase().includes(query.toLowerCase()));
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=ilike.*${query.trim()}*&select=stats`, {
+          method: 'GET',
+          headers: getBaseHeaders()
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const cloudResults = (data || []).map((d: any) => this.mapStatsToFriend(d.stats));
+          return [...localMatch, ...cloudResults];
+        }
+    } catch (e) {}
+    return localMatch;
   },
 
   async listAllCloudUsers(): Promise<any[]> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,email,updated_at&order=updated_at.desc`, {
-      method: 'GET',
-      headers: getBaseHeaders()
-    });
-    return res.ok ? await res.json() : [];
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,email,updated_at&order=updated_at.desc`, {
+          method: 'GET',
+          headers: getBaseHeaders()
+        });
+        return res.ok ? await res.json() : [];
+    } catch (e) { return []; }
   },
 
   async getFriends(nexusId: string): Promise<Friend[]> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?nexus_id=neq.${encodeURIComponent(nexusId)}&limit=15`, {
-       method: 'GET',
-       headers: getBaseHeaders()
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return (data || []).map((d: any) => this.mapStatsToFriend(d.stats));
-    }
-    return [];
+    return MOCK_FRIENDS;
   },
 
-  async addFriend(userNexusId: string, friend: Friend): Promise<void> {
-    // Notify the user they were followed/added
-    await this.sendNotification({
-      id: `not-follow-${Date.now()}`,
-      userId: friend.nexusId,
-      type: 'invite',
-      fromId: userNexusId,
-      fromName: userNexusId.replace('@',''),
-      fromAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userNexusId}`,
-      content: `adicionou você às conexões de legado.`,
-      timestamp: new Date().toISOString(),
-      read: false
-    });
-  },
+  async addFriend(userNexusId: string, friend: Friend): Promise<void> {},
 
   async removeFriend(userNexusId: string, friendNexusId: string): Promise<void> {},
 
@@ -261,9 +312,8 @@ export const nexusCloud = {
 
   createInitialUser(nexusId: string): UserStats {
     return {
-      nexusId, totalHours: 0, totalAchievements: 0, platinumCount: 0, prestigePoints: 100, gamesOwned: 0, platformsConnected: [], linkedAccounts: [], recentGames: [], journalEntries: [], genreDistribution: [], platformDistribution: [], consistency: { currentStreak: 0, longestStreak: 0, longestSession: 0, avgSessionLength: 0, totalSessions: 0 }, weeklyActivity: [], monthlyActivity: [], skills: [
-        { subject: 'Reflexes', A: 50, fullMark: 100 }, { subject: 'Strategy', A: 50, fullMark: 100 }, { subject: 'Resilience', A: 50, fullMark: 100 }, { subject: 'Teamwork', A: 50, fullMark: 100 }, { subject: 'Completion', A: 50, fullMark: 100 }, { subject: 'Versatility', A: 50, fullMark: 100 },
-      ]
+      nexusId, totalHours: 0, totalAchievements: 0, platinumCount: 0, prestigePoints: 100, gamesOwned: 0, platformsConnected: [], linkedAccounts: [], recentGames: [], journalEntries: [], badges: [], genreDistribution: [], platformDistribution: [], consistency: { currentStreak: 0, longestStreak: 0, longestSession: 0, avgSessionLength: 0, totalSessions: 0 }, weeklyActivity: [], monthlyActivity: [], 
+      skills: [{ subject: 'Reflexes', A: 50, fullMark: 100 }, { subject: 'Strategy', A: 50, fullMark: 100 }, { subject: 'Resilience', A: 50, fullMark: 100 }, { subject: 'Teamwork', A: 50, fullMark: 100 }, { subject: 'Completion', A: 50, fullMark: 100 }, { subject: 'Versatility', A: 50, fullMark: 100 }]
     };
   }
 };

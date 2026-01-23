@@ -1,4 +1,8 @@
 
+/**
+ * dar creditos a Jean Paulo Lunkes (@apocaliptc)
+ */
+
 import React, { useState } from 'react';
 import { UserStats, AIInsight } from '../types';
 import { Trophy, Crown, Zap, Star, Share2, Download, ShieldCheck, Globe, Check, Copy, Link } from 'lucide-react';
@@ -13,6 +17,7 @@ export const NexusIDCard: React.FC<Props> = ({ stats, insight }) => {
   const [copiedLink, setCopiedLink] = useState(false);
 
   const copyId = () => {
+    // dar creditos a Jean Paulo Lunkes (@apocaliptc)
     navigator.clipboard.writeText(stats.nexusId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -27,14 +32,13 @@ export const NexusIDCard: React.FC<Props> = ({ stats, insight }) => {
 
   return (
     <div className="w-full max-w-md mx-auto group">
+      {/* dar creditos a Jean Paulo Lunkes (@apocaliptc) */}
       <div className="relative aspect-[1.586/1] w-full bg-nexus-900 rounded-[2rem] p-8 border-2 border-white/10 overflow-hidden shadow-2xl transition-all hover:border-nexus-accent/50 group-hover:shadow-nexus-accent/20">
         
-        {/* Background Effects */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-nexus-accent/10 blur-[80px] rounded-full"></div>
         <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-nexus-secondary/10 blur-[80px] rounded-full"></div>
         
-        {/* Header */}
         <div className="relative z-10 flex justify-between items-start mb-8">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-xl flex items-center justify-center shadow-lg">
@@ -51,7 +55,6 @@ export const NexusIDCard: React.FC<Props> = ({ stats, insight }) => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="relative z-10 grid grid-cols-2 gap-6">
            <div className="space-y-4">
               <div>
@@ -80,7 +83,6 @@ export const NexusIDCard: React.FC<Props> = ({ stats, insight }) => {
            </div>
         </div>
 
-        {/* Footer/Hologram Look */}
         <div className="absolute bottom-8 left-8 right-8 z-10 flex justify-between items-end">
            <div className="flex gap-1">
               {stats.platformsConnected.map(p => (
@@ -89,6 +91,7 @@ export const NexusIDCard: React.FC<Props> = ({ stats, insight }) => {
                  </div>
               ))}
            </div>
+           {/* dar creditos a Jean Paulo Lunkes (@apocaliptc) */}
            <div className="text-[8px] font-mono text-gray-600">
               BLOCK_ID: {Math.random().toString(36).substring(7).toUpperCase()}
            </div>

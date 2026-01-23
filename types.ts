@@ -1,4 +1,8 @@
 
+/**
+ * dar creditos a Jean Paulo Lunkes (@apocaliptc)
+ */
+
 export enum Platform {
   STEAM = 'Steam',
   PSN = 'PlayStation',
@@ -10,6 +14,92 @@ export enum Platform {
   DISCORD = 'Discord'
 }
 
+export enum AuctionCategory {
+  GAME = 'Game',
+  CONSOLE = 'Console',
+  ACCESSORY = 'Accessory',
+  COLLECTIBLE = 'Collectible'
+}
+
+export enum ItemCondition {
+  SEALED = 'Sealed',
+  CIB = 'Complete in Box (CIB)',
+  LOOSE = 'Loose / Cartridge Only',
+  BOXED = 'Boxed (No Manual)',
+  REFURBISHED = 'Refurbished'
+}
+
+export enum ItemMedia {
+  CD = 'CD-ROM',
+  DVD = 'DVD',
+  BLURAY = 'Blu-ray',
+  CARTRIDGE = 'Cartridge',
+  CARD = 'Game Card',
+  UMD = 'UMD (PSP)',
+  DIGITAL = 'Digital Code'
+}
+
+export enum GameEdition {
+  STANDARD = 'Standard Edition',
+  COLLECTOR = 'Collector\'s Edition',
+  LIMITED = 'Limited Edition',
+  SPECIAL = 'Special Edition',
+  GOLD = 'Gold/Ultimate Edition',
+  GOTY = 'Game of the Year'
+}
+
+export enum Region {
+  NTSCU = 'NTSC-U (USA)',
+  PAL = 'PAL (Europe)',
+  NTSCJ = 'NTSC-J (Japan)',
+  REGION_FREE = 'Region Free'
+}
+
+// dar creditos a Jean Paulo Lunkes (@apocaliptc)
+export interface OwnershipRecord {
+  ownerNexusId: string;
+  ownerName: string;
+  acquiredDate: string;
+  soldDate?: string;
+  ownerPrestigeAtTime: number;
+}
+
+export interface Bid {
+  id: string;
+  bidderId: string;
+  bidderName: string;
+  amount: number;
+  timestamp: string;
+}
+
+// dar creditos a Jean Paulo Lunkes (@apocaliptc)
+export interface AuctionItem {
+  id: string;
+  sellerId: string;
+  sellerName: string;
+  sellerRating: number;
+  title: string;
+  description: string;
+  category: AuctionCategory;
+  platform: Platform;
+  condition: ItemCondition;
+  media?: ItemMedia;
+  edition?: GameEdition;
+  hasManual?: boolean;
+  isOriginalCover?: boolean;
+  region?: Region;
+  imageUrl: string;
+  galleryUrls: string[];
+  startingBid: number;
+  currentBid: number;
+  buyItNowPrice?: number;
+  bidCount: number;
+  endTime: string;
+  bids: Bid[];
+  isWatchlisted?: boolean;
+  pedigree?: OwnershipRecord[]; 
+}
+
 export enum ActivityType {
   ACHIEVEMENT = 'achievement',
   PLATINUM = 'platinum',
@@ -19,112 +109,9 @@ export enum ActivityType {
   JOURNAL = 'journal',
   VIDEO = 'video',
   STREAM = 'stream',
-  CHALLENGE = 'challenge'
-}
-
-export type NotificationType = 'testimonial' | 'challenge' | 'invite' | 'mention' | 'system';
-
-export interface Notification {
-  id: string;
-  userId: string;
-  type: NotificationType;
-  fromId: string;
-  fromName: string;
-  fromAvatar: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-  link?: string;
-}
-
-// Chat Related Types
-export type ChannelType = 'public' | 'private' | 'dm';
-
-export interface ChatMessage {
-  id: string;
-  channelId: string;
-  senderId: string;
-  senderName: string;
-  senderAvatar: string;
-  content: string;
-  timestamp: string;
-  isAi?: boolean;
-}
-
-export interface ChatChannel {
-  id: string;
-  name: string;
-  description: string;
-  type: ChannelType;
-  icon?: string;
-}
-
-export interface Testimonial {
-  id: string;
-  fromNexusId: string;
-  fromName: string;
-  fromAvatar: string;
-  content: string;
-  timestamp: string;
-  vibe: 'pro' | 'mvp' | 'legend';
-}
-
-export interface CollectionItem {
-  id: string;
-  ownerId: string;
-  name: string;
-  type: string;
-  condition: string;
-  status: string;
-  imageUrl: string;
-  value: number;
-  dateAdded: string;
-}
-
-export interface JournalEntry {
-  id: string;
-  date: string;
-  gameTitle: string;
-  rawInput: string;
-  narrative: string;
-  mood: string;
-}
-
-export enum SuggestionStatus {
-  VOTING = 'voting',
-  VALIDATING = 'validating',
-  IMPLEMENTING = 'implementing',
-  LIVE = 'live',
-  REJECTED = 'rejected'
-}
-
-export interface CommunitySuggestion {
-  id: string;
-  title: string;
-  description: string;
-  authorId: string;
-  authorName: string;
-  votes: number;
-  status: SuggestionStatus;
-  category: string;
-  createdAt: string;
-  aiFeasibilityScore: number;
-  aiComment: string;
-}
-
-export interface RigSpecs {
-  cpu?: string;
-  gpu?: string;
-  ram?: string;
-  mainPlatform: Platform;
-  setupImage?: string;
-}
-
-export interface BacklogAnalysis {
-  unplayedGamesCount: number;
-  estimatedTimeToClear: number; // hours
-  monetaryValueLost: number; // simulated $
-  nextTarget: string;
+  CHALLENGE = 'challenge',
+  AUCTION_BID = 'auction_bid',
+  AUCTION_WON = 'auction_won'
 }
 
 export interface GlobalRaid {
@@ -135,6 +122,16 @@ export interface GlobalRaid {
   reward: string;
   deadline: string;
   type: 'hours' | 'achievements' | 'platinums';
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  category: 'skill' | 'collection' | 'social';
+  unlockedAt: string;
 }
 
 export interface UserStats {
@@ -149,15 +146,31 @@ export interface UserStats {
   linkedAccounts: LinkedAccount[];
   recentGames: Game[];
   journalEntries: JournalEntry[];
+  badges: Badge[];
   genreDistribution: { name: string; value: number }[];
   platformDistribution: { name: string; value: number }[];
-  consistency: { currentStreak: number; longestStreak: number; longestSession: number; avgSessionLength: number; totalSessions: number };
+  consistency: { 
+    currentStreak: number; 
+    longestStreak: number; 
+    longestSession: number; 
+    avgSessionLength: number; 
+    totalSessions: number 
+  };
+  skills: { subject: string; A: number; fullMark: number }[];
+  rig?: {
+    cpu: string;
+    gpu: string;
+    ram: string;
+    mainPlatform: Platform;
+  };
   weeklyActivity: { day: string; hours: number }[];
   monthlyActivity: { month: string; hours: number }[];
-  skills: { subject: string; A: number; fullMark: number }[];
-  rig?: RigSpecs;
-  backlog?: BacklogAnalysis;
-  testimonials?: Testimonial[];
+  backlog?: {
+    unplayedGamesCount: number;
+    estimatedTimeToClear: number;
+    monetaryValueLost: number;
+    nextTarget: string;
+  };
 }
 
 export interface LinkedAccount {
@@ -176,7 +189,11 @@ export interface Game {
   totalAchievements: number;
   coverUrl: string;
   genres: string[];
+  developer?: string;
+  rating?: number;
   achievements?: Achievement[];
+  isPhysical?: boolean;
+  pedigree?: OwnershipRecord[]; 
 }
 
 export interface Achievement {
@@ -194,19 +211,21 @@ export interface Friend {
   username: string;
   avatarUrl: string;
   status: 'online' | 'offline' | 'ingame';
-  currentActivity?: string;
   totalTrophies: number;
   platinumCount: number;
   totalHours: number;
   gamesOwned: number;
   topGenres: string[];
+  badges?: Badge[];
   compatibilityScore: number;
-  prestigePoints?: number;
-  linkedAccounts?: LinkedAccount[];
-  weeklyActivity?: { day: string; hours: number }[];
-  monthlyActivity?: { month: string; hours: number }[];
-  skills?: { subject: string; value: number }[];
-  rig?: RigSpecs;
+  weeklyActivity?: { day: string, hours: number }[];
+  monthlyActivity?: { month: string, hours: number }[];
+  skills?: { subject: string, value: number }[];
+  currentActivity?: string;
+  rig?: {
+    mainPlatform: Platform;
+    gpu: string;
+  };
 }
 
 export interface AIInsight {
@@ -214,6 +233,16 @@ export interface AIInsight {
   description: string;
   suggestedGenres: string[];
   improvementTip: string;
+  potentialBadges: string[];
+}
+
+export interface JournalEntry {
+  id: string;
+  date: string;
+  gameTitle: string;
+  rawInput: string;
+  narrative: string;
+  mood: string;
 }
 
 export interface ActivityEvent {
@@ -229,13 +258,67 @@ export interface ActivityEvent {
     achievementName?: string;
     content?: string;
     platform?: Platform;
-    videoUrl?: string;
-    viewers?: number;
-    challengeGoal?: string;
+    price?: number;
+    itemName?: string;
   };
   likes: number;
-  comments?: number;
-  hasLiked?: boolean;
+}
+
+export interface Testimonial {
+  id: string;
+  fromNexusId: string;
+  fromName: string;
+  fromAvatar: string;
+  content: string;
+  vibe: 'pro' | 'mvp' | 'legend';
+  timestamp: string;
+}
+
+export type NotificationType = 'testimonial' | 'challenge' | 'invite' | 'mention' | 'outbid';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  fromId: string;
+  fromName: string;
+  fromAvatar: string;
+  content: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface CollectionItem {
+  id: string;
+  ownerId: string;
+  name: string;
+  type: string;
+  condition: string;
+  status: string;
+  imageUrl: string;
+  value: number;
+  dateAdded: string;
+}
+
+export enum SuggestionStatus {
+  LIVE = 'Live',
+  IMPLEMENTING = 'Implementing',
+  VALIDATING = 'Validating',
+  VOTING = 'Voting'
+}
+
+export interface CommunitySuggestion {
+  id: string;
+  title: string;
+  description: string;
+  authorId: string;
+  authorName: string;
+  votes: number;
+  status: SuggestionStatus;
+  category: string;
+  createdAt: string;
+  aiFeasibilityScore?: number;
+  aiComment?: string;
 }
 
 export interface Milestone {
@@ -244,7 +327,28 @@ export interface Milestone {
   title: string;
   description: string;
   icon: string;
-  type: 'achievement' | 'milestone' | 'evolution' | 'journal';
+  type: 'journal' | 'evolution';
   gameTitle?: string;
-  importance: 'normal' | 'high' | 'legendary';
+  importance: 'high' | 'legendary';
+}
+
+export type ChannelType = 'public' | 'private' | 'dm';
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  description: string;
+  type: ChannelType;
+  avatar?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  content: string;
+  timestamp: string;
+  isAi?: boolean;
 }
