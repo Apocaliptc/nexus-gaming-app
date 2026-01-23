@@ -5,7 +5,7 @@ import {
   Trophy, Loader2, Lock, AtSign, UserCircle, 
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
   MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search,
-  ChevronUp, X, LayoutGrid, Gavel, Shield
+  ChevronUp, X, LayoutGrid, Gavel, Shield, ChevronRight
 } from 'lucide-react';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
@@ -142,37 +142,52 @@ const MainApp: React.FC = () => {
   };
 
   const mobileMenuGroups = {
-    pulse: [
-      { id: 'pulse', label: 'Pulse Global', icon: Activity },
-      { id: 'chat', label: 'Comunicações', icon: MessageSquare },
-      { id: 'friends', label: 'Conexões', icon: Users },
-    ],
-    digital: [
-      { id: 'profile', label: 'Perfil & DNA', icon: UserCircle },
-      { id: 'achievements', label: 'Conquistas', icon: Trophy },
-      { id: 'library', label: 'Biblioteca', icon: Grid },
-      { id: 'stats', label: 'Analytics', icon: BarChart2 },
-    ],
-    legacy: [
-      { id: 'vault', label: 'Coleção Física', icon: Box },
-      { id: 'auctions', label: 'Leilões Hub', icon: Gavel },
-    ],
-    intel: [
-      { id: 'oracle', label: 'Nexus Oracle', icon: BrainCircuit },
-      { id: 'discover', label: 'Explorar', icon: Compass },
-      { id: 'chronos', label: 'Chronos', icon: BookOpen },
-    ],
-    config: [
-      { id: 'notifications', label: 'Alertas', icon: Bell, badge: unreadCount },
-      { id: 'settings', label: 'Ajustes', icon: SettingsIcon },
-      { id: 'logout', label: 'Sair do Nexus', icon: LogOut, action: logout },
-    ]
+    pulse: {
+      title: 'Nexus Pulse',
+      items: [
+        { id: 'pulse', label: 'Pulse Global', icon: Activity },
+        { id: 'chat', label: 'Comunicações', icon: MessageSquare },
+        { id: 'friends', label: 'Conexões', icon: Users },
+      ]
+    },
+    digital: {
+      title: 'Patrimônio Digital',
+      items: [
+        { id: 'profile', label: 'Perfil & DNA', icon: UserCircle },
+        { id: 'achievements', label: 'Conquistas', icon: Trophy },
+        { id: 'library', label: 'Biblioteca', icon: Grid },
+        { id: 'stats', label: 'Analytics', icon: BarChart2 },
+      ]
+    },
+    legacy: {
+      title: 'Legacy Hub',
+      items: [
+        { id: 'vault', label: 'Coleção Física', icon: Box },
+        { id: 'auctions', label: 'Mercado de Leilões', icon: Gavel },
+      ]
+    },
+    intel: {
+      title: 'Inteligência Nexus',
+      items: [
+        { id: 'oracle', label: 'Nexus Oracle IA', icon: BrainCircuit },
+        { id: 'discover', label: 'Explorar Mundos', icon: Compass },
+        { id: 'chronos', label: 'Diário Chronos', icon: BookOpen },
+      ]
+    },
+    config: {
+      title: 'Sistema Soberano',
+      items: [
+        { id: 'notifications', label: 'Central de Alertas', icon: Bell, badge: unreadCount },
+        { id: 'settings', label: 'Ajustes de Conta', icon: SettingsIcon },
+        { id: 'logout', label: 'Sair do Nexus', icon: LogOut, action: logout, color: 'text-red-500' },
+      ]
+    }
   };
 
   return (
-    <div className="flex h-screen bg-[#050507] text-white overflow-hidden font-sans">
+    <div className="flex h-screen w-screen bg-[#050507] text-white overflow-hidden font-sans">
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex w-64 bg-nexus-900 border-r border-nexus-800 flex-col transition-all duration-300 relative z-50 shrink-0">
+      <aside className="hidden md:flex w-64 bg-nexus-900 border-r border-nexus-800 flex-col transition-all duration-300 relative z-50 shrink-0 h-full">
         <div className="p-6 flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xl cursor-pointer" onClick={() => setActiveTab('pulse')}>
             <span className="font-display font-bold text-white text-2xl">N</span>
@@ -265,7 +280,7 @@ const MainApp: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-hidden relative flex flex-col bg-[#050507]">
+      <main className="flex-1 overflow-hidden relative flex flex-col bg-[#050507] h-full">
         {/* Syncing Indicator */}
         {isSyncing && (
           <div className="absolute top-4 right-4 md:top-6 md:right-8 z-[100] animate-fade-in">
@@ -276,32 +291,41 @@ const MainApp: React.FC = () => {
           </div>
         )}
         
-        {/* Content Area */}
-        <div className="flex-1 relative">
+        {/* ÁREA DE CONTEÚDO COM SCROLL ÚNICO */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative pb-32 md:pb-0">
            {renderContent()}
         </div>
 
-        {/* MOBILE HUB MENU (Overlay expandível) */}
+        {/* MOBILE HUB MENU (Redesenhado para não cortar em nenhuma tela) */}
         {activeGroup && (
            <>
-            <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[101] animate-fade-in" onClick={() => setActiveGroup(null)}></div>
-            <div className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 w-[92%] bg-nexus-900/95 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-6 z-[102] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-fade-in origin-bottom">
-               <div className="flex items-center justify-between mb-6 px-2">
-                  <h4 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.4em]">{activeGroup.replace('_', ' ')}</h4>
-                  <button onClick={() => setActiveGroup(null)} className="p-2 bg-white/5 rounded-full"><X size={16} /></button>
+            <div className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[101] animate-fade-in" onClick={() => setActiveGroup(null)}></div>
+            <div className="md:hidden fixed bottom-[90px] left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-lg bg-nexus-900/98 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-5 z-[102] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] animate-fade-in origin-bottom overflow-hidden box-border">
+               <div className="flex items-center justify-between mb-5 px-1 border-b border-white/5 pb-3">
+                  <div className="space-y-0.5">
+                     <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Protocolo de Acesso</p>
+                     <h4 className="text-xs font-display font-bold text-nexus-accent uppercase tracking-[0.1em]">{(mobileMenuGroups as any)[activeGroup].title}</h4>
+                  </div>
+                  <button onClick={() => setActiveGroup(null)} className="p-2 bg-white/5 rounded-full text-gray-400"><X size={18} /></button>
                </div>
-               <div className="grid grid-cols-2 gap-3">
-                  {(mobileMenuGroups as any)[activeGroup].map((item: any) => (
+               
+               <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto no-scrollbar">
+                  {(mobileMenuGroups as any)[activeGroup].items.map((item: any) => (
                      <button 
                        key={item.id}
                        onClick={() => item.action ? item.action() : selectTab(item.id)}
-                       className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${activeTab === item.id ? 'bg-nexus-accent border-nexus-accent shadow-xl text-white' : 'bg-nexus-800 border-white/5 text-gray-400'}`}
+                       className={`flex items-center justify-between w-full p-4 rounded-2xl border transition-all active:scale-[0.97] ${activeTab === item.id ? 'bg-nexus-accent/20 border-nexus-accent/40 shadow-xl' : 'bg-nexus-800/40 border-white/5'}`}
                      >
-                        <div className="relative">
-                           <item.icon size={20} />
-                           {item.badge > 0 && <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-600 rounded-full text-[8px] flex items-center justify-center border border-nexus-900">{item.badge}</div>}
+                        <div className="flex items-center gap-4 min-w-0">
+                           <div className={`p-2.5 rounded-xl flex-shrink-0 ${activeTab === item.id ? 'bg-nexus-accent text-white' : 'bg-nexus-900 text-gray-500'}`}>
+                              <item.icon size={20} />
+                           </div>
+                           <div className="text-left min-w-0">
+                              <span className={`block text-xs font-bold truncate ${activeTab === item.id ? 'text-white' : 'text-gray-300'}`}>{item.label}</span>
+                              {item.badge !== undefined && item.badge > 0 && <span className="text-[7px] font-black text-nexus-accent uppercase">{item.badge} Pendente(s)</span>}
+                           </div>
                         </div>
-                        <span className="text-[11px] font-bold tracking-tight">{item.label}</span>
+                        <ChevronRight size={16} className={activeTab === item.id ? 'text-nexus-accent' : 'text-gray-700'} />
                      </button>
                   ))}
                </div>
@@ -309,8 +333,8 @@ const MainApp: React.FC = () => {
            </>
         )}
 
-        {/* Bottom Nav Mobile - Estilo Futurista Flutuante */}
-        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] bg-[#09090b]/80 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] px-2 py-3 flex justify-around items-center z-[100] shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        {/* Bottom Nav Mobile - Flutuante e Seguro */}
+        <div className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md bg-[#09090b]/85 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] px-1 py-2 flex justify-around items-center z-[100] shadow-[0_20px_50px_rgba(0,0,0,0.9)] box-border">
            <MobileHubItem icon={Activity} label="Pulse" group="pulse" active={activeGroup === 'pulse'} onClick={() => toggleGroup('pulse')} />
            <MobileHubItem icon={Trophy} label="Patrimônio" group="digital" active={activeGroup === 'digital'} onClick={() => toggleGroup('digital')} />
            <MobileHubItem icon={BrainCircuit} label="Oráculo" group="intel" active={activeGroup === 'intel'} onClick={() => toggleGroup('intel')} />
@@ -337,12 +361,12 @@ const NavItem = ({ id, icon: Icon, label, active, onClick }: { id: string, icon:
 const MobileHubItem = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, group: string, active: boolean, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className={`p-3 rounded-full transition-all flex flex-col items-center justify-center relative ${active ? 'bg-nexus-accent/20 text-nexus-accent' : 'text-gray-500'}`}
+    className={`p-2 rounded-full transition-all flex flex-col items-center justify-center relative min-w-[60px] ${active ? 'bg-nexus-accent/15 text-nexus-accent' : 'text-gray-500'}`}
   >
-    <Icon size={24} className={`${active ? 'scale-110 transition-transform drop-shadow-[0_0_12px_rgba(139,92,246,0.8)]' : ''}`} />
-    <span className={`text-[8px] font-black uppercase mt-1 tracking-tighter ${active ? 'text-nexus-accent' : 'text-gray-600'}`}>{label}</span>
+    <Icon size={22} className={`${active ? 'scale-110 transition-transform drop-shadow-[0_0_10px_rgba(139,92,246,0.8)]' : ''}`} />
+    <span className={`text-[7px] font-black uppercase mt-1 tracking-tighter ${active ? 'text-nexus-accent' : 'text-gray-600'}`}>{label}</span>
     {active && (
-       <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-nexus-accent rounded-full animate-pulse shadow-[0_0_8px_#8b5cf6]"></div>
+       <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-nexus-accent rounded-full animate-pulse shadow-[0_0_8px_#8b5cf6]"></div>
     )}
   </button>
 );

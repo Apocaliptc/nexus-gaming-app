@@ -34,8 +34,7 @@ export const GlobalFeed: React.FC = () => {
   }, [activeTab]);
 
   return (
-    <div className="h-full w-full bg-[#050507] overflow-y-auto custom-scrollbar flex flex-col items-center">
-      
+    <div className="w-full bg-[#050507] flex flex-col items-center min-h-full">
       <div className="w-full max-w-5xl px-6 pt-10 pb-6 space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-end gap-6">
            <div className="space-y-1">
