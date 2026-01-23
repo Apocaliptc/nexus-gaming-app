@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Users, LogOut, Compass, BarChart2, Grid, 
   Trophy, Loader2, Lock, AtSign, UserCircle, 
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
   MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search,
-  ChevronUp, X, LayoutGrid, Gavel, Shield, ChevronRight
+  ChevronUp, X, LayoutGrid, Gavel, Shield, ChevronRight, ChevronLeft,
+  CircleDot, Plus, Share2, Target, MousePointer2, Layout
 } from 'lucide-react';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
@@ -95,30 +96,96 @@ const MainApp: React.FC = () => {
   const { logout, userStats, isSyncing } = useAppContext();
   const [activeTab, setActiveTab] = useState('pulse');
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  
+  // NAV STATES
+  const [isRadialOpen, setIsRadialOpen] = useState(false);
+  const [isVerticalMenuOpen, setIsVerticalMenuOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [touchPos, setTouchPos] = useState({ x: 0, y: 0 });
+  const [centerPos, setCenterPos] = useState({ x: 0, y: 0 });
+  
+  const radialButtonRef = useRef<HTMLButtonElement>(null);
+
+  const menuItems = useMemo(() => [
+    { id: 'pulse', label: 'Pulse', icon: Activity, desc: 'Feed Global' },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, desc: 'Comunidade' },
+    { id: 'friends', label: 'Social', icon: Users, desc: 'Guerreiros' },
+    { id: 'profile', label: 'DNA', icon: UserCircle, desc: 'Meu Legado' },
+    { id: 'achievements', label: 'Troféus', icon: Trophy, desc: 'Feitos' },
+    { id: 'library', label: 'Biblioteca', icon: Grid, desc: 'Meus Jogos' },
+    { id: 'oracle', label: 'IA', icon: BrainCircuit, desc: 'Oráculo' },
+    { id: 'discover', label: 'Explorar', icon: Compass, desc: 'Busca AI' },
+    { id: 'vault', label: 'Cofre', icon: Box, desc: 'Físico' },
+    { id: 'auctions', label: 'Leilões', icon: Gavel, desc: 'Mercado' },
+    { id: 'notifications', label: 'Alertas', icon: Bell, desc: 'Nexus Pulse' },
+    { id: 'settings', label: 'Ajustes', icon: SettingsIcon, desc: 'Core Setup' },
+    { id: 'logout', label: 'Sair', icon: LogOut, desc: 'Desconectar', action: logout },
+  ], [logout]);
 
   useEffect(() => {
     if (userStats) {
-      const pollNotifs = async () => {
-        try {
-          const notifs = await nexusCloud.getNotifications(userStats.nexusId);
-          setUnreadCount(notifs.filter(n => !n.read).length);
-        } catch (e) {}
+      const poll = async () => {
+        const notifs = await nexusCloud.getNotifications(userStats.nexusId);
+        setUnreadCount(notifs.filter(n => !n.read).length);
       };
-      pollNotifs();
-      const interval = setInterval(pollNotifs, 30000);
+      poll();
+      const interval = setInterval(poll, 30000);
       return () => clearInterval(interval);
     }
   }, [userStats]);
 
-  const toggleGroup = (group: string) => {
-    if (activeGroup === group) setActiveGroup(null);
-    else setActiveGroup(group);
+  // RADIAL HANDLERS
+  const handleRadialStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const pos = 'touches' in e ? e.touches[0] : (e as any);
+    if (radialButtonRef.current) {
+      const rect = radialButtonRef.current.getBoundingClientRect();
+      setCenterPos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    }
+    setIsRadialOpen(true);
+    setActiveIdx(null);
+    updateRadialSelection(pos.clientX, pos.clientY);
   };
 
-  const selectTab = (tab: string) => {
-    setActiveTab(tab);
-    setActiveGroup(null);
+  const updateRadialSelection = (clientX: number, clientY: number) => {
+    setTouchPos({ x: clientX, y: clientY });
+    const dx = clientX - centerPos.x;
+    const dy = clientY - centerPos.y;
+    const dist = Math.hypot(dx, dy);
+    
+    if (dist < 40) {
+      setActiveIdx(null);
+      return;
+    }
+
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    if (angle < 0) angle += 360;
+
+    const step = 360 / menuItems.length;
+    const idx = Math.floor(angle / step);
+    setActiveIdx(idx);
+  };
+
+  const handleRadialMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isRadialOpen) return;
+    const pos = 'touches' in e ? e.touches[0] : (e as any);
+    updateRadialSelection(pos.clientX, pos.clientY);
+  };
+
+  const handleRadialEnd = () => {
+    if (!isRadialOpen) return;
+    if (activeIdx !== null) {
+      const item = menuItems[activeIdx];
+      if (item.action) item.action();
+      else setActiveTab(item.id);
+    }
+    setIsRadialOpen(false);
+    setActiveIdx(null);
+  };
+
+  const navigateTo = (id: string, action?: () => void) => {
+    if (action) action();
+    else setActiveTab(id);
+    setIsVerticalMenuOpen(false);
   };
 
   const renderContent = () => {
@@ -141,260 +208,183 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const mobileMenuGroups = {
-    pulse: {
-      title: 'Nexus Pulse',
-      items: [
-        { id: 'pulse', label: 'Pulse Global', icon: Activity },
-        { id: 'chat', label: 'Comunicações', icon: MessageSquare },
-        { id: 'friends', label: 'Conexões', icon: Users },
-      ]
-    },
-    digital: {
-      title: 'Patrimônio Digital',
-      items: [
-        { id: 'profile', label: 'Perfil & DNA', icon: UserCircle },
-        { id: 'achievements', label: 'Conquistas', icon: Trophy },
-        { id: 'library', label: 'Biblioteca', icon: Grid },
-        { id: 'stats', label: 'Analytics', icon: BarChart2 },
-      ]
-    },
-    legacy: {
-      title: 'Legacy Hub',
-      items: [
-        { id: 'vault', label: 'Coleção Física', icon: Box },
-        { id: 'auctions', label: 'Mercado de Leilões', icon: Gavel },
-      ]
-    },
-    intel: {
-      title: 'Inteligência Nexus',
-      items: [
-        { id: 'oracle', label: 'Nexus Oracle IA', icon: BrainCircuit },
-        { id: 'discover', label: 'Explorar Mundos', icon: Compass },
-        { id: 'chronos', label: 'Diário Chronos', icon: BookOpen },
-      ]
-    },
-    config: {
-      title: 'Sistema Soberano',
-      items: [
-        { id: 'notifications', label: 'Central de Alertas', icon: Bell, badge: unreadCount },
-        { id: 'settings', label: 'Ajustes de Conta', icon: SettingsIcon },
-        { id: 'logout', label: 'Sair do Nexus', icon: LogOut, action: logout, color: 'text-red-500' },
-      ]
-    }
-  };
-
   return (
-    <div className="flex h-screen w-screen bg-[#050507] text-white overflow-hidden font-sans">
+    <div 
+      className="flex h-screen w-screen bg-[#050507] text-white overflow-hidden font-sans select-none touch-none"
+      onMouseMove={handleRadialMove}
+      onMouseUp={handleRadialEnd}
+      onTouchMove={handleRadialMove}
+      onTouchEnd={handleRadialEnd}
+    >
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex w-64 bg-nexus-900 border-r border-nexus-800 flex-col transition-all duration-300 relative z-50 shrink-0 h-full">
+      <aside className="hidden md:flex w-64 bg-nexus-900 border-r border-nexus-800 flex-col shrink-0 h-full z-50">
         <div className="p-6 flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xl cursor-pointer" onClick={() => setActiveTab('pulse')}>
+          <div className="w-12 h-12 bg-gradient-to-tr from-nexus-accent to-nexus-secondary rounded-2xl flex items-center justify-center shadow-2xl cursor-pointer" onClick={() => setActiveTab('pulse')}>
             <span className="font-display font-bold text-white text-2xl">N</span>
           </div>
-          <div>
-            <h2 className="font-display font-bold text-xl tracking-tighter leading-none">NEXUS</h2>
-            <p className="text-[8px] font-black text-nexus-accent uppercase tracking-widest">Sovereign Legacy</p>
-          </div>
+          <div><h2 className="font-display font-bold text-xl tracking-tighter">NEXUS</h2><p className="text-[8px] font-black text-nexus-accent uppercase tracking-widest">Sovereign Legacy</p></div>
         </div>
-
-        <div className="px-4 mb-6">
-           <button 
-             onClick={() => setActiveTab('profile')}
-             className={`w-full flex items-center gap-4 p-3 rounded-[1.5rem] transition-all group border-2 ${activeTab === 'profile' ? 'bg-nexus-accent border-nexus-accent text-white shadow-2xl scale-105' : 'bg-nexus-800/40 border-nexus-700 text-gray-500 hover:border-nexus-accent hover:bg-nexus-800/80'}`}
-           >
-             <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white/10 shrink-0 relative">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userStats?.nexusId}`} className="w-full h-full object-cover" alt="Avatar" />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-nexus-900 shadow-lg"></div>
-             </div>
-             <div className="text-left">
-                <p className="font-black text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/80">Meu Legado</p>
-                <p className="font-bold text-sm text-white truncate">{userStats?.nexusId.replace('@', '')}</p>
-             </div>
-           </button>
-        </div>
-
-        <nav className="flex-1 px-3 space-y-8 overflow-y-auto custom-scrollbar pt-2">
-          <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Nexus Pulse</p>
-            <NavItem id="pulse" icon={Activity} label="Pulse Global" active={activeTab} onClick={selectTab} />
-            <NavItem id="chat" icon={MessageSquare} label="Comunicações" active={activeTab} onClick={selectTab} />
-            <NavItem id="friends" icon={Users} label="Conexões" active={activeTab} onClick={selectTab} />
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Patrimônio Digital</p>
-            <NavItem id="profile" icon={UserCircle} label="Perfil & DNA" active={activeTab} onClick={selectTab} />
-            <NavItem id="achievements" icon={Trophy} label="Conquistas" active={activeTab} onClick={selectTab} />
-            <NavItem id="library" icon={Grid} label="Biblioteca" active={activeTab} onClick={selectTab} />
-            <NavItem id="stats" icon={BarChart2} label="Analytics" active={activeTab} onClick={selectTab} />
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Físico & Hardware</p>
-            <NavItem id="vault" icon={Box} label="Coleção" active={activeTab} onClick={selectTab} />
-            <NavItem id="auctions" icon={Play} label="Leilões" active={activeTab} onClick={selectTab} />
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3 px-3">Inteligência</p>
-            <NavItem id="oracle" icon={BrainCircuit} label="Nexus Oracle" active={activeTab} onClick={selectTab} />
-            <NavItem id="discover" icon={Compass} label="Explorar" active={activeTab} onClick={selectTab} />
-            <NavItem id="chronos" icon={BookOpen} label="Chronos" active={activeTab} onClick={selectTab} />
-          </div>
+        <nav className="flex-1 px-3 space-y-6 overflow-y-auto custom-scrollbar pt-4">
+           <div className="space-y-1">
+             {menuItems.slice(0, 11).map(item => (
+                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
+             ))}
+           </div>
         </nav>
-
-        <div className="p-4 bg-nexus-900 border-t border-nexus-800 space-y-3 shrink-0">
-          <button 
-            onClick={() => setActiveTab('notifications')}
-            className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all relative ${
-              activeTab === 'notifications' ? 'bg-white/10 text-white shadow-inner' : 'text-gray-500 hover:bg-nexus-800/50 hover:text-white'
-            }`}
-          >
-             <Bell size={20} />
-             <span className="font-bold text-xs">Alertas</span>
-             {unreadCount > 0 && (
-                <div className="absolute right-3 top-3 w-5 h-5 bg-red-600 rounded-lg flex items-center justify-center text-[8px] font-black border-2 border-nexus-900 shadow-xl">
-                   {unreadCount}
-                </div>
-             )}
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all ${
-              activeTab === 'settings' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-nexus-800/50'
-            }`}
-          >
-             <SettingsIcon size={20} />
-             <span className="font-bold text-xs">Ajustes</span>
-          </button>
-
-          <button 
-            onClick={logout}
-            className="w-full flex items-center gap-4 p-3 text-red-500/60 hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
-          >
-            <LogOut size={20} />
-            <span className="font-bold text-xs">Sair</span>
-          </button>
+        <div className="p-4 border-t border-nexus-800 space-y-2">
+          <NavItem id="settings" icon={SettingsIcon} label="Ajustes" active={activeTab} onClick={setActiveTab} />
+          <button onClick={logout} className="w-full flex items-center gap-4 p-3 text-red-500/60 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"><LogOut size={20} /><span className="font-bold text-xs">Sair</span></button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-hidden relative flex flex-col bg-[#050507] h-full">
-        {/* Syncing Indicator */}
         {isSyncing && (
-          <div className="absolute top-4 right-4 md:top-6 md:right-8 z-[100] animate-fade-in">
-             <div className="bg-nexus-900/90 backdrop-blur-xl border border-nexus-accent/40 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl flex items-center gap-3 shadow-2xl shadow-nexus-accent/10">
+          <div className="absolute top-4 right-4 z-[100] animate-fade-in">
+             <div className="bg-nexus-900/90 backdrop-blur-xl border border-nexus-accent/40 px-4 py-2 rounded-xl flex items-center gap-3 shadow-2xl">
                 <Loader2 size={14} className="animate-spin text-nexus-accent" />
-                <span className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-[0.2em]">Sincronizando...</span>
+                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Sync...</span>
              </div>
           </div>
         )}
         
-        {/* ÁREA DE CONTEÚDO COM SCROLL ÚNICO */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative pb-32 md:pb-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
            {renderContent()}
+           <div className="md:hidden h-32 w-full"></div>
         </div>
 
-        {/* MOBILE HUB MENU (Redesenhado para não cortar em nenhuma tela) */}
-        {activeGroup && (
-           <>
-            <div className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[101] animate-fade-in" onClick={() => setActiveGroup(null)}></div>
-            <div className="md:hidden fixed bottom-[90px] left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-lg bg-nexus-900/98 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-5 z-[102] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] animate-fade-in origin-bottom overflow-hidden box-border">
-               <div className="flex items-center justify-between mb-5 px-1 border-b border-white/5 pb-3">
-                  <div className="space-y-0.5">
-                     <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Protocolo de Acesso</p>
-                     <h4 className="text-xs font-display font-bold text-nexus-accent uppercase tracking-[0.1em]">{(mobileMenuGroups as any)[activeGroup].title}</h4>
-                  </div>
-                  <button onClick={() => setActiveGroup(null)} className="p-2 bg-white/5 rounded-full text-gray-400"><X size={18} /></button>
-               </div>
-               
-               <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto no-scrollbar">
-                  {(mobileMenuGroups as any)[activeGroup].items.map((item: any) => (
-                     <button 
-                       key={item.id}
-                       onClick={() => item.action ? item.action() : selectTab(item.id)}
-                       className={`flex items-center justify-between w-full p-4 rounded-2xl border transition-all active:scale-[0.97] ${activeTab === item.id ? 'bg-nexus-accent/20 border-nexus-accent/40 shadow-xl' : 'bg-nexus-800/40 border-white/5'}`}
-                     >
-                        <div className="flex items-center gap-4 min-w-0">
-                           <div className={`p-2.5 rounded-xl flex-shrink-0 ${activeTab === item.id ? 'bg-nexus-accent text-white' : 'bg-nexus-900 text-gray-500'}`}>
-                              <item.icon size={20} />
-                           </div>
-                           <div className="text-left min-w-0">
-                              <span className={`block text-xs font-bold truncate ${activeTab === item.id ? 'text-white' : 'text-gray-300'}`}>{item.label}</span>
-                              {item.badge !== undefined && item.badge > 0 && <span className="text-[7px] font-black text-nexus-accent uppercase">{item.badge} Pendente(s)</span>}
-                           </div>
-                        </div>
-                        <ChevronRight size={16} className={activeTab === item.id ? 'text-nexus-accent' : 'text-gray-700'} />
-                     </button>
-                  ))}
-               </div>
-            </div>
-           </>
+        {/* MOBILE RADIAL OVERLAY */}
+        {isRadialOpen && (
+           <div className="md:hidden fixed inset-0 z-[200] flex items-center justify-center animate-fade-in pointer-events-none">
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-3xl"></div>
+              <div className="relative w-80 h-80 flex items-center justify-center">
+                 <div 
+                    className="absolute w-1 h-32 bg-gradient-to-t from-nexus-accent/0 to-nexus-accent origin-bottom transition-transform duration-100 ease-out"
+                    style={{ 
+                        transform: `rotate(${Math.atan2(touchPos.y - centerPos.y, touchPos.x - centerPos.x) * (180 / Math.PI) + 90}deg)`,
+                        left: 'calc(50% - 2px)',
+                        bottom: '50%'
+                    }}
+                 ><div className="w-4 h-4 bg-white rounded-full absolute -top-2 left-1/2 -translate-x-1/2 shadow-[0_0_15px_#fff]"></div></div>
+                 <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100">
+                    {menuItems.map((_, i) => {
+                       const step = 360 / menuItems.length;
+                       const start = i * step;
+                       const end = (i + 1) * step;
+                       const isFocused = activeIdx === i;
+                       const x1 = 50 + 48 * Math.cos(Math.PI * start / 180);
+                       const y1 = 50 + 48 * Math.sin(Math.PI * start / 180);
+                       const x2 = 50 + 48 * Math.cos(Math.PI * end / 180);
+                       const y2 = 50 + 48 * Math.sin(Math.PI * end / 180);
+                       const x3 = 50 + 35 * Math.cos(Math.PI * end / 180);
+                       const y3 = 50 + 35 * Math.sin(Math.PI * end / 180);
+                       const x4 = 50 + 35 * Math.cos(Math.PI * start / 180);
+                       const y4 = 50 + 35 * Math.sin(Math.PI * start / 180);
+                       return <path key={i} d={`M ${x1} ${y1} A 48 48 0 0 1 ${x2} ${y2} L ${x3} ${y3} A 35 35 0 0 0 ${x4} ${y4} Z`} fill={isFocused ? "rgba(139, 92, 246, 0.4)" : "rgba(255, 255, 255, 0.03)"} stroke={isFocused ? "#8b5cf6" : "rgba(255, 255, 255, 0.05)"} strokeWidth="0.3" className="transition-all duration-200" />;
+                    })}
+                 </svg>
+                 {menuItems.map((item, i) => {
+                    const step = 360 / menuItems.length;
+                    const angle = i * step + (step / 2);
+                    const isFocused = activeIdx === i;
+                    const radius = isFocused ? 125 : 110;
+                    const x = Math.cos(angle * Math.PI / 180) * radius;
+                    const y = Math.sin(angle * Math.PI / 180) * radius;
+                    return (
+                       <div key={i} className={`absolute transition-all duration-300 flex flex-col items-center gap-1.5 ${isFocused ? 'scale-125 z-50' : 'opacity-40'}`} style={{ transform: `translate(${x}px, ${y}px)` }}>
+                          <div className={`p-3 rounded-2xl border-2 transition-all ${isFocused ? 'bg-nexus-accent border-white text-white shadow-[0_0_30px_rgba(139,92,246,0.8)]' : 'bg-nexus-900 border-white/10 text-gray-400'}`}><item.icon size={22} /></div>
+                          <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded backdrop-blur-md ${isFocused ? 'bg-white text-black' : 'bg-black/40 text-gray-500'}`}>{item.label}</span>
+                       </div>
+                    );
+                 })}
+                 <div className="w-24 h-24 rounded-full bg-nexus-900 border-4 border-nexus-accent flex flex-col items-center justify-center shadow-2xl z-10"><span className="font-display font-black text-2xl text-white">N</span></div>
+              </div>
+           </div>
         )}
 
-        {/* Bottom Nav Mobile - Flutuante e Seguro */}
-        <div className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md bg-[#09090b]/85 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] px-1 py-2 flex justify-around items-center z-[100] shadow-[0_20px_50px_rgba(0,0,0,0.9)] box-border">
-           <MobileHubItem icon={Activity} label="Pulse" group="pulse" active={activeGroup === 'pulse'} onClick={() => toggleGroup('pulse')} />
-           <MobileHubItem icon={Trophy} label="Patrimônio" group="digital" active={activeGroup === 'digital'} onClick={() => toggleGroup('digital')} />
-           <MobileHubItem icon={BrainCircuit} label="Oráculo" group="intel" active={activeGroup === 'intel'} onClick={() => toggleGroup('intel')} />
-           <MobileHubItem icon={Box} label="Legacy" group="legacy" active={activeGroup === 'legacy'} onClick={() => toggleGroup('legacy')} />
-           <MobileHubItem icon={UserCircle} label="Sistema" group="config" active={activeGroup === 'config'} onClick={() => toggleGroup('config')} />
+        {/* MOBILE VERTICAL MENU (DRAWER) OVERLAY */}
+        {isVerticalMenuOpen && (
+           <div className="md:hidden fixed inset-0 z-[250] flex flex-col animate-fade-in">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsVerticalMenuOpen(false)}></div>
+              <div className="mt-auto bg-nexus-900 border-t border-nexus-700 rounded-t-[3rem] p-6 pb-12 shadow-[0_-20px_60px_rgba(0,0,0,0.8)] relative z-[260] translate-y-0 transition-transform duration-500 ease-out">
+                 <div className="w-12 h-1.5 bg-gray-800 rounded-full mx-auto mb-8"></div>
+                 <div className="flex items-center justify-between mb-8 px-4">
+                    <h2 className="text-3xl font-display font-bold text-white flex items-center gap-3">
+                       <LayoutGrid className="text-nexus-accent" /> Navegação
+                    </h2>
+                    <button onClick={() => setIsVerticalMenuOpen(false)} className="p-3 bg-nexus-800 rounded-2xl text-gray-400"><X size={20}/></button>
+                 </div>
+                 
+                 <div className="grid grid-cols-3 gap-3">
+                    {menuItems.map(item => (
+                       <button 
+                         key={item.id} 
+                         onClick={() => navigateTo(item.id, item.action)}
+                         className={`flex flex-col items-center justify-center p-5 rounded-[2rem] border transition-all ${activeTab === item.id ? 'bg-nexus-accent border-nexus-accent shadow-lg shadow-nexus-accent/20' : 'bg-nexus-800/50 border-nexus-800 hover:bg-nexus-800'}`}
+                       >
+                          <item.icon size={24} className={activeTab === item.id ? 'text-white' : 'text-nexus-accent'} />
+                          <span className="text-[10px] font-black uppercase tracking-tighter mt-2 text-white">{item.label}</span>
+                       </button>
+                    ))}
+                 </div>
+              </div>
+           </div>
+        )}
+
+        {/* HYBRID MOBILE CONTROLS */}
+        <div className="md:hidden fixed bottom-10 inset-x-0 flex items-center justify-center gap-6 z-[210]">
+           {/* Botão Gatilho Radial (Esquerda) */}
+           <button 
+             ref={radialButtonRef}
+             onMouseDown={handleRadialStart}
+             onTouchStart={handleRadialStart}
+             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-[0_0_40px_rgba(139,92,246,0.3)] border-2 ${
+               isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-accent border-nexus-accent/40 active:scale-90 active:bg-nexus-accent active:text-white'
+             }`}
+           >
+              <Target size={24} strokeWidth={2.5} />
+              <div className="absolute inset-0 rounded-full animate-ping bg-nexus-accent/5 pointer-events-none"></div>
+           </button>
+
+           {/* Botão Gatilho Vertical (Direita) */}
+           <button 
+             onClick={() => setIsVerticalMenuOpen(true)}
+             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-[0_0_40px_rgba(6,182,212,0.3)] border-2 ${
+               isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-secondary border-nexus-secondary/40 active:scale-90 active:bg-nexus-secondary active:text-white'
+             }`}
+           >
+              <Layout size={24} strokeWidth={2.5} />
+           </button>
         </div>
       </main>
     </div>
   );
 };
 
-const NavItem = ({ id, icon: Icon, label, active, onClick }: { id: string, icon: any, label: string, active: string, onClick: (id: string) => void }) => (
+const NavItem: React.FC<{ id: string, icon: any, label: string, active: string, onClick: (id: string) => void }> = ({ id, icon: Icon, label, active, onClick }) => (
   <button 
     onClick={() => onClick(id)} 
     className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all group ${
-      active === id ? 'bg-nexus-accent text-white shadow-xl shadow-nexus-accent/20' : 'text-gray-400 hover:bg-nexus-800 hover:text-gray-300'
+      active === id ? 'bg-nexus-accent text-white shadow-xl shadow-nexus-accent/20' : 'text-gray-400 hover:bg-nexus-800/60 hover:text-gray-300'
     }`}
   >
-    <Icon size={20} className={`transition-all ${active === id ? 'scale-110' : 'group-hover:scale-110'}`} />
+    <Icon size={18} className={`transition-all ${active === id ? 'scale-110' : 'group-hover:scale-110'}`} />
     <span className="font-bold text-xs tracking-tight">{label}</span>
-  </button>
-);
-
-const MobileHubItem = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, group: string, active: boolean, onClick: () => void }) => (
-  <button 
-    onClick={onClick}
-    className={`p-2 rounded-full transition-all flex flex-col items-center justify-center relative min-w-[60px] ${active ? 'bg-nexus-accent/15 text-nexus-accent' : 'text-gray-500'}`}
-  >
-    <Icon size={22} className={`${active ? 'scale-110 transition-transform drop-shadow-[0_0_10px_rgba(139,92,246,0.8)]' : ''}`} />
-    <span className={`text-[7px] font-black uppercase mt-1 tracking-tighter ${active ? 'text-nexus-accent' : 'text-gray-600'}`}>{label}</span>
-    {active && (
-       <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-nexus-accent rounded-full animate-pulse shadow-[0_0_8px_#8b5cf6]"></div>
-    )}
   </button>
 );
 
 const AppContent: React.FC = () => {
   const { userStats, isInitializing } = useAppContext();
-  
-  if (isInitializing) {
-    return (
-      <div className="h-screen bg-[#050507] flex flex-col items-center justify-center gap-6">
-        <div className="relative">
-           <Loader2 className="animate-spin text-nexus-accent" size={48} />
-           <div className="absolute inset-0 bg-nexus-accent blur-3xl opacity-20"></div>
-        </div>
-        <p className="text-gray-500 font-mono text-[10px] md:text-xs uppercase tracking-[0.5em] animate-pulse">Handshaking Core...</p>
-      </div>
-    );
-  }
-
+  if (isInitializing) return (
+    <div className="h-screen bg-[#050507] flex flex-col items-center justify-center gap-6">
+      <div className="relative"><Loader2 className="animate-spin text-nexus-accent" size={48} /><div className="absolute inset-0 bg-nexus-accent blur-3xl opacity-20"></div></div>
+      <p className="text-gray-500 font-mono text-[10px] uppercase tracking-[0.5em] animate-pulse">Handshake...</p>
+    </div>
+  );
   return userStats ? <MainApp /> : <LoginScreen />;
 };
 
-const App: React.FC = () => {
-  return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
-  );
-};
+const App: React.FC = () => (
+  <AppProvider><AppContent /></AppProvider>
+);
 
 export default App;
