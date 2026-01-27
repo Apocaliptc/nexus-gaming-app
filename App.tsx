@@ -467,7 +467,7 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <AppProvider><AppContent /></AppContent>
+  <AppProvider><AppContent /></AppProvider>
 );
 
 export default App;
