@@ -1,14 +1,14 @@
+
 import React, { useState } from 'react';
 import { 
   FileCode, Layers, GitBranch, Share2, Database, ListTodo, 
   User, Server, Cpu, Globe, ArrowRight, Zap, Target, 
   CheckCircle2, Clock, Play, MessageSquare, ShieldCheck, Box,
   Search, X, RefreshCw, Code2, Link2, Key, Activity, Workflow,
-  /* Added missing Info icon */
-  Info
+  Info, AlertTriangle, Terminal, Settings, HardDrive
 } from 'lucide-react';
 
-type BlueprintTab = 'usecase' | 'activity' | 'interaction' | 'conceptual' | 'backlog';
+type BlueprintTab = 'usecase' | 'activity' | 'interaction' | 'conceptual' | 'backlog' | 'infrastructure';
 
 export const NexusBlueprint: React.FC = () => {
   const [activeTab, setActiveTab] = useState<BlueprintTab>('usecase');
@@ -19,23 +19,28 @@ export const NexusBlueprint: React.FC = () => {
         <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="space-y-1">
             <h1 className="text-4xl font-display font-bold text-white tracking-tighter flex items-center gap-4">
-              <Code2 className="text-nexus-accent" size={36} /> NEXUS <span className="text-nexus-accent">BLUEPRINT</span>
+              <Terminal className="text-nexus-accent" size={36} /> NEXUS <span className="text-nexus-accent">BLUEPRINT</span>
             </h1>
-            <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em]">System Architecture & API Documentation v4.2</p>
+            <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em]">Technical Documentation & System Design v4.5</p>
           </div>
           <div className="flex gap-2">
-             <span className="px-3 py-1 bg-nexus-success/10 border border-nexus-success/20 text-nexus-success rounded-lg text-[9px] font-bold uppercase tracking-widest">Stable Release</span>
-             <span className="px-3 py-1 bg-nexus-accent/10 border border-nexus-accent/20 text-nexus-accent rounded-lg text-[9px] font-bold uppercase tracking-widest">TS Strict Mode</span>
+             <div className="flex items-center gap-2 px-3 py-1 bg-nexus-success/10 border border-nexus-success/20 text-nexus-success rounded-lg text-[9px] font-bold uppercase tracking-widest">
+                <CheckCircle2 size={12}/> Build: Passing
+             </div>
+             <div className="flex items-center gap-2 px-3 py-1 bg-nexus-accent/10 border border-nexus-accent/20 text-nexus-accent rounded-lg text-[9px] font-bold uppercase tracking-widest">
+                <Settings size={12}/> Node 18+ Required
+             </div>
           </div>
         </div>
       </header>
 
       <div className="flex bg-nexus-900 border-b border-nexus-800 px-6 gap-2 overflow-x-auto no-scrollbar shrink-0">
-         <BlueprintTabButton id="usecase" label="Use Cases" icon={Target} active={activeTab} onClick={setActiveTab} />
-         <BlueprintTabButton id="activity" label="Data Flow" icon={Workflow} active={activeTab} onClick={setActiveTab} />
-         <BlueprintTabButton id="interaction" label="Sequence" icon={Share2} active={activeTab} onClick={setActiveTab} />
-         <BlueprintTabButton id="conceptual" label="Data Schema" icon={Database} active={activeTab} onClick={setActiveTab} />
-         <BlueprintTabButton id="backlog" label="Sprint Backlog" icon={ListTodo} active={activeTab} onClick={setActiveTab} />
+         <BlueprintTabButton id="usecase" label="Casos de Uso" icon={Target} active={activeTab} onClick={setActiveTab} />
+         <BlueprintTabButton id="activity" label="Fluxo de Dados" icon={Workflow} active={activeTab} onClick={setActiveTab} />
+         <BlueprintTabButton id="interaction" label="Sequência (IA)" icon={Share2} active={activeTab} onClick={setActiveTab} />
+         <BlueprintTabButton id="conceptual" label="DB Schema" icon={Database} active={activeTab} onClick={setActiveTab} />
+         <BlueprintTabButton id="backlog" label="Backlog Técnico" icon={ListTodo} active={activeTab} onClick={setActiveTab} />
+         <BlueprintTabButton id="infrastructure" label="Deploy & Build" icon={HardDrive} active={activeTab} onClick={setActiveTab} />
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10">
@@ -44,31 +49,31 @@ export const NexusBlueprint: React.FC = () => {
             {activeTab === 'usecase' && (
                <div className="space-y-8 animate-fade-in">
                   <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl">
-                     <h3 className="text-xl font-display font-bold text-white mb-8 border-l-4 border-nexus-accent pl-6">Mapeamento Funcional (Actors & Services)</h3>
+                     <h3 className="text-xl font-display font-bold text-white mb-8 border-l-4 border-nexus-accent pl-6">Mapeamento de Serviços (Use Case -> Implementation)</h3>
                      <div className="grid grid-cols-1 gap-4">
                         <TechnicalUseCase 
-                           actor="Player" 
+                           actor="Gamer" 
                            action="Sincronizar Troféus" 
                            service="nexusCloud.saveGame()" 
-                           requirement="Google Search Grounding + Web Scraping" 
+                           notes="Usa fetchPublicProfileData() para scraping via Google Grounding." 
                         />
                         <TechnicalUseCase 
-                           actor="System (IA)" 
-                           action="Gerar DNA Insight" 
+                           actor="System AI" 
+                           action="Analisar DNA Gamer" 
                            service="geminiService.analyzeGamingProfile()" 
-                           requirement="Prompt Engineering + JSON Schema Validation" 
+                           notes="Processamento assíncrono com retry (max 2) para Rate Limit." 
                         />
                         <TechnicalUseCase 
-                           actor="Merchant" 
-                           action="Postar Promoção (Loot)" 
-                           service="nexusCloud.saveDeal()" 
-                           requirement="Affiliate URL Sanitization" 
+                           actor="Loot Bot" 
+                           action="Validar Ofertas" 
+                           service="LootMarket.toggleExpire()" 
+                           notes="Persistência local-first com sincronização Supabase via PATCH." 
                         />
                         <TechnicalUseCase 
-                           actor="Admin/System" 
-                           action="Verificar Pedigree" 
-                           service="nexusCloud.getOwnershipHistory()" 
-                           requirement="Blockchain-like Immutable Logs" 
+                           actor="Dev/Admin" 
+                           action="Auditar Linhagem" 
+                           service="PedigreeTimeline" 
+                           notes="Renderização linear de OwnershipRecord[] com validação de PrestigePoints." 
                         />
                      </div>
                   </div>
@@ -78,25 +83,24 @@ export const NexusBlueprint: React.FC = () => {
             {activeTab === 'activity' && (
                <div className="space-y-8 animate-fade-in">
                   <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl overflow-hidden">
-                     <h3 className="text-xl font-display font-bold text-white mb-10 border-l-4 border-nexus-secondary pl-6">Diagrama de Fluxo (Crawler Engine)</h3>
+                     <h3 className="text-xl font-display font-bold text-white mb-10 border-l-4 border-nexus-secondary pl-6">Pipeline de Sincronização (Crawler Architecture)</h3>
                      <div className="relative pt-10">
-                        {/* Swimlanes Headers */}
                         <div className="grid grid-cols-3 border-b border-white/10 pb-4 mb-10">
-                           <div className="text-center text-[10px] font-black uppercase text-gray-500 tracking-widest">UI (Frontend)</div>
-                           <div className="text-center text-[10px] font-black uppercase text-nexus-accent tracking-widest">Logic (Services)</div>
-                           <div className="text-center text-[10px] font-black uppercase text-nexus-secondary tracking-widest">Storage (Cloud)</div>
+                           <div className="text-center text-[10px] font-black uppercase text-gray-500">React Client</div>
+                           <div className="text-center text-[10px] font-black uppercase text-nexus-accent">Edge Functions / Gemini</div>
+                           <div className="text-center text-[10px] font-black uppercase text-nexus-secondary">PostgreSQL (Supabase)</div>
                         </div>
                         
-                        <div className="space-y-8 max-w-4xl mx-auto">
-                           <FlowStep side="left" label="Input Public ID" icon={User} />
+                        <div className="space-y-8 max-w-4xl mx-auto font-mono text-[10px]">
+                           <FlowStep side="left" label="linkAccount(platform, username)" icon={Code2} />
                            <FlowLine />
-                           <FlowStep side="center" label="Fetch Public Profile (Search Grounding)" icon={Globe} />
+                           <FlowStep side="center" label="fetchPublicProfileData() -> Grounding Search" icon={Globe} />
                            <FlowLine />
-                           <FlowStep side="center" label="Parse Metadata (IA Scraper)" icon={Cpu} />
+                           <FlowStep side="center" label="JSON.parse(AI_Response) -> Game[]" icon={Cpu} />
                            <FlowLine />
-                           <FlowStep side="right" label="Insert/Update Rest API (PATCH)" icon={Database} />
+                           <FlowStep side="right" label="nexusCloud.saveUser() -> Profiles PATCH" icon={Database} />
                            <FlowLine />
-                           <FlowStep side="left" label="Update Dashboard Store" icon={RefreshCw} />
+                           <FlowStep side="left" label="AppProvider state update (isSyncing: false)" icon={RefreshCw} />
                         </div>
                      </div>
                   </div>
@@ -106,15 +110,14 @@ export const NexusBlueprint: React.FC = () => {
             {activeTab === 'interaction' && (
                <div className="space-y-8 animate-fade-in">
                   <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl">
-                     <h3 className="text-xl font-display font-bold text-white mb-10 border-l-4 border-nexus-accent pl-6">Sequence Diagram: Handshake de Autenticação</h3>
+                     <h3 className="text-xl font-display font-bold text-white mb-10 border-l-4 border-nexus-accent pl-6">Sequência de Mensagens IA (NexusOracle)</h3>
                      <div className="font-mono text-[11px] bg-black/40 p-8 rounded-3xl border border-white/5 space-y-6">
-                        <SequenceLine time="0ms" from="Client" to="NexusCloud" msg="POST /rest/v1/auth/login" />
-                        <SequenceLine time="120ms" from="NexusCloud" to="PostgreSQL" msg="SELECT * FROM profiles WHERE email = ?" />
-                        <SequenceLine time="250ms" from="PostgreSQL" to="NexusCloud" msg="ProfileData + JWT_Token" />
-                        <SequenceLine time="260ms" from="NexusCloud" to="Client" msg="HTTP 200 (UserStats JSON)" status="success" />
+                        <SequenceLine time="0ms" from="Oracle UI" to="AppContext" msg="useAppContext().userStats (Context Injection)" />
+                        <SequenceLine time="15ms" from="Oracle UI" to="Gemini_SDK" msg="chat.sendMessageStream({ message })" />
+                        <SequenceLine time="250ms" from="Gemini_API" to="Oracle UI" msg="onChunk: (GenerateContentResponse) -> part.text" status="pending" />
+                        <SequenceLine time="1.2s" from="Oracle UI" to="State" msg="setMessages(prev => [...newChunk])" status="success" />
                         <div className="h-px bg-white/5 my-4"></div>
-                        <SequenceLine time="280ms" from="Client" to="Gemini_API" msg="POST /generateContent (Insight Prompt)" />
-                        <SequenceLine time="1200ms" from="Gemini_API" to="Client" msg="Streaming Response (Part 1...n)" status="pending" />
+                        <div className="text-[10px] text-gray-600 italic">Nota técnica: O stream evita bloqueio da Main Thread em respostas longas da IA.</div>
                      </div>
                   </div>
                </div>
@@ -122,42 +125,34 @@ export const NexusBlueprint: React.FC = () => {
 
             {activeTab === 'conceptual' && (
                <div className="space-y-8 animate-fade-in">
-                  <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl overflow-hidden">
-                     <h3 className="text-xl font-display font-bold text-white mb-10 border-l-4 border-nexus-secondary pl-6">Modelo de Dados (ER Schema)</h3>
+                  <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl">
+                     <h3 className="text-xl font-display font-bold text-white mb-10 border-l-4 border-nexus-secondary pl-6">Esquema Relacional e Tipos (Entity-Relationship)</h3>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative">
                         <SchemaTable 
                            title="PROFILES" 
                            fields={[
-                              { name: 'nexus_id', type: 'PK (string)', rel: '1:N' },
-                              { name: 'stats', type: 'JSONB (UserStats)' },
-                              { name: 'email', type: 'Unique (string)' }
+                              { name: 'nexus_id', type: 'PK (varchar)', rel: '1:N Games' },
+                              { name: 'email', type: 'varchar (unique)', rel: '1:1 Session' },
+                              { name: 'stats', type: 'jsonb (UserStats)', rel: 'Nested Object' }
                            ]} 
                         />
                         <SchemaTable 
-                           title="GAMES" 
+                           title="TESTIMONIALS" 
                            fields={[
                               { name: 'id', type: 'PK (uuid)' },
-                              { name: 'title', type: 'string' },
-                              { name: 'hours', type: 'integer' },
-                              { name: 'nexus_id', type: 'FK -> PROFILES' }
+                              { name: 'to_nexus_id', type: 'FK -> Profiles.nexus_id' },
+                              { name: 'vibe', type: 'enum (pro, mvp, legend)' }
                            ]} 
                            secondary
                         />
                         <SchemaTable 
-                           title="LOOT_DEALS" 
+                           title="LOOT_MARKET" 
                            fields={[
                               { name: 'id', type: 'PK (uuid)' },
-                              { name: 'price', type: 'numeric' },
-                              { name: 'is_expired', type: 'boolean' },
-                              { name: 'posted_by', type: 'FK -> PROFILES' }
+                              { name: 'price', type: 'numeric(10,2)' },
+                              { name: 'affiliate_url', type: 'text' }
                            ]} 
                         />
-                     </div>
-                     <div className="mt-10 p-6 bg-nexus-accent/5 border border-nexus-accent/20 rounded-2xl flex items-center gap-4">
-                        <Info className="text-nexus-accent" size={20} />
-                        <p className="text-[11px] text-gray-500 uppercase font-black tracking-widest">
-                           Nota: O campo 'stats' armazena o estado volátil via JSONB para flexibilidade de atributos da IA.
-                        </p>
                      </div>
                   </div>
                </div>
@@ -166,22 +161,73 @@ export const NexusBlueprint: React.FC = () => {
             {activeTab === 'backlog' && (
                <div className="space-y-8 animate-fade-in">
                   <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl">
-                     <div className="flex justify-between items-center mb-10">
-                        <h3 className="text-xl font-display font-bold text-white border-l-4 border-nexus-accent pl-6">Sprint Management (Active Backlog)</h3>
-                        <div className="flex items-center gap-4">
-                           <div className="text-right">
-                              <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Velocity</p>
-                              <p className="text-sm font-mono text-white">42pts/wk</p>
+                     <h3 className="text-xl font-display font-bold text-white mb-8 border-l-4 border-nexus-accent pl-6">Developer Roadmap & Technical Debt</h3>
+                     <div className="space-y-3">
+                        <TechnicalBacklogItem id="DEV-1" title="Upgrade para Gemini-3-Pro (High Priority)" status="doing" tech="SDK @google/genai" priority="Critical" />
+                        <TechnicalBacklogItem id="ARC-2" title="Migração de state para React Query (Performance)" status="todo" tech="Client Side Cache" priority="Medium" />
+                        <TechnicalBacklogItem id="SEC-1" title="Implementação de RLS (Row Level Security) em Testimonials" status="todo" tech="Supabase Policies" priority="High" />
+                        <TechnicalBacklogItem id="FIX-4" title="Otimização de imagens da biblioteca (Next Gen Formats)" status="done" tech="Sharp / Cloudinary" priority="Low" />
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {activeTab === 'infrastructure' && (
+               <div className="space-y-8 animate-fade-in">
+                  <div className="bg-nexus-900 border border-nexus-800 rounded-[3rem] p-10 shadow-2xl">
+                     <h3 className="text-xl font-display font-bold text-white mb-8 border-l-4 border-red-500 pl-6">Guia de Troubleshooting de Deploy</h3>
+                     
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                           <div className="bg-red-500/10 border border-red-500/30 p-6 rounded-3xl space-y-4">
+                              <div className="flex items-center gap-3 text-red-500">
+                                 <AlertTriangle size={24}/>
+                                 <h4 className="font-bold text-sm">Erro de Depreciação: node-domexception</h4>
+                              </div>
+                              <p className="text-xs text-gray-400 leading-relaxed">
+                                 "npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead"
+                              </p>
+                              <div className="p-4 bg-black/40 rounded-xl font-mono text-[10px] text-gray-300">
+                                 # SOLUÇÃO:<br/>
+                                 1. Certifique-se de que está usando Node.js 18 ou superior.<br/>
+                                 2. O DOMException é nativo a partir dessa versão.<br/>
+                                 3. Se persistir, remova o pacote explicitamente: <br/>
+                                 `npm uninstall node-domexception`
+                              </div>
+                           </div>
+                           
+                           <div className="bg-nexus-accent/5 border border-nexus-accent/20 p-6 rounded-3xl space-y-4">
+                              <div className="flex items-center gap-3 text-nexus-accent">
+                                 <Key size={24}/>
+                                 <h4 className="font-bold text-sm">Environment Variables</h4>
+                              </div>
+                              <ul className="space-y-2 text-[10px] font-mono text-gray-500">
+                                 <li><span className="text-white">API_KEY:</span> Obrigatória para Gemini API</li>
+                                 <li><span className="text-white">SUPABASE_URL:</span> Endereço da instância PostgreSQL</li>
+                                 <li><span className="text-white">SUPABASE_KEY:</span> Client anon key para REST API</li>
+                              </ul>
                            </div>
                         </div>
-                     </div>
-                     
-                     <div className="space-y-3">
-                        <TechnicalBacklogItem id="NEX-104" title="Refactor: linkAccount middleware for concurrency" priority="High" status="doing" tech="React/Context" />
-                        <TechnicalBacklogItem id="NEX-105" title="Feature: Multi-region scraping (NTSC-J Support)" priority="Medium" status="todo" tech="AI/Grounding" />
-                        <TechnicalBacklogItem id="NEX-106" title="Fix: Memory leak on Oracle Chat streaming" priority="Critical" status="doing" tech="WebSockets" />
-                        <TechnicalBacklogItem id="NEX-102" title="Infrastructure: Supabase Realtime for Pulse Feed" priority="Low" status="done" tech="PostgreSQL" />
-                        <TechnicalBacklogItem id="NEX-108" title="Security: E2E Encryption for Nexus Chat" priority="Critical" status="todo" tech="Crypto API" />
+
+                        <div className="bg-nexus-800/40 p-8 rounded-[2.5rem] border border-nexus-700 space-y-6">
+                           <h4 className="text-lg font-bold text-white flex items-center gap-3"><Zap className="text-yellow-500"/> Stack Tecnológica</h4>
+                           <div className="grid grid-cols-2 gap-4">
+                              <TechBadge label="React 19" />
+                              <TechBadge label="TypeScript 5" />
+                              <TechBadge label="Tailwind CSS 3" />
+                              <TechBadge label="Gemini AI (Pro)" />
+                              <TechBadge label="Supabase DB" />
+                              <TechBadge label="Lucide Icons" />
+                           </div>
+                           <div className="pt-6 border-t border-white/5">
+                              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-4">Métricas de Performance (Lighthouse)</p>
+                              <div className="flex gap-4">
+                                 <PerformanceRing label="FCP" value="0.8s" />
+                                 <PerformanceRing label="LCP" value="1.2s" />
+                                 <PerformanceRing label="CLS" value="0.01" />
+                              </div>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -198,45 +244,40 @@ export const NexusBlueprint: React.FC = () => {
 const BlueprintTabButton: React.FC<{ id: BlueprintTab, label: string, icon: any, active: string, onClick: (id: BlueprintTab) => void }> = ({ id, label, icon: Icon, active, onClick }) => (
   <button 
     onClick={() => onClick(id as BlueprintTab)}
-    className={`px-6 py-4 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap ${active === id ? 'border-nexus-accent text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+    className={`px-6 py-4 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap ${active === id ? 'border-nexus-accent text-white bg-nexus-accent/5' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
   >
     <Icon size={14} /> {label}
   </button>
 );
 
-const TechnicalUseCase = ({ actor, action, service, requirement }: any) => (
+const TechnicalUseCase = ({ actor, action, service, notes }: any) => (
    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-nexus-800/40 border border-nexus-700 rounded-2xl hover:border-nexus-accent transition-all group">
       <div className="flex items-center gap-3">
-         <User size={14} className="text-gray-500" />
-         <span className="text-xs font-bold text-white uppercase tracking-tighter">{actor}</span>
+         <div className="w-8 h-8 rounded-lg bg-nexus-900 flex items-center justify-center"><User size={14} className="text-gray-500" /></div>
+         <span className="text-[10px] font-black text-white uppercase">{actor}</span>
       </div>
-      <div className="flex items-center text-xs font-medium text-gray-300">
-         {action}
-      </div>
+      <div className="flex items-center text-xs font-bold text-gray-300">{action}</div>
       <div className="flex items-center gap-2">
          <Code2 size={12} className="text-nexus-accent" />
          <span className="text-[10px] font-mono text-nexus-accent bg-nexus-accent/5 px-2 py-1 rounded">{service}</span>
       </div>
-      <div className="flex items-center gap-2">
-         <ShieldCheck size={12} className="text-nexus-secondary" />
-         <span className="text-[10px] text-gray-500 italic">{requirement}</span>
-      </div>
+      <div className="flex items-center text-[10px] text-gray-500 italic">{notes}</div>
    </div>
 );
 
 const FlowStep = ({ side, label, icon: Icon }: any) => (
    <div className={`flex items-center ${side === 'left' ? 'justify-start' : side === 'right' ? 'justify-end' : 'justify-center'}`}>
-      <div className={`flex items-center gap-4 p-4 rounded-2xl bg-nexus-900 border border-nexus-800 shadow-xl min-w-[240px] ${side === 'center' ? 'border-nexus-accent/30' : ''}`}>
-         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${side === 'center' ? 'bg-nexus-accent' : 'bg-nexus-800'}`}>
-            <Icon size={18} />
+      <div className={`flex items-center gap-4 p-4 rounded-2xl bg-nexus-900 border border-nexus-800 shadow-xl min-w-[240px] ${side === 'center' ? 'border-nexus-accent/30 shadow-nexus-accent/5' : ''}`}>
+         <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${side === 'center' ? 'bg-nexus-accent' : 'bg-nexus-800 border border-nexus-700'}`}>
+            <Icon size={16} />
          </div>
-         <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">{label}</span>
+         <span className="font-black uppercase tracking-tighter text-gray-300">{label}</span>
       </div>
    </div>
 );
 
 const FlowLine = () => (
-   <div className="h-8 flex justify-center">
+   <div className="h-6 flex justify-center">
       <div className="w-0.5 h-full bg-gradient-to-b from-nexus-accent/40 to-transparent"></div>
    </div>
 );
@@ -264,7 +305,7 @@ const SchemaTable = ({ title, fields, secondary }: any) => (
             <div key={f.name} className="flex flex-col gap-1">
                <div className="flex justify-between items-center">
                   <span className="text-xs font-mono font-bold text-white">{f.name}</span>
-                  {f.rel && <span className="text-[9px] text-nexus-accent font-black">{f.rel}</span>}
+                  {f.rel && <span className="text-[8px] text-nexus-accent font-black">{f.rel}</span>}
                </div>
                <span className="text-[9px] text-gray-600 font-mono italic">{f.type}</span>
             </div>
@@ -276,16 +317,15 @@ const SchemaTable = ({ title, fields, secondary }: any) => (
 const TechnicalBacklogItem = ({ id, title, priority, status, tech }: any) => (
    <div className={`flex items-center gap-4 p-5 rounded-[1.5rem] border transition-all ${status === 'done' ? 'bg-nexus-success/5 border-nexus-success/20 opacity-40' : 'bg-nexus-800 border-nexus-700 hover:border-nexus-accent'}`}>
       <span className="text-[9px] font-mono text-gray-600 font-black">{id}</span>
-      <div className="flex-1">
-         <h4 className="font-bold text-white text-xs">{title}</h4>
-         <div className="flex gap-2 mt-2">
-            <span className="px-2 py-0.5 bg-black/40 rounded text-[7px] font-black uppercase text-gray-500 tracking-widest">{tech}</span>
-         </div>
+      <div className="flex-1 min-w-0">
+         <h4 className="font-bold text-white text-sm truncate">{title}</h4>
+         <span className="px-2 py-0.5 bg-black/40 rounded text-[7px] font-black uppercase text-gray-500 tracking-widest mt-2 inline-block">{tech}</span>
       </div>
       <div className="flex items-center gap-4 shrink-0">
          <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase border ${
             priority === 'Critical' ? 'border-red-500 text-red-500' :
-            priority === 'High' ? 'border-orange-500 text-orange-500' : 'border-gray-700 text-gray-500'
+            priority === 'High' ? 'border-orange-500 text-orange-500' :
+            'border-gray-700 text-gray-500'
          }`}>
             {priority}
          </div>
@@ -295,5 +335,20 @@ const TechnicalBacklogItem = ({ id, title, priority, status, tech }: any) => (
             {status === 'done' ? <CheckCircle2 size={18}/> : <Activity size={18}/>}
          </div>
       </div>
+   </div>
+);
+
+const TechBadge = ({ label }: { label: string }) => (
+   <div className="px-4 py-3 bg-black/40 border border-white/5 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-center">
+      {label}
+   </div>
+);
+
+const PerformanceRing = ({ label, value }: { label: string, value: string }) => (
+   <div className="flex flex-col items-center gap-1">
+      <div className="w-12 h-12 rounded-full border-4 border-nexus-success flex items-center justify-center text-[10px] font-black text-white shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+         {value}
+      </div>
+      <span className="text-[8px] font-black text-gray-600 uppercase">{label}</span>
    </div>
 );
