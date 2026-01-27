@@ -6,7 +6,8 @@ import {
   Zap, Database, Activity, BrainCircuit, Settings as SettingsIcon, 
   MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search,
   ChevronUp, X, LayoutGrid, Gavel, Shield, ChevronRight, ChevronLeft,
-  CircleDot, Plus, Share2, Target, MousePointer2, Layout, Sparkles, Monitor
+  CircleDot, Plus, Share2, Target, MousePointer2, Layout, Sparkles, Monitor,
+  ShoppingBag, MessagesSquare, Tag, FileCode
 } from 'lucide-react';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
@@ -23,6 +24,9 @@ import { NotificationCenter } from './components/NotificationCenter';
 import { Auctions } from './components/Auctions';
 import { Collection } from './components/Collection';
 import { SetupMaster } from './components/SetupMaster';
+import { NexusForum } from './components/NexusForum';
+import { LootMarket } from './components/LootMarket';
+import { NexusBlueprint } from './components/NexusBlueprint';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { nexusCloud } from './services/nexusCloud';
 
@@ -123,8 +127,12 @@ const MainApp: React.FC = () => {
     { id: 'setup', label: 'Meu Setup', icon: Monitor, category: 'hardware' },
     { id: 'vault', label: 'Coleção', icon: Box, category: 'hardware' },
     { id: 'auctions', label: 'Leilões', icon: Gavel, category: 'hardware' },
+
+    { id: 'forum', label: 'Nexus Forum', icon: MessagesSquare, category: 'community' },
+    { id: 'loot', label: 'Loot Market', icon: ShoppingBag, category: 'community' },
     
     { id: 'notifications', label: 'Alertas', icon: Bell, category: 'system' },
+    { id: 'blueprint', label: 'Blueprint', icon: FileCode, category: 'system' },
     { id: 'settings', label: 'Ajustes', icon: SettingsIcon, category: 'system' },
   ], []);
 
@@ -218,6 +226,9 @@ const MainApp: React.FC = () => {
       case 'discover': return <GameSearch />;
       case 'friends': return <Friends />;
       case 'auctions': return <Auctions />;
+      case 'forum': return <NexusForum />;
+      case 'loot': return <LootMarket />;
+      case 'blueprint': return <NexusBlueprint />;
       case 'settings': return <Settings />;
       default: return <GlobalFeed />;
     }
@@ -250,6 +261,13 @@ const MainApp: React.FC = () => {
            <div className="space-y-1">
              <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Legado Digital</h3>
              {fullMenuItems.filter(i => i.category === 'digital').map(item => (
+                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
+             ))}
+           </div>
+
+           <div className="space-y-1">
+             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Comunidade</h3>
+             {fullMenuItems.filter(i => i.category === 'community').map(item => (
                 <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
              ))}
            </div>
@@ -449,7 +467,7 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <AppProvider><AppContent /></AppProvider>
+  <AppProvider><AppContent /></AppContent>
 );
 
 export default App;

@@ -14,13 +14,67 @@ export enum Platform {
   DISCORD = 'Discord'
 }
 
+export enum ForumCategory {
+  DIGITAL_GAMES = 'Jogos Digitais',
+  PHYSICAL_GAMES = 'Jogos Físicos',
+  CONSOLES = 'Consoles',
+  COLLECTION = 'Colecionismo',
+  PC_GAMING = 'PC Gaming',
+  HARDWARE = 'Hardware & Specs',
+  OFFTOPIC = 'Off-Topic'
+}
+
+export enum PostPrivacy {
+  PUBLIC = 'Público',
+  FRIENDS = 'Apenas Amigos',
+  FRIENDS_OF_FRIENDS = 'Amigos de Amigos'
+}
+
+export interface ForumPost {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  category: ForumCategory;
+  title: string;
+  content: string;
+  privacy: PostPrivacy;
+  timestamp: string;
+  likes: number;
+  replies: number;
+}
+
+export enum DealCategory {
+  GAMES = 'Jogos',
+  CONSOLES = 'Consoles',
+  HARDWARE = 'Hardware',
+  ACCESSORIES = 'Acessórios',
+  SUBSCRIPTIONS = 'Assinaturas'
+}
+
+export interface GamingDeal {
+  id: string;
+  postedBy: string;
+  postedById: string;
+  title: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  imageUrl: string;
+  affiliateUrl: string;
+  category: DealCategory;
+  timestamp: string;
+  store: string;
+  isExpired?: boolean;
+}
+
 export enum AuctionCategory {
   GAME = 'Game',
   CONSOLE = 'Console',
   ACCESSORY = 'Accessory',
   COLLECTIBLE = 'Collectible'
 }
-
+// ... (restante do arquivo types.ts permanece igual)
 export enum ItemCondition {
   SEALED = 'Sealed',
   CIB = 'Complete in Box (CIB)',

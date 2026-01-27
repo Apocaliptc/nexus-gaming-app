@@ -1,5 +1,5 @@
 
-import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, Testimonial, JournalEntry, Notification, NotificationType } from '../types';
+import { UserStats, Game, Platform, Friend, ActivityEvent, ActivityType, Testimonial, JournalEntry, Notification, NotificationType, ForumPost, GamingDeal } from '../types';
 import { MOCK_FRIENDS, MOCK_USER_STATS, MOCK_TESTIMONIALS_DATA, MOCK_ACTIVITY_FEED } from './mockData';
 
 /**
@@ -162,7 +162,6 @@ export const nexusCloud = {
   },
 
   async getGlobalActivities(): Promise<ActivityEvent[]> {
-    // Mesclar dados do Supabase com o feed rico do mock
     let cloudActivities: ActivityEvent[] = [];
     try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=nexus_id,stats,updated_at&order=updated_at.desc&limit=5`, {
