@@ -114,29 +114,39 @@ const MainApp: React.FC = () => {
 
   // MENU COMPLETO
   const fullMenuItems = useMemo(() => [
-    { id: 'pulse', label: 'Pulse', icon: Activity, category: 'core' },
-    { id: 'profile', label: 'DNA', icon: UserCircle, category: 'core' },
-    { id: 'friends', label: 'Social', icon: Users, category: 'core' },
-    { id: 'chat', label: 'Chat', icon: MessageSquare, category: 'core' },
+    { id: 'pulse', label: 'Pulse', icon: Activity, category: 'Core Hub' },
+    { id: 'profile', label: 'DNA', icon: UserCircle, category: 'Core Hub' },
+    { id: 'friends', label: 'Social', icon: Users, category: 'Core Hub' },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, category: 'Core Hub' },
     
-    { id: 'library', label: 'Biblioteca', icon: Grid, category: 'digital' },
-    { id: 'achievements', label: 'Troféus', icon: Trophy, category: 'digital' },
-    { id: 'stats', label: 'Analytics', icon: BarChart2, category: 'digital' },
-    { id: 'discover', label: 'Explorar', icon: Compass, category: 'digital' },
-    { id: 'oracle', label: 'IA Oracle', icon: BrainCircuit, category: 'digital' },
+    { id: 'library', label: 'Biblioteca', icon: Grid, category: 'Legado Digital' },
+    { id: 'achievements', label: 'Troféus', icon: Trophy, category: 'Legado Digital' },
+    { id: 'stats', label: 'Analytics', icon: BarChart2, category: 'Legado Digital' },
+    { id: 'discover', label: 'Explorar', icon: Compass, category: 'Legado Digital' },
+    { id: 'oracle', label: 'IA Oracle', icon: BrainCircuit, category: 'Legado Digital' },
 
-    { id: 'forum', label: 'Nexus Forum', icon: MessagesSquare, category: 'community' },
-    { id: 'market', label: 'Nexus Market', icon: Store, category: 'community' },
-    { id: 'auctions', label: 'Leilões', icon: Gavel, category: 'community' },
-    { id: 'loot', label: 'Loot Market', icon: ShoppingBag, category: 'community' },
+    { id: 'forum', label: 'Nexus Forum', icon: MessagesSquare, category: 'Comunidade' },
+    { id: 'market', label: 'Nexus Market', icon: Store, category: 'Comunidade' },
+    { id: 'auctions', label: 'Leilões', icon: Gavel, category: 'Comunidade' },
+    { id: 'loot', label: 'Loot Market', icon: ShoppingBag, category: 'Comunidade' },
 
-    { id: 'setup', label: 'Meu Setup', icon: Monitor, category: 'hardware' },
-    { id: 'vault', label: 'Coleção', icon: Box, category: 'hardware' },
+    { id: 'setup', label: 'Meu Setup', icon: Monitor, category: 'Acervo & Hardware' },
+    { id: 'vault', label: 'Coleção', icon: Box, category: 'Acervo & Hardware' },
     
-    { id: 'notifications', label: 'Alertas', icon: Bell, category: 'system' },
-    { id: 'blueprint', label: 'Blueprint', icon: FileCode, category: 'system' },
-    { id: 'settings', label: 'Ajustes', icon: SettingsIcon, category: 'system' },
+    { id: 'notifications', label: 'Alertas', icon: Bell, category: 'Sistema' },
+    { id: 'blueprint', label: 'Blueprint', icon: FileCode, category: 'Sistema' },
+    { id: 'settings', label: 'Ajustes', icon: SettingsIcon, category: 'Sistema' },
   ], []);
+
+  // Agrupamento para o menu vertical mobile
+  const groupedMenuItems = useMemo(() => {
+    // Cast to any[] to avoid 'unknown' type errors when using Object.entries in the UI
+    return fullMenuItems.reduce((acc, item) => {
+      if (!acc[item.category]) acc[item.category] = [];
+      acc[item.category].push(item);
+      return acc;
+    }, {} as Record<string, any[]>);
+  }, [fullMenuItems]);
 
   // ATALHOS RÁPIDOS (Radial 360)
   const shortcutItems = useMemo(() => [
@@ -254,40 +264,15 @@ const MainApp: React.FC = () => {
         </div>
         
         <nav className="flex-1 px-3 space-y-8 overflow-y-auto custom-scrollbar pt-4">
-           <div className="space-y-1">
-             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Core Hub</h3>
-             {fullMenuItems.filter(i => i.category === 'core').map(item => (
-                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
-             ))}
-           </div>
-
-           <div className="space-y-1">
-             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Legado Digital</h3>
-             {fullMenuItems.filter(i => i.category === 'digital').map(item => (
-                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
-             ))}
-           </div>
-
-           <div className="space-y-1">
-             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Comunidade</h3>
-             {fullMenuItems.filter(i => i.category === 'community').map(item => (
-                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
-             ))}
-           </div>
-
-           <div className="space-y-1">
-             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Acervo & Hardware</h3>
-             {fullMenuItems.filter(i => i.category === 'hardware').map(item => (
-                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
-             ))}
-           </div>
-
-           <div className="space-y-1">
-             <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">Sistema</h3>
-             {fullMenuItems.filter(i => i.category === 'system').map(item => (
-                <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
-             ))}
-           </div>
+           {Object.entries(groupedMenuItems).map(([category, items]) => (
+             <div key={category} className="space-y-1">
+               <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">{category}</h3>
+               {/* Use explicit typing via groups record fix to resolve 'unknown' type errors */}
+               {items.map(item => (
+                  <NavItem key={item.id} id={item.id} icon={item.icon} label={item.label} active={activeTab} onClick={setActiveTab} />
+               ))}
+             </div>
+           ))}
         </nav>
 
         <div className="p-4 border-t border-nexus-800">
@@ -307,7 +292,7 @@ const MainApp: React.FC = () => {
         
         <div className="flex-1 overflow-y-auto custom-scrollbar relative">
            {renderContent()}
-           <div className="md:hidden h-32 w-full"></div>
+           <div className="md:hidden h-40 w-full"></div>
         </div>
 
         {isRadialOpen && (
@@ -375,57 +360,82 @@ const MainApp: React.FC = () => {
         )}
 
         {isVerticalMenuOpen && (
-           <div className="md:hidden fixed inset-0 z-[250] flex flex-col animate-fade-in">
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => setIsVerticalMenuOpen(false)}></div>
-              <div className="mt-auto bg-[#0f0f15] border-t border-nexus-700 rounded-t-[3.5rem] p-8 pb-14 shadow-[0_-20px_80px_rgba(0,0,0,0.9)] relative z-[260] animate-slide-up">
-                 <div className="w-16 h-1.5 bg-gray-800 rounded-full mx-auto mb-10"></div>
-                 <div className="flex items-center justify-between mb-10">
-                    <h2 className="text-4xl font-display font-bold text-white flex items-center gap-4">
-                       <LayoutGrid className="text-nexus-accent" size={32} /> Central Nexus
-                    </h2>
-                    <button onClick={() => setIsVerticalMenuOpen(false)} className="p-4 bg-nexus-800 rounded-2xl text-gray-400 active:scale-90"><X size={24}/></button>
-                 </div>
-                 <div className="grid grid-cols-3 gap-4">
-                    {fullMenuItems.map(item => (
-                       <button 
-                         key={item.id} 
-                         onClick={() => navigateTo(item.id)}
-                         className={`flex flex-col items-center justify-center p-6 rounded-[2.5rem] border transition-all active:scale-95 ${activeTab === item.id ? 'bg-nexus-accent border-nexus-accent shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'bg-nexus-800/40 border-nexus-800 hover:bg-nexus-800'}`}
-                       >
-                          <item.icon size={28} className={activeTab === item.id ? 'text-white' : 'text-nexus-accent'} />
-                          <span className="text-[10px] font-black uppercase tracking-tighter mt-3 text-white text-center leading-tight">{item.label}</span>
-                       </button>
+           <div className="md:hidden fixed inset-0 z-[250] flex flex-col animate-fade-in pointer-events-auto">
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl" onClick={() => setIsVerticalMenuOpen(false)}></div>
+              <div className="mt-auto bg-[#08080c] border-t border-nexus-700 rounded-t-[3.5rem] h-[85vh] flex flex-col relative z-[260] animate-slide-up shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
+                 <div className="w-16 h-1.5 bg-gray-800 rounded-full mx-auto mt-6 mb-8 shrink-0"></div>
+                 
+                 <header className="px-10 flex items-center justify-between mb-8 shrink-0">
+                    <div>
+                       <h2 className="text-3xl font-display font-bold text-white flex items-center gap-4">
+                          Central Nexus
+                       </h2>
+                       <p className="text-[10px] font-black text-nexus-accent uppercase tracking-widest mt-1">Sovereign Panel v4</p>
+                    </div>
+                    <button onClick={() => setIsVerticalMenuOpen(false)} className="p-4 bg-nexus-800 border border-nexus-700 rounded-2xl text-gray-400 active:scale-90 transition-all">
+                       <X size={24}/>
+                    </button>
+                 </header>
+
+                 <div className="flex-1 overflow-y-auto px-8 space-y-10 pb-40 custom-scrollbar">
+                    {Object.entries(groupedMenuItems).map(([category, items]) => (
+                       <div key={category} className="space-y-4">
+                          <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] pl-2 border-l-2 border-nexus-accent/30">{category}</h3>
+                          <div className="grid grid-cols-2 gap-3">
+                             {/* Use explicit typing from the central groupedMenuItems fix to resolve 'unknown' map errors */}
+                             {items.map(item => (
+                                <button 
+                                  key={item.id} 
+                                  onClick={() => navigateTo(item.id)}
+                                  className={`flex flex-col items-center justify-center p-6 rounded-[2.5rem] border transition-all active:scale-95 ${activeTab === item.id ? 'bg-nexus-accent border-nexus-accent shadow-[0_0_30px_rgba(139,92,246,0.3)]' : 'bg-nexus-800/30 border-nexus-800 hover:bg-nexus-800'}`}
+                                >
+                                   <div className={`p-3 rounded-2xl mb-3 ${activeTab === item.id ? 'bg-white/20' : 'bg-nexus-900/50'}`}>
+                                      <item.icon size={26} className={activeTab === item.id ? 'text-white' : 'text-nexus-accent'} />
+                                   </div>
+                                   <span className="text-[10px] font-bold uppercase tracking-tight text-white text-center leading-tight">{item.label}</span>
+                                </button>
+                             ))}
+                          </div>
+                       </div>
                     ))}
+                    
+                    <button 
+                      onClick={logout}
+                      className="w-full py-6 bg-red-500/10 border border-red-500/20 text-red-500 rounded-[2.5rem] font-black text-xs uppercase tracking-widest mt-4 flex items-center justify-center gap-3 active:bg-red-500 active:text-white transition-all"
+                    >
+                       <LogOut size={20} /> Desconectar Protocolo
+                    </button>
                  </div>
               </div>
            </div>
         )}
 
-        <div className="md:hidden fixed bottom-10 inset-x-0 flex items-center justify-center gap-8 z-[210]">
-           <div className="flex flex-col items-center gap-2">
+        {/* BOTTOM NAV BAR MOBILE FIXED */}
+        <div className="md:hidden fixed bottom-8 inset-x-0 flex items-center justify-center gap-6 z-[210] pointer-events-none">
+           <div className="flex flex-col items-center gap-2 pointer-events-auto group">
               <button 
                 ref={radialButtonRef}
                 onMouseDown={handleRadialStart}
                 onTouchStart={handleRadialStart}
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl border-2 ${
-                  isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-accent border-nexus-accent/40 active:bg-nexus-accent active:text-white'
+                className={`w-18 h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.6)] border-2 ${
+                  isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-accent border-nexus-accent/40 active:scale-90 active:bg-nexus-accent active:text-white'
                 }`}
               >
-                 <Zap size={28} strokeWidth={2.5} className="fill-current" />
+                 <Zap size={32} strokeWidth={2.5} className="fill-current" />
               </button>
-              <span className={`text-[8px] font-black uppercase tracking-widest text-nexus-accent/60 ${isRadialOpen ? 'opacity-0' : 'opacity-100'}`}>Shortcuts</span>
+              <span className={`text-[8px] font-black uppercase tracking-widest text-nexus-accent/60 transition-opacity duration-300 ${isRadialOpen ? 'opacity-0' : 'opacity-100'}`}>Shortcuts</span>
            </div>
 
-           <div className="flex flex-col items-center gap-2">
+           <div className="flex flex-col items-center gap-2 pointer-events-auto group">
               <button 
                 onClick={() => setIsVerticalMenuOpen(true)}
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl border-2 ${
-                  isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-secondary border-nexus-secondary/40 active:bg-nexus-secondary active:text-white'
+                className={`w-18 h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.6)] border-2 ${
+                  isRadialOpen ? 'scale-0 opacity-0' : 'bg-nexus-900 text-nexus-secondary border-nexus-secondary/40 active:scale-90 active:bg-nexus-secondary active:text-white'
                 }`}
               >
-                 <Menu size={28} strokeWidth={2.5} />
+                 <Menu size={32} strokeWidth={2.5} />
               </button>
-              <span className={`text-[8px] font-black uppercase tracking-widest text-nexus-secondary/60 ${isRadialOpen ? 'opacity-0' : 'opacity-100'}`}>Full Panel</span>
+              <span className={`text-[8px] font-black uppercase tracking-widest text-nexus-secondary/60 transition-opacity duration-300 ${isRadialOpen ? 'opacity-0' : 'opacity-100'}`}>Full Panel</span>
            </div>
         </div>
       </main>
@@ -436,11 +446,13 @@ const MainApp: React.FC = () => {
           to { transform: translateY(0); }
         }
         .animate-slide-up {
-          animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .animate-spin-slow {
           animation: spin 8s linear infinite;
         }
+        .w-18 { width: 4.5rem; }
+        .h-18 { height: 4.5rem; }
       `}} />
     </div>
   );
