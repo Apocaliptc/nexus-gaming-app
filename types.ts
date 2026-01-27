@@ -74,7 +74,32 @@ export enum AuctionCategory {
   ACCESSORY = 'Accessory',
   COLLECTIBLE = 'Collectible'
 }
-// ... (restante do arquivo types.ts permanece igual)
+
+export enum MarketCategory {
+  GAMES = 'Jogos',
+  CONSOLES = 'Consoles',
+  PERIPHERALS = 'Periféricos',
+  PC_PARTS = 'Hardware PC',
+  COLLECTIBLES = 'Colecionáveis'
+}
+
+export interface MarketItem {
+  id: string;
+  sellerId: string;
+  sellerName: string;
+  sellerAvatar: string;
+  title: string;
+  description: string;
+  price: number;
+  location: string;
+  condition: ItemCondition;
+  category: MarketCategory;
+  imageUrl: string;
+  timestamp: string;
+  isSold?: boolean;
+  isSovereignVerified?: boolean;
+}
+
 export enum ItemCondition {
   SEALED = 'Sealed',
   CIB = 'Complete in Box (CIB)',

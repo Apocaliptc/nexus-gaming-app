@@ -7,7 +7,7 @@ import {
   MessageSquare, Bell, Box, BookOpen, Play, Menu, Home, Search,
   ChevronUp, X, LayoutGrid, Gavel, Shield, ChevronRight, ChevronLeft,
   CircleDot, Plus, Share2, Target, MousePointer2, Layout, Sparkles, Monitor,
-  ShoppingBag, MessagesSquare, Tag, FileCode
+  ShoppingBag, MessagesSquare, Tag, FileCode, Store
 } from 'lucide-react';
 import { Friends } from './components/Friends';
 import { Settings } from './components/Settings';
@@ -26,6 +26,7 @@ import { Collection } from './components/Collection';
 import { SetupMaster } from './components/SetupMaster';
 import { NexusForum } from './components/NexusForum';
 import { LootMarket } from './components/LootMarket';
+import { NexusMarket } from './components/NexusMarket';
 import { NexusBlueprint } from './components/NexusBlueprint';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { nexusCloud } from './services/nexusCloud';
@@ -73,13 +74,13 @@ const LoginScreen: React.FC = () => {
              </div>
            )}
            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">E-mail</label>
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-3">E-mail</label>
               <div className="relative">
                  <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="nome@exemplo.com" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl px-6 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
               </div>
            </div>
            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-3">Senha</label>
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-3">Senha</label>
               <div className="relative">
                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                  <input required value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-nexus-800 border border-nexus-700 rounded-2xl pl-12 pr-4 py-4 text-sm text-white focus:border-nexus-accent outline-none" />
@@ -124,12 +125,13 @@ const MainApp: React.FC = () => {
     { id: 'discover', label: 'Explorar', icon: Compass, category: 'digital' },
     { id: 'oracle', label: 'IA Oracle', icon: BrainCircuit, category: 'digital' },
 
+    { id: 'forum', label: 'Nexus Forum', icon: MessagesSquare, category: 'community' },
+    { id: 'market', label: 'Nexus Market', icon: Store, category: 'community' },
+    { id: 'auctions', label: 'Leilões', icon: Gavel, category: 'community' },
+    { id: 'loot', label: 'Loot Market', icon: ShoppingBag, category: 'community' },
+
     { id: 'setup', label: 'Meu Setup', icon: Monitor, category: 'hardware' },
     { id: 'vault', label: 'Coleção', icon: Box, category: 'hardware' },
-    { id: 'auctions', label: 'Leilões', icon: Gavel, category: 'hardware' },
-
-    { id: 'forum', label: 'Nexus Forum', icon: MessagesSquare, category: 'community' },
-    { id: 'loot', label: 'Loot Market', icon: ShoppingBag, category: 'community' },
     
     { id: 'notifications', label: 'Alertas', icon: Bell, category: 'system' },
     { id: 'blueprint', label: 'Blueprint', icon: FileCode, category: 'system' },
@@ -141,7 +143,7 @@ const MainApp: React.FC = () => {
     { id: 'pulse', label: 'Feed', icon: Activity },
     { id: 'profile', label: 'DNA', icon: UserCircle },
     { id: 'library', label: 'Jogos', icon: Grid },
-    { id: 'setup', label: 'Setup', icon: Monitor },
+    { id: 'market', label: 'Market', icon: Store },
     { id: 'oracle', label: 'IA', icon: BrainCircuit },
     { id: 'notifications', label: 'Alertas', icon: Bell },
   ], []);
@@ -226,6 +228,7 @@ const MainApp: React.FC = () => {
       case 'discover': return <GameSearch />;
       case 'friends': return <Friends />;
       case 'auctions': return <Auctions />;
+      case 'market': return <NexusMarket />;
       case 'forum': return <NexusForum />;
       case 'loot': return <LootMarket />;
       case 'blueprint': return <NexusBlueprint />;
