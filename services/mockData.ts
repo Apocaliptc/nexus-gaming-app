@@ -40,9 +40,37 @@ export const MOCK_SETUP_APOCALIPTC: PCSetup = {
 
 // Fix: Renamed MOCK_COLLECTION_APOCALIPTC to MOCK_COLLECTION to satisfy imports in components/Dashboard.tsx and components/LegacyDashboard.tsx
 export const MOCK_COLLECTION: CollectionItem[] = [
-  { id: 'c1', ownerId: '@apocaliptc', name: 'PlayStation Classic (CIB)', type: 'Console', condition: 'CIB', status: 'collection', imageUrl: 'https://picsum.photos/400/400?random=1', value: 150, dateAdded: '2019-06-01' },
-  { id: 'c2', ownerId: '@apocaliptc', name: 'Metal Gear Solid (Black Label)', type: 'Game', condition: 'CIB', status: 'collection', imageUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co20u2.jpg', value: 250, dateAdded: '2021-11-01' },
-  { id: 'c3', ownerId: '@apocaliptc', name: 'Zelda: Ocarina of Time (Gold Cartridge)', type: 'Game', condition: 'Loose', status: 'collection', imageUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co394v.jpg', value: 350, dateAdded: '2022-01-05' }
+  { 
+    id: 'c1', ownerId: '@apocaliptc', name: 'PlayStation Classic (CIB)', type: 'Console', condition: 'CIB', status: 'collection', imageUrl: 'https://picsum.photos/400/400?random=1', value: 150, dateAdded: '2019-06-01',
+    platform: 'Sony PlayStation', year: 1994, generation: '5th Gen', description: 'O console que mudou tudo. Versão original japonesa completa.',
+    pedigree: [
+      { ownerNexusId: 'leg-4', ownerName: 'Yoshi_Collector', acquiredDate: '1995-01-10', soldDate: '2019-06-01', ownerPrestigeAtTime: 5000 },
+      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2019-06-01', ownerPrestigeAtTime: 18200 }
+    ]
+  },
+  { 
+    id: 'c2', ownerId: '@apocaliptc', name: 'Metal Gear Solid (Black Label)', type: 'Game', condition: 'CIB', status: 'collection', imageUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co20u2.jpg', value: 250, dateAdded: '2021-11-01',
+    platform: 'PlayStation', year: 1998, generation: '5th Gen', description: 'Obra prima de Hideo Kojima em estado de conservação 10/10.',
+    pedigree: [
+      { ownerNexusId: 'leg-9', ownerName: 'SnakeEater', acquiredDate: '1998-10-01', soldDate: '2021-11-01', ownerPrestigeAtTime: 1200 },
+      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2021-11-01', ownerPrestigeAtTime: 18200 }
+    ]
+  },
+  { 
+    id: 'c3', ownerId: '@apocaliptc', name: 'Zelda: Ocarina of Time (Gold Cartridge)', type: 'Game', condition: 'Loose', status: 'collection', imageUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co394v.jpg', value: 350, dateAdded: '2022-01-05',
+    platform: 'Nintendo 64', year: 1998, generation: '5th Gen', description: 'Cartucho dourado raríssimo da primeira tiragem.',
+    pedigree: [
+      { ownerNexusId: 'link-fan', ownerName: 'HylianHero', acquiredDate: '1998-11-21', soldDate: '2022-01-05', ownerPrestigeAtTime: 8800 },
+      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2022-01-05', ownerPrestigeAtTime: 18200 }
+    ]
+  },
+  { 
+    id: 'c4', ownerId: '@apocaliptc', name: 'Sega Dreamcast (Sports Edition)', type: 'Console', condition: 'Boxed', status: 'collection', imageUrl: 'https://picsum.photos/400/400?random=4', value: 300, dateAdded: '2023-05-10',
+    platform: 'Sega', year: 2000, generation: '6th Gen', description: 'Versão preta clássica do console à frente do seu tempo.',
+    pedigree: [
+      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2023-05-10', ownerPrestigeAtTime: 18200 }
+    ]
+  }
 ];
 
 export const MOCK_USER_STATS: UserStats = {

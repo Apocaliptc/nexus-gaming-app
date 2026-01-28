@@ -264,7 +264,8 @@ const MainApp: React.FC = () => {
         </div>
         
         <nav className="flex-1 px-3 space-y-8 overflow-y-auto custom-scrollbar pt-4">
-           {Object.entries(groupedMenuItems).map(([category, items]) => (
+           {/* Fix: Explicitly cast Object.entries result to [string, any[]][] to avoid unknown map errors */}
+           {(Object.entries(groupedMenuItems) as [string, any[]][]).map(([category, items]) => (
              <div key={category} className="space-y-1">
                <h3 className="px-4 text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-3">{category}</h3>
                {/* Use explicit typing via groups record fix to resolve 'unknown' type errors */}
@@ -378,7 +379,8 @@ const MainApp: React.FC = () => {
                  </header>
 
                  <div className="flex-1 overflow-y-auto px-8 space-y-10 pb-40 custom-scrollbar">
-                    {Object.entries(groupedMenuItems).map(([category, items]) => (
+                    {/* Fix: Explicitly cast Object.entries result to [string, any[]][] to avoid unknown map errors */}
+                    {(Object.entries(groupedMenuItems) as [string, any[]][]).map(([category, items]) => (
                        <div key={category} className="space-y-4">
                           <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] pl-2 border-l-2 border-nexus-accent/30">{category}</h3>
                           <div className="grid grid-cols-2 gap-3">

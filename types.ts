@@ -392,6 +392,11 @@ export interface CollectionItem {
   imageUrl: string;
   value: number;
   dateAdded: string;
+  platform?: string;
+  year?: number;
+  generation?: string;
+  description?: string;
+  pedigree?: OwnershipRecord[];
 }
 
 export enum SuggestionStatus {
