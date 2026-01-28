@@ -1,6 +1,7 @@
 
 import { UserStats, Platform, LinkedAccount, Game, Friend, ActivityEvent, JournalEntry, ActivityType, AuctionItem, Bid, CollectionItem } from '../types';
 import { nexusCloud } from '../services/nexusCloud';
+import { MOCK_COLLECTION } from '../services/mockData';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AppContextType {
@@ -57,6 +58,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const session = await nexusCloud.getActiveSession();
         if (session) {
+          // Segurança: Garantir que itens mock premium (PS5 Pro / Switch 2) estejam na coleção
+          const collection = session.collection || [];
+          const hasPS5Pro = collection.some(i => i.id === 'c-ps5pro');
+          const hasSwitch2 = collection.some(i => i.id === 'c-switch2');
+          
+          if (!hasPS5Pro || !hasSwitch2) {
+             const itemsToAdd = MOCK_COLLECTION.filter(i => i.id === 'c-ps5pro' || i.id === 'c-switch2');
+             session.collection = [...itemsToAdd, ...collection.filter(i => i.id !== 'c-ps5pro' && i.id !== 'c-switch2')];
+             nexusCloud.saveUser(session);
+          }
+
           setUserStatsState(session);
           setCurrentUser({ email: session.nexusId });
           const userFriends = await nexusCloud.getFriends(session.nexusId);

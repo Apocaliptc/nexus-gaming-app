@@ -38,38 +38,58 @@ export const MOCK_SETUP_APOCALIPTC: PCSetup = {
   description: 'Estação de alta performance focada em fidelidade visual e latência mínima para títulos competitivos.'
 };
 
-// Fix: Renamed MOCK_COLLECTION_APOCALIPTC to MOCK_COLLECTION to satisfy imports in components/Dashboard.tsx and components/LegacyDashboard.tsx
 export const MOCK_COLLECTION: CollectionItem[] = [
   { 
-    id: 'c1', ownerId: '@apocaliptc', name: 'PlayStation Classic (CIB)', type: 'Console', condition: 'CIB', status: 'collection', imageUrl: 'https://picsum.photos/400/400?random=1', value: 150, dateAdded: '2019-06-01',
-    platform: 'Sony PlayStation', year: 1994, generation: '5th Gen', description: 'O console que mudou tudo. Versão original japonesa completa.',
-    pedigree: [
-      { ownerNexusId: 'leg-4', ownerName: 'Yoshi_Collector', acquiredDate: '1995-01-10', soldDate: '2019-06-01', ownerPrestigeAtTime: 5000 },
-      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2019-06-01', ownerPrestigeAtTime: 18200 }
-    ]
+    id: 'c-ps5pro', ownerId: '@apocaliptc', name: 'PlayStation 5 Pro', type: 'Console', condition: 'Novo', status: 'collection', 
+    imageUrl: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=1200&auto=format&fit=crop', value: 6200, dateAdded: '2025-11-22',
+    manufacturer: 'Sony Interactive Entertainment', family: 'PlayStation', modelCode: 'CFI-7014A', region: 'Brasil (NTSC-U/C)',
+    serialNumber: 'P5P9A3B7C4125896', manufacturingDate: '2025-09-15', manufacturingPlace: 'China',
+    platform: 'PlayStation 5', year: 2025, generation: '9ª geração', architecture: 'AMD Custom SoC (Zen + RDNA)', storageCapacity: '2 TB SSD NVMe', mediaType: 'Blu-ray Ultra HD',
+    functionality: 'Totalmente funcional', modifications: 'Nenhuma', firmware: '10.02',
+    hasOriginalBox: true, hasManual: true, hasOriginalAccessories: true, hasReceipt: true,
+    accessoriesIncluded: '1 controle DualSense, Cabo HDMI, Cabo de energia, Base vertical',
+    rarity: 'Comum', acquisitionDate: '2025-11-22', acquisitionForm: 'Compra em varejo nacional', acquisitionValue: 6499,
+    description: 'Modelo nacional, sem uso prolongado, mantido em ambiente controlado.',
+    history: 'HISTÓRIA: Unidade nacional adquirida no lote de lançamento Pro. Conservação nível museu (Mint).',
+    pedigree: [{ ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2025-11-22', ownerPrestigeAtTime: 18200 }]
   },
   { 
-    id: 'c2', ownerId: '@apocaliptc', name: 'Metal Gear Solid (Black Label)', type: 'Game', condition: 'CIB', status: 'collection', imageUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co20u2.jpg', value: 250, dateAdded: '2021-11-01',
-    platform: 'PlayStation', year: 1998, generation: '5th Gen', description: 'Obra prima de Hideo Kojima em estado de conservação 10/10.',
-    pedigree: [
-      { ownerNexusId: 'leg-9', ownerName: 'SnakeEater', acquiredDate: '1998-10-01', soldDate: '2021-11-01', ownerPrestigeAtTime: 1200 },
-      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2021-11-01', ownerPrestigeAtTime: 18200 }
-    ]
+    id: 'c-switch2', ownerId: '@apocaliptc', name: 'Nintendo Switch 2', type: 'Console', condition: 'Usado (Excelente Estado)', status: 'collection', 
+    imageUrl: 'https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?q=80&w=1200&auto=format&fit=crop', value: 5100, dateAdded: '2026-06-18',
+    manufacturer: 'Nintendo', family: 'Nintendo Switch', modelCode: 'HAC-201', region: 'Global',
+    serialNumber: 'XSW2205BR0987345', manufacturingDate: '2026-03-03', manufacturingPlace: 'Vietnã',
+    platform: 'Nintendo Switch', year: 2026, generation: '9ª geração', architecture: 'NVIDIA Custom Tegra', storageCapacity: '512 GB (flash interno)', mediaType: 'Cartucho proprietário Nintendo',
+    functionality: 'Totalmente funcional', modifications: 'Nenhuma', firmware: '2.1.0',
+    hasOriginalBox: true, hasManual: true, hasOriginalAccessories: true, hasReceipt: true,
+    accessoriesIncluded: '2 Joy-Cons (E/D), Dock, Grip, Cabos HDMI e Energia',
+    rarity: 'Incomum (Primeiro Lote)', acquisitionDate: '2026-06-18', acquisitionForm: 'Importação direta', acquisitionValue: 4800,
+    description: 'Unidade do lote inicial, sem drift nos controles.',
+    history: 'HISTÓRIA: Adquirido via importação direta do Japão. Lote inicial sem revisões de hardware posteriores.',
+    pedigree: [{ ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2026-06-18', ownerPrestigeAtTime: 22500 }]
   },
   { 
-    id: 'c3', ownerId: '@apocaliptc', name: 'Zelda: Ocarina of Time (Gold Cartridge)', type: 'Game', condition: 'Loose', status: 'collection', imageUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co394v.jpg', value: 350, dateAdded: '2022-01-05',
-    platform: 'Nintendo 64', year: 1998, generation: '5th Gen', description: 'Cartucho dourado raríssimo da primeira tiragem.',
-    pedigree: [
-      { ownerNexusId: 'link-fan', ownerName: 'HylianHero', acquiredDate: '1998-11-21', soldDate: '2022-01-05', ownerPrestigeAtTime: 8800 },
-      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2022-01-05', ownerPrestigeAtTime: 18200 }
-    ]
+    id: 'c1', ownerId: '@apocaliptc', name: 'NES (Original Toastbox)', type: 'Console', condition: 'Loose', status: 'collection', imageUrl: 'https://picsum.photos/400/400?random=nes', value: 280, dateAdded: '2023-05-10',
+    manufacturer: 'Nintendo', family: 'Nintendo Entertainment System', modelCode: 'NES-001', region: 'NTSC-U',
+    serialNumber: 'N10239420-USA', manufacturingDate: '1986-11', manufacturingPlace: 'Japan',
+    platform: 'NES', year: 1985, generation: '3rd Gen', architecture: 'Ricoh 2A03 8-bit', storageCapacity: 'N/A', mediaType: 'Cartridge',
+    functionality: 'Functional', modifications: 'Recapped, AV Modded', firmware: 'N/A',
+    hasOriginalBox: false, hasManual: false, hasOriginalAccessories: true, hasReceipt: false,
+    rarity: 'Uncommon', acquisitionDate: '2023-05-10', acquisitionForm: 'Purchase', acquisitionValue: 200,
+    description: 'O console que salvou a indústria dos videogames em 1985.',
+    history: 'HISTÓRIA: Encontrado em um sótão em New Jersey. Passou por restauração interna completa com capacitores novos de alta fidelidade e limpeza por ultrassom.',
+    pedigree: [{ ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2023-05-10', ownerPrestigeAtTime: 18200 }]
   },
   { 
-    id: 'c4', ownerId: '@apocaliptc', name: 'Sega Dreamcast (Sports Edition)', type: 'Console', condition: 'Boxed', status: 'collection', imageUrl: 'https://picsum.photos/400/400?random=4', value: 300, dateAdded: '2023-05-10',
-    platform: 'Sega', year: 2000, generation: '6th Gen', description: 'Versão preta clássica do console à frente do seu tempo.',
-    pedigree: [
-      { ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2023-05-10', ownerPrestigeAtTime: 18200 }
-    ]
+    id: 'c2', ownerId: '@apocaliptc', name: 'Mega Drive 3', type: 'Console', condition: 'Boxed', status: 'collection', imageUrl: 'https://picsum.photos/400/400?random=mega', value: 120, dateAdded: '2022-04-15',
+    manufacturer: 'Sega (Tectoy)', family: 'Genesis / Mega Drive', modelCode: '010660', region: 'Brazil (PAL-M)',
+    serialNumber: 'TEC-3310-BR-01', manufacturingDate: '1994-03', manufacturingPlace: 'Manaus, Brazil',
+    platform: 'Mega Drive', year: 1994, generation: '4th Gen', architecture: 'Motorola 68000', storageCapacity: 'N/A', mediaType: 'Cartridge',
+    functionality: 'Functional', modifications: 'None', firmware: 'N/A',
+    hasOriginalBox: true, hasManual: true, hasOriginalAccessories: true, hasReceipt: false,
+    rarity: 'Common (Regional)', acquisitionDate: '2022-04-15', acquisitionForm: 'Trade', acquisitionValue: 100,
+    description: 'Edição brasileira icônica da Tectoy, compacta e potente.',
+    history: 'HISTÓRIA: Item de legado nacional original com transformador integrado. Representa a soberania da Sega no Brasil durante os anos 90.',
+    pedigree: [{ ownerNexusId: '@apocaliptc', ownerName: 'Apocaliptc', acquiredDate: '2022-04-15', ownerPrestigeAtTime: 18200 }]
   }
 ];
 
@@ -80,7 +100,6 @@ export const MOCK_USER_STATS: UserStats = {
   platinumCount: 48,
   prestigePoints: 18200,
   gamesOwned: 312,
-  // Fix: Updated reference to MOCK_COLLECTION
   collection: [...MOCK_COLLECTION],
   setup: { ...MOCK_SETUP_APOCALIPTC },
   platformsConnected: [Platform.STEAM, Platform.PSN, Platform.XBOX],
@@ -166,7 +185,6 @@ export const MOCK_FRIENDS: Friend[] = [
     gamesOwned: 1200, 
     topGenres: ['Classic', 'Arcade'], 
     compatibilityScore: 62,
-    // Fix: Added missing 'ram' property required by PCSetup type
     setup: {
       cpu: 'i7 10700K',
       gpu: 'GTX 1660 Ti',
@@ -254,7 +272,6 @@ export const MOCK_GLOBAL_STATS: any = {
   averageHours: 920, 
   averageAchievements: 110, 
   topGenres: [{ name: 'FPS', value: 40 }, { name: 'RPG', value: 30 }], 
-  // Fix: Removed duplicate activityTrend property that was defined as empty array
   monthlyActivity: [
     { month: 'Jan', hours: 45 }, { month: 'Feb', hours: 55 }, { month: 'Mar', hours: 40 }
   ], 

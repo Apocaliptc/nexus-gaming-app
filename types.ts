@@ -131,7 +131,8 @@ export enum Region {
   NTSCU = 'NTSC-U (USA)',
   PAL = 'PAL (Europe)',
   NTSCJ = 'NTSC-J (Japan)',
-  REGION_FREE = 'Region Free'
+  REGION_FREE = 'Region Free',
+  BRAZIL = 'Brasil'
 }
 
 export interface OwnershipRecord {
@@ -386,16 +387,58 @@ export interface CollectionItem {
   id: string;
   ownerId: string;
   name: string;
-  type: string;
+  type: 'Console' | 'Game' | 'Accessory' | 'Merch';
   condition: string;
   status: string;
   imageUrl: string;
   value: number;
   dateAdded: string;
+  
+  // Identificação Básica
+  manufacturer?: string;
+  family?: string;
+  modelCode?: string;
+  region?: string;
+  
+  // Identificação Única
+  serialNumber?: string;
+  manufacturingDate?: string;
+  manufacturingPlace?: string;
+  
+  // Classificação Técnica
   platform?: string;
   year?: number;
   generation?: string;
+  architecture?: string;
+  storageCapacity?: string;
+  mediaType?: string;
+  
+  // Estado e Integridade
+  functionality?: string;
+  modifications?: string;
+  firmware?: string;
+  
+  // Documentação e Checklist
+  hasOriginalBox?: boolean;
+  hasManual?: boolean;
+  hasOriginalAccessories?: boolean;
+  hasReceipt?: boolean;
+  accessoriesIncluded?: string;
+  
+  // Específico para Jogos
+  publisher?: string;
+  developer?: string;
+  edition?: string;
+  productCode?: string;
+  discCount?: number;
+  
+  // Informações de Coleção
+  acquisitionDate?: string;
+  acquisitionForm?: string;
+  acquisitionValue?: number;
+  rarity?: string;
   description?: string;
+  history?: string;
   pedigree?: OwnershipRecord[];
 }
 
